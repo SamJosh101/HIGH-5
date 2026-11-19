@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}My bookings{% endblock %}
+{% block content %}
+{% comment %} Raheem: upcoming trips go in the first panel, past/cancelled trips in #history. {% endcomment %}
+<div class="h5-page-head">
+  <h1>Hi, {{ user.get_short_name }}</h1>
+  <a class="btn btn-primary" href="{% url 'bookings:search' %}">Book a trip &rarr;</a>
+</div>
+<div class="h5-panel">
+  <h2>Upcoming</h2>
+  <div class="h5-empty">
+    <div class="h5-empty-ico"><svg viewBox="0 0 24 24"><path d="M4 7h16v4a2 2 0 000 4v4H4v-4a2 2 0 000-4z"/><path d="M14 7v12"/></svg></div>
+    <h3>No trips yet</h3>
+    <a class="btn btn-outline-light" href="{% url 'bookings:search' %}">Find a trip</a>
+  </div>
+</div>
+<div class="h5-panel" id="history">
+  <h2>History</h2>
+  <div class="h5-empty">
+    <div class="h5-empty-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+    <h3>No past trips</h3>
+  </div>
+</div>
+{% endblock %}

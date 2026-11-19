@@ -1,0 +1,15 @@
+{# Main links, shared by the desktop pill and the mobile menu. Expects `vn` (current view name). #}
+{% if user.is_authenticated and user.is_admin_role %}
+  <a href="{% url 'dashboard:home' %}"{% if vn == 'dashboard:home' %} class="is-active" aria-current="page"{% endif %}>Dashboard</a>
+  <a href="{% url 'transport:manage' %}"{% if vn == 'transport:manage' %} class="is-active" aria-current="page"{% endif %}>Transport</a>
+{% else %}
+  <a href="{% url 'bookings:search' %}"{% if vn == 'bookings:search' %} class="is-active" aria-current="page"{% endif %}>Book a Trip</a>
+  {% if user.is_authenticated %}
+    <a href="{% url 'bookings:dashboard' %}"{% if vn == 'bookings:dashboard' %} class="is-active" aria-current="page"{% endif %}>My Bookings</a>
+  {% endif %}
+{% endif %}
+<a href="{% url 'home' %}#routes">Routes</a>
+{% if user.is_authenticated and user.is_passenger_role %}
+  <a href="{% url 'bookings:dashboard' %}#history">History</a>
+{% endif %}
+<a href="{% url 'home' %}#support">Support</a>

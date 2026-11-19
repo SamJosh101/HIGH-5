@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% comment %}
+  Split-screen layout for login, sign-up and password reset pages (owner: Cross).
+  Left: the animated night scene from the homepage. Right: the form card.
+  Child templates fill: auth_tagline (short headline on the scene) and auth_card.
+{% endcomment %}
+{% block body_class %}h5-auth-page{% endblock %}
+{% block main_class %}{% endblock %}
+{% block messages %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<section class="h5-auth">
+  <div class="h5-auth-art">
+    {% include "partials/hero_scene.html" with align="xMaxYMid" %}
+    <h2>{% block auth_tagline %}Intercity travel,<br><em>booked in minutes.</em>{% endblock %}</h2>
+  </div>
+  <div class="h5-auth-panel">
+    <div class="h5-auth-card">
+      {% include "partials/messages.html" %}
+      {% block auth_card %}{% endblock %}
+    </div>
+  </div>
+</section>
+{% endblock %}

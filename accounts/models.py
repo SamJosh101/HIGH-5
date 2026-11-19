@@ -1,0 +1,100 @@
+"""
+Custom user model for HIGH 5.
+
+Why a custom model?  Django's default User logs in with a *username* and has
+no role or phone field. HIGH 5 logs users in with their *email* and needs a
+role (ADMIN / PASSENGER). Django only lets you swap the user model safely
+BEFORE the first migration, so it is defined here from day one.
+"""
+
+from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.core.validators import RegexValidator
+from django.db import models
+
+
+class UserManager(BaseUserManager):
+    """Creates users identified by email instead of username."""
+
+    use_in_migrations = True
+
+    def _create_user(self, email, password, **extra_fields):
+        if not email:
+            raise ValueError("An email address is required.")
+        email = self.normalize_email(email).lower()
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)  # hashes the password; never stored as plain text
+        user.save(using=self._db)
+        return user
+
+    def create_user(self, email, password=None, **extra_fields):
+        extra_fields.setdefault("role", User.Role.PASSENGER)
+        extra_fields.setdefault("is_staff", False)
+        extra_fields.setdefault("is_superuser", False)
+        return self._create_user(email, password, **extra_fields)
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault("role", User.Role.ADMIN)
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        if extra_fields.get("is_staff") is not True or extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_staff=True and is_superuser=True.")
+        return self._create_user(email, password, **extra_fields)
+
+
+phone_validator = RegexValidator(
+    regex=r"^\+?[0-9]{7,15}$",
+    message="Enter a valid phone number: 7-15 digits, optionally starting with +.",
+)
+
+
+class User(AbstractUser):
+    """A HIGH 5 account: either a PASSENGER or an ADMIN."""
+
+    class Role(models.TextChoices):
+        ADMIN = "ADMIN", "Administrator"
+        PASSENGER = "PASSENGER", "Passenger"
+
+    # Remove AbstractUser fields we don't use.
+    username = None
+    first_name = None
+    last_name = None
+
+    email = models.EmailField("email address", unique=True)
+    full_name = models.CharField(max_length=150)
+    phone = models.CharField(max_length=16, blank=True, validators=[phone_validator])
+    role = models.CharField(max_length=10, choices=Role.choices, default=Role.PASSENGER, db_index=True)
+    # Inherited from AbstractUser: password (hashed), is_active, is_staff,
+    # is_superuser, date_joined, last_login, groups, user_permissions.
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["full_name"]  # asked for by `createsuperuser`
+
+    objects = UserManager()
+
+    class Meta:
+        ordering = ["-date_joined"]
+        verbose_name = "user"
+        verbose_name_plural = "users"
+
+    def __str__(self):
+        return f"{self.full_name} <{self.email}>"
+
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.lower()
+        super().save(*args, **kwargs)
+
+    # Used by templates and the permission helpers in accounts/permissions.py.
+    @property
+    def is_admin_role(self):
+        return self.is_active and (self.role == self.Role.ADMIN or self.is_superuser)
+
+    @property
+    def is_passenger_role(self):
+        return self.is_active and self.role == self.Role.PASSENGER and not self.is_superuser
+
+    def get_full_name(self):
+        return self.full_name
+
+    def get_short_name(self):
+        return self.full_name.split(" ")[0] if self.full_name else self.email

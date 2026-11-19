@@ -1,0 +1,62 @@
+{% comment %}
+  Site navigation (owner: Cross). Used on every page.
+  Which links show depends on who is looking:
+    visitors   – Book a Trip · Routes · Support
+    passengers – Book a Trip · My Bookings · Routes · History · Support
+    admins     – Dashboard · Transport · Routes · Support
+  "Routes" and "Support" are homepage sections until real pages exist.
+{% endcomment %}
+{% with vn=request.resolver_match.view_name %}
+<header class="h5-hnav" id="h5Nav">
+  <div class="h5-hnav-inner">
+    <a class="h5-logo" href="{% url 'home' %}" aria-label="HIGH 5 home"><span class="h5-logo-mark">H5</span><span class="h5-logo-text">HIGH&nbsp;5</span></a>
+
+    <nav class="h5-pill-nav" aria-label="Main">
+      <span class="h5-pill-glider" aria-hidden="true"></span>
+      {% include "partials/nav_links.html" %}
+    </nav>
+
+    <div class="h5-hnav-right">
+      {% if user.is_authenticated %}
+        <div class="dropdown">
+          <button class="h5-user" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
+            <span class="h5-avatar">{{ user.get_short_name|first|upper }}</span><span>{{ user.get_short_name }}</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><span class="dropdown-header">{{ user.email }}</span></li>
+            <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">Profile</a></li>
+            <li><a class="dropdown-item" href="{% url 'accounts:password_change' %}">Change password</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <form method="post" action="{% url 'accounts:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item">Log out</button>
+              </form>
+            </li>
+          </ul>
+        </div>
+      {% else %}
+        <a class="h5-ghost" href="{% url 'accounts:login' %}">Log in</a>
+        <a class="h5-btn-white" href="{% url 'accounts:register' %}">Sign up</a>
+      {% endif %}
+      <button class="h5-burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="h5MobileMenu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="h5-mobile-menu" id="h5MobileMenu" hidden>
+    {% include "partials/nav_links.html" %}
+    {% if user.is_authenticated %}
+      <a href="{% url 'accounts:profile' %}">Profile</a>
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="h5-btn-outline w-100 justify-content-center mt-2">Log out</button>
+      </form>
+    {% else %}
+      <a href="{% url 'accounts:login' %}">Log in</a>
+      <a href="{% url 'accounts:register' %}" class="h5-btn-white">Sign up</a>
+    {% endif %}
+  </div>
+</header>
+{% endwith %}

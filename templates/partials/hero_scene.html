@@ -1,0 +1,105 @@
+{% comment %} Decorative night scene behind the homepage hero (owner: Cross).
+   Pure SVG, no images. Classes on the groups are animation hooks used by
+   static/css/home.css and static/js/home.js. aria-hidden: screen readers skip it.
+   Optional: align="xMaxYMid" keeps the right side (the bus) in view on narrow panels. {% endcomment %}
+<svg class="h5-scene" viewBox="0 0 1600 600" preserveAspectRatio="{{ align|default:'xMidYMid' }} slice" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="h5sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b1019"/><stop offset=".55" stop-color="#1c2738"/><stop offset="1" stop-color="#121925"/>
+    </linearGradient>
+    <linearGradient id="h5mtn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5d6a80"/><stop offset=".35" stop-color="#2a3446"/><stop offset="1" stop-color="#151c28"/>
+    </linearGradient>
+    <linearGradient id="h5road" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a212d"/><stop offset="1" stop-color="#07090d"/>
+    </linearGradient>
+    <linearGradient id="h5body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3f5f9"/><stop offset=".25" stop-color="#c9cfd9"/><stop offset=".6" stop-color="#8b94a3"/><stop offset="1" stop-color="#4b525e"/>
+    </linearGradient>
+    <linearGradient id="h5glass" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0c111a"/><stop offset=".5" stop-color="#1d2738"/><stop offset="1" stop-color="#0c111a"/>
+    </linearGradient>
+    <radialGradient id="h5lamp"><stop offset="0" stop-color="#fff6dc"/><stop offset=".25" stop-color="#ffd98a" stop-opacity=".55"/><stop offset="1" stop-color="#ffb84d" stop-opacity="0"/></radialGradient>
+    <radialGradient id="h5head"><stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#dfe9ff" stop-opacity=".7"/><stop offset="1" stop-color="#9fb8ff" stop-opacity="0"/></radialGradient>
+    <filter id="h5blur6"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="h5blur2"><feGaussianBlur stdDeviation="2"/></filter>
+  </defs>
+
+  <rect width="1600" height="600" fill="url(#h5sky)"/>
+
+  <!-- twinkling stars -->
+  <g class="h5-stars" fill="#dfe6f5">
+    <circle cx="620" cy="60" r="1.4"/><circle cx="700" cy="110" r="1"/><circle cx="790" cy="48" r="1.6"/>
+    <circle cx="880" cy="96" r="1"/><circle cx="960" cy="40" r="1.3"/><circle cx="1040" cy="82" r="1"/>
+    <circle cx="1130" cy="58" r="1.5"/><circle cx="1220" cy="104" r="1"/><circle cx="1300" cy="36" r="1.2"/>
+    <circle cx="1380" cy="88" r="1.6"/><circle cx="1460" cy="54" r="1"/><circle cx="1540" cy="110" r="1.3"/>
+  </g>
+
+  <!-- mountains (parallax layer, moved by home.js on scroll) -->
+  <g class="h5-parallax" data-speed="0.25">
+    <path d="M520 330 L640 220 L700 262 L790 160 L860 230 L930 185 L1010 250 L1100 150 L1190 232 L1260 196 L1350 262 L1440 178 L1530 246 L1600 214 L1600 360 L520 360Z" fill="url(#h5mtn)"/>
+    <path d="M770 180 L790 160 L812 186 L800 182 L790 196 L780 184Z M1080 172 L1100 150 L1124 178 L1110 174 L1100 190 L1090 176Z M1420 198 L1440 178 L1462 204 L1448 199 L1440 212 L1430 200Z" fill="#c9d2e0" opacity=".75"/>
+  </g>
+  <g class="h5-parallax" data-speed="0.12">
+    <path d="M520 360 L620 300 L720 330 L840 280 L960 322 L1080 286 L1220 330 L1340 292 L1460 330 L1600 300 L1600 380 L520 380Z" fill="#111722"/>
+    <path fill="#0b1018" d="M520 380 l10-34 10 34z M548 380 l12-44 12 44z M580 380 l9-30 9 30z M1450 380 l11-40 11 40z M1480 380 l9-30 9 30z M1510 380 l12-46 12 46z M1545 380 l10-34 10 34z M1572 380 l12-42 12 42z"/>
+  </g>
+
+  <!-- lamp posts -->
+  <g stroke="#2b3342" stroke-width="3">
+    <line x1="600" y1="250" x2="600" y2="410"/><line x1="900" y1="230" x2="900" y2="410"/>
+    <line x1="1210" y1="230" x2="1210" y2="410"/><line x1="1500" y1="250" x2="1500" y2="410"/>
+  </g>
+  <g class="h5-lamps">
+    <circle cx="600" cy="252" r="40" fill="url(#h5lamp)"/><circle cx="900" cy="232" r="46" fill="url(#h5lamp)"/>
+    <circle cx="1210" cy="232" r="46" fill="url(#h5lamp)"/><circle cx="1500" cy="252" r="40" fill="url(#h5lamp)"/>
+  </g>
+
+  <!-- wet road with reflections and moving lane dashes -->
+  <rect y="400" width="1600" height="200" fill="url(#h5road)"/>
+  <g class="h5-lamps" opacity=".55" filter="url(#h5blur6)">
+    <rect x="592" y="430" width="16" height="110" fill="#ffd98a"/><rect x="892" y="430" width="16" height="130" fill="#ffd98a"/>
+    <rect x="1202" y="430" width="16" height="130" fill="#ffd98a"/><rect x="1492" y="430" width="16" height="110" fill="#ffd98a"/>
+  </g>
+  <line class="h5-lane" x1="0" y1="520" x2="1600" y2="520" stroke="#3a4352" stroke-width="3" stroke-dasharray="60 46" opacity=".6"/>
+
+  <!-- coach (front at left). Outer g = position, inner g = drive-in animation -->
+  <g transform="translate(700 236)">
+    <g class="h5-coach">
+      <ellipse cx="380" cy="198" rx="400" ry="16" fill="#000" opacity=".6" filter="url(#h5blur6)"/>
+      <g transform="translate(0 392) scale(1 -1)" opacity=".18" filter="url(#h5blur2)">
+        <path d="M40 30 Q48 6 90 4 L760 4 Q790 4 792 30 L792 170 Q792 186 776 186 L28 186 Q10 186 10 168 L10 120 Q12 66 40 30Z" fill="url(#h5body)"/>
+      </g>
+      <g class="h5-coach-body">
+        <path d="M40 30 Q48 6 90 4 L760 4 Q790 4 792 30 L792 170 Q792 186 776 186 L28 186 Q10 186 10 168 L10 120 Q12 66 40 30Z" fill="url(#h5body)"/>
+        <path d="M44 34 Q52 14 92 12 L130 12 L120 118 L18 118 Q22 64 44 34Z" fill="url(#h5glass)"/>
+        <path d="M58 30 L96 16 L70 110 L40 110Z" fill="#fff" opacity=".07"/>
+        <rect x="140" y="12" width="644" height="92" rx="10" fill="url(#h5glass)"/>
+        <g class="h5-cabin" fill="#ffd98a" opacity=".22">
+          <rect x="150" y="60" width="90" height="40" rx="4"/><rect x="262" y="60" width="90" height="40" rx="4"/><rect x="374" y="60" width="90" height="40" rx="4"/>
+          <rect x="486" y="60" width="90" height="40" rx="4"/><rect x="598" y="60" width="90" height="40" rx="4"/><rect x="700" y="60" width="78" height="40" rx="4"/>
+        </g>
+        <g stroke="#0a0d13" stroke-width="5"><line x1="252" y1="12" x2="252" y2="104"/><line x1="364" y1="12" x2="364" y2="104"/><line x1="476" y1="12" x2="476" y2="104"/><line x1="588" y1="12" x2="588" y2="104"/><line x1="694" y1="12" x2="694" y2="104"/></g>
+        <path d="M150 18 L620 18" stroke="#fff" stroke-opacity=".18" stroke-width="3"/>
+        <path d="M128 118 L132 176" stroke="#59606d" stroke-width="2"/>
+        <path d="M14 132 L792 132 L792 142 L12 142Z" fill="#f5a524"/>
+        <text x="300" y="168" font-family="Segoe UI, system-ui, sans-serif" font-weight="700" font-size="20" letter-spacing="6" fill="#2b313c">HIGH 5</text>
+        <text x="410" y="168" font-family="Segoe UI, system-ui, sans-serif" font-size="13" letter-spacing="3" fill="#4a515d">INTERCITY</text>
+      </g>
+      <path d="M100 186 a46 46 0 0 1 92 0" fill="#0b0e13"/><path d="M600 186 a46 46 0 0 1 92 0" fill="#0b0e13"/>
+      <g class="h5-wheel">
+        <circle cx="146" cy="190" r="34" fill="#15181e"/><circle cx="146" cy="190" r="18" fill="#6b7280"/>
+        <path d="M146 174 V206 M130 190 H162" stroke="#3b414c" stroke-width="3"/><circle cx="146" cy="190" r="7" fill="#1d2129"/>
+      </g>
+      <g class="h5-wheel">
+        <circle cx="646" cy="190" r="34" fill="#15181e"/><circle cx="646" cy="190" r="18" fill="#6b7280"/>
+        <path d="M646 174 V206 M630 190 H662" stroke="#3b414c" stroke-width="3"/><circle cx="646" cy="190" r="7" fill="#1d2129"/>
+      </g>
+      <rect x="14" y="150" width="34" height="10" rx="5" fill="#fff"/>
+      <g class="h5-headlight">
+        <circle cx="26" cy="155" r="70" fill="url(#h5head)" opacity=".85"/>
+        <ellipse cx="-40" cy="190" rx="160" ry="14" fill="#cfdcff" opacity=".22" filter="url(#h5blur6)"/>
+      </g>
+    </g>
+  </g>
+</svg>

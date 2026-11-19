@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}No access to this page{% endblock %}
+{% block content %}
+<div class="h5-error">
+  <b>403</b>
+  <h1>No access to this page</h1>
+  <a class="btn btn-primary" href="{% url 'home' %}">Go home</a>
+</div>
+{% endblock %}

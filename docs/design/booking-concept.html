@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HIGH 5 – Booking page concept</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #07090d;
+    --panel: rgba(18, 21, 28, 0.92);
+    --line: rgba(255,255,255,0.08);
+    --text: #f2f4f8;
+    --muted: #8b93a3;
+    --blue: #2f6bff;
+    --blue-glow: rgba(47,107,255,0.55);
+    --amber: #f5a524;
+  }
+  html, body { width: 1600px; height: 1000px; background: var(--bg); overflow: hidden; }
+  body { font-family: "Segoe UI", system-ui, sans-serif; color: var(--text); }
+
+  .app { position: relative; width: 1600px; height: 1000px; }
+
+  /* ---------- HERO ---------- */
+  .hero { position: absolute; inset: 0 0 auto 0; height: 600px; overflow: hidden; }
+  .hero svg.scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .hero::after { /* fade text side + bottom */
+    content: ""; position: absolute; inset: 0;
+    background:
+      linear-gradient(90deg, rgba(7,9,13,.92) 0%, rgba(7,9,13,.55) 32%, rgba(7,9,13,0) 55%),
+      linear-gradient(0deg, var(--bg) 0%, rgba(7,9,13,0) 35%);
+  }
+
+  nav { position: absolute; z-index: 5; top: 0; left: 0; right: 0; height: 88px;
+        display: flex; align-items: center; padding: 0 56px; }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 600; letter-spacing: .32em; font-size: 19px; }
+  .brand-mark { width: 34px; height: 34px; border-radius: 9px; background: var(--amber); color: #111;
+                display: grid; place-items: center; font-weight: 800; letter-spacing: 0; font-size: 15px; }
+  .links { display: flex; gap: 40px; margin-left: 120px; font-size: 15px; color: #c9ced8; }
+  .links .active { color: #fff; position: relative; }
+  .links .active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -10px; height: 2px; background: var(--blue); border-radius: 2px; }
+  .links .badge { display: inline-grid; place-items: center; width: 17px; height: 17px; border-radius: 50%; background: var(--blue);
+                  font-size: 10px; margin-left: 4px; vertical-align: top; }
+  .nav-right { margin-left: auto; display: flex; align-items: center; gap: 22px; }
+  .icon-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; background: rgba(255,255,255,.04); }
+  .pill { background: #fff; color: #0b0d12; border-radius: 999px; padding: 11px 22px; font-size: 14px; font-weight: 600; display: flex; gap: 10px; align-items: center; }
+
+  .hero-copy { position: absolute; z-index: 4; left: 56px; top: 150px; }
+  .tagline { font-size: 24px; font-weight: 300; color: #b9bfcb; line-height: 1.35; }
+  .times { display: flex; align-items: flex-start; gap: 34px; margin-top: 34px; }
+  .t-block .time { font-size: 104px; font-weight: 200; letter-spacing: -2px; line-height: .95; font-family: "Segoe UI Light", "Segoe UI", sans-serif; }
+  .t-block .city { font-size: 30px; font-weight: 400; margin-top: 12px; }
+  .t-block .term { font-size: 14px; color: var(--muted); margin-top: 4px; }
+  .arrow { font-size: 64px; font-weight: 200; margin-top: 10px; color: #dfe3ea; }
+  .t-block.dest { margin-top: 0; }
+  .chips { display: flex; gap: 14px; margin-top: 40px; }
+  .chip { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #d4d8e0; padding: 10px 16px;
+          border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.035); backdrop-filter: blur(6px); }
+  .chip svg { width: 18px; height: 18px; stroke: #d4d8e0; fill: none; stroke-width: 1.6; }
+
+  /* date / passengers strip */
+  .trip-meta { position: absolute; z-index: 4; right: 56px; top: 132px; display: flex; gap: 12px; }
+  .meta { background: rgba(10,12,17,.7); border: 1px solid var(--line); border-radius: 14px; padding: 12px 18px; backdrop-filter: blur(8px); }
+  .meta small { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
+  .meta b { font-weight: 500; font-size: 15px; }
+
+  /* ---------- PANELS ---------- */
+  .panels { position: absolute; z-index: 6; left: 40px; right: 40px; top: 560px; height: 410px;
+            display: grid; grid-template-columns: 360px minmax(0,1fr) 380px; gap: 18px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 26px 28px;
+           box-shadow: 0 30px 60px rgba(0,0,0,.45); backdrop-filter: blur(14px); }
+  .panel h3 { font-size: 17px; font-weight: 500; display: flex; justify-content: space-between; align-items: center; }
+  .panel h3 span { font-size: 12px; color: var(--muted); font-weight: 400; }
+
+  /* timeline */
+  .stops { margin-top: 22px; position: relative; }
+  .stops::before { content: ""; position: absolute; left: 7px; top: 14px; bottom: 26px; width: 2px; background: rgba(255,255,255,.55); }
+  .stop { display: grid; grid-template-columns: 30px 1fr 64px 84px; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--line); position: relative; }
+  .stop:last-child { border-bottom: 0; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; background: var(--bg); margin-left: 2px; z-index: 1; }
+  .stop.major .dot { width: 16px; height: 16px; background: #fff; margin-left: 0; }
+  .stop .name { font-size: 15px; color: #c9ced8; }
+  .stop.major .name { font-size: 19px; color: #fff; font-weight: 600; }
+  .stop .tm { font-size: 16px; }
+  .stop .info { font-size: 12px; color: var(--muted); text-align: right; }
+
+  /* seat map */
+  .seat-head { display: flex; justify-content: space-between; align-items: center; }
+  .legend { display: flex; gap: 18px; font-size: 12px; color: var(--muted); }
+  .legend i { display: inline-block; width: 13px; height: 13px; border-radius: 4px; vertical-align: -2px; margin-right: 7px; }
+  .lg-a { background: #f4f6fb; } .lg-t { background: #252a35; border: 1px solid #39404e; } .lg-s { background: var(--blue); box-shadow: 0 0 10px var(--blue-glow); }
+
+  .coach { position: relative; margin: 26px auto 0; width: 650px; height: 228px;
+           border-radius: 90px 26px 26px 90px;
+           background: radial-gradient(120% 140% at 0% 50%, rgba(47,107,255,.28), rgba(47,107,255,0) 55%), linear-gradient(180deg, #151a24, #10141c);
+           border: 1px solid rgba(120,150,255,.28); box-shadow: inset 0 0 40px rgba(47,107,255,.08); }
+  .coach::before { /* windscreen */
+    content: ""; position: absolute; left: 14px; top: 30px; bottom: 30px; width: 30px; border-radius: 40px 6px 6px 40px;
+    background: linear-gradient(90deg, rgba(110,150,255,.55), rgba(110,150,255,.08)); }
+  .driver { position: absolute; left: 62px; top: 34px; width: 40px; height: 40px; border-radius: 50%; border: 3px solid #4a5468; }
+  .driver::after { content: ""; position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px; border-radius: 50%; background: #4a5468; }
+  .door { position: absolute; left: 66px; bottom: -1px; width: 52px; height: 4px; background: var(--amber); border-radius: 2px; }
+  .door-l { position: absolute; left: 70px; bottom: 12px; font-size: 10px; color: var(--muted); letter-spacing: .1em; }
+  .front-l { position: absolute; left: 58px; top: 82px; font-size: 10px; color: var(--muted); letter-spacing: .1em; }
+
+  .grid { position: absolute; left: 124px; top: 20px; display: grid; grid-template-rows: repeat(2, 36px) 28px repeat(2, 36px); row-gap: 8px; }
+  .row { display: grid; grid-template-columns: 20px repeat(11, 36px); column-gap: 9px; align-items: center; }
+  .rl { font-size: 11px; color: var(--muted); }
+  .aisle { display: grid; grid-template-columns: 20px repeat(11, 36px); column-gap: 9px; align-items: center; font-size: 10px; color: #5f6878; text-align: center; }
+  .seat { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; position: relative; }
+  .seat.a { background: #f4f6fb; box-shadow: inset 0 -4px 0 #d3d8e4; }
+  .seat.t { background: #222733; border: 1px solid #353c4a; }
+  .seat.t::before, .seat.t::after { content: ""; position: absolute; width: 15px; height: 1.6px; background: #6b7487; border-radius: 1px; }
+  .seat.t::before { transform: rotate(45deg); } .seat.t::after { transform: rotate(-45deg); }
+  .seat.s { background: linear-gradient(180deg, #4f86ff, #2457e6); box-shadow: 0 0 16px var(--blue-glow), inset 0 -4px 0 #1b47c4; }
+  .seat.s svg { width: 17px; height: 17px; stroke: #fff; stroke-width: 2.6; fill: none; }
+
+  .seat-foot { margin-top: 22px; display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 13px; }
+  .seat-foot b { color: #fff; font-weight: 500; }
+  .avail-bar { width: 220px; height: 6px; border-radius: 6px; background: #232834; overflow: hidden; margin-top: 7px; }
+  .avail-bar i { display: block; height: 100%; width: 36%; background: linear-gradient(90deg, #2f6bff, #6e9bff); }
+
+  /* fares + checkout */
+  .fares { margin-top: 18px; display: grid; gap: 10px; }
+  .fare { display: grid; grid-template-columns: 1fr auto 20px; align-items: center; gap: 14px; padding: 14px 16px;
+          border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.02); }
+  .fare.on { border-color: rgba(255,255,255,.55); background: rgba(255,255,255,.05); }
+  .fare b { font-weight: 500; font-size: 16px; } .fare small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .fare .price { font-size: 19px; font-weight: 400; }
+  .fare .go { color: var(--muted); }
+  .summary { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 12px 16px; border-radius: 14px; background: #0d1016; border: 1px solid var(--line); }
+  .summary small { display: block; font-size: 11px; color: var(--muted); }
+  .summary b { font-weight: 500; font-size: 15px; }
+  .cta { margin-top: 14px; height: 50px; border-radius: 14px; background: linear-gradient(180deg, #3b77ff, #2457e6);
+         box-shadow: 0 10px 30px var(--blue-glow); display: flex; justify-content: space-between; align-items: center; padding: 0 20px; font-weight: 600; font-size: 15px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ HERO ============ -->
+  <div class="hero">
+    <svg class="scene" viewBox="0 0 1600 600" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#0b1019"/><stop offset=".55" stop-color="#1c2738"/><stop offset="1" stop-color="#121925"/>
+        </linearGradient>
+        <linearGradient id="mtn" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#5d6a80"/><stop offset=".35" stop-color="#2a3446"/><stop offset="1" stop-color="#151c28"/>
+        </linearGradient>
+        <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1a212d"/><stop offset="1" stop-color="#07090d"/>
+        </linearGradient>
+        <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#f3f5f9"/><stop offset=".25" stop-color="#c9cfd9"/><stop offset=".6" stop-color="#8b94a3"/><stop offset="1" stop-color="#4b525e"/>
+        </linearGradient>
+        <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#0c111a"/><stop offset=".5" stop-color="#1d2738"/><stop offset="1" stop-color="#0c111a"/>
+        </linearGradient>
+        <radialGradient id="lamp"><stop offset="0" stop-color="#fff6dc" stop-opacity="1"/><stop offset=".25" stop-color="#ffd98a" stop-opacity=".55"/><stop offset="1" stop-color="#ffb84d" stop-opacity="0"/></radialGradient>
+        <radialGradient id="head"><stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#dfe9ff" stop-opacity=".7"/><stop offset="1" stop-color="#9fb8ff" stop-opacity="0"/></radialGradient>
+        <filter id="blur6"><feGaussianBlur stdDeviation="6"/></filter>
+        <filter id="blur2"><feGaussianBlur stdDeviation="2"/></filter>
+      </defs>
+
+      <rect width="1600" height="600" fill="url(#sky)"/>
+      <!-- distant mountains with snow caps -->
+      <path d="M520 330 L640 220 L700 262 L790 160 L860 230 L930 185 L1010 250 L1100 150 L1190 232 L1260 196 L1350 262 L1440 178 L1530 246 L1600 214 L1600 360 L520 360Z" fill="url(#mtn)"/>
+      <path d="M770 180 L790 160 L812 186 L800 182 L790 196 L780 184Z M1080 172 L1100 150 L1124 178 L1110 174 L1100 190 L1090 176Z M1420 198 L1440 178 L1462 204 L1448 199 L1440 212 L1430 200Z" fill="#c9d2e0" opacity=".75"/>
+      <path d="M520 360 L620 300 L720 330 L840 280 L960 322 L1080 286 L1220 330 L1340 292 L1460 330 L1600 300 L1600 380 L520 380Z" fill="#111722"/>
+      <!-- tree line -->
+      <g fill="#0b1018">
+        <path d="M520 380 l10-34 10 34z M548 380 l12-44 12 44z M580 380 l9-30 9 30z M1450 380 l11-40 11 40z M1480 380 l9-30 9 30z M1510 380 l12-46 12 46z M1545 380 l10-34 10 34z M1572 380 l12-42 12 42z"/>
+      </g>
+
+      <!-- terminal canopy & lamp posts -->
+      <g stroke="#2b3342" stroke-width="3">
+        <line x1="600" y1="250" x2="600" y2="410"/><line x1="900" y1="230" x2="900" y2="410"/><line x1="1210" y1="230" x2="1210" y2="410"/><line x1="1500" y1="250" x2="1500" y2="410"/>
+      </g>
+      <g>
+        <circle cx="600" cy="252" r="40" fill="url(#lamp)"/><circle cx="900" cy="232" r="46" fill="url(#lamp)"/>
+        <circle cx="1210" cy="232" r="46" fill="url(#lamp)"/><circle cx="1500" cy="252" r="40" fill="url(#lamp)"/>
+      </g>
+
+      <!-- wet road -->
+      <rect y="400" width="1600" height="200" fill="url(#road)"/>
+      <g opacity=".55" filter="url(#blur6)">
+        <rect x="592" y="430" width="16" height="110" fill="#ffd98a"/><rect x="892" y="430" width="16" height="130" fill="#ffd98a"/>
+        <rect x="1202" y="430" width="16" height="130" fill="#ffd98a"/><rect x="1492" y="430" width="16" height="110" fill="#ffd98a"/>
+      </g>
+      <g stroke="#3a4352" stroke-width="3" stroke-dasharray="60 46" opacity=".6"><line x1="520" y1="520" x2="1600" y2="520"/></g>
+
+      <!-- ===== Coach (side view, front at left) ===== -->
+      <g transform="translate(700 236)">
+        <ellipse cx="380" cy="198" rx="400" ry="16" fill="#000" opacity=".6" filter="url(#blur6)"/>
+        <!-- reflection -->
+        <g transform="translate(0 392) scale(1 -1)" opacity=".18" filter="url(#blur2)">
+          <path d="M40 30 Q48 6 90 4 L760 4 Q790 4 792 30 L792 170 Q792 186 776 186 L28 186 Q10 186 10 168 L10 120 Q12 66 40 30Z" fill="url(#body)"/>
+        </g>
+        <!-- body -->
+        <path d="M40 30 Q48 6 90 4 L760 4 Q790 4 792 30 L792 170 Q792 186 776 186 L28 186 Q10 186 10 168 L10 120 Q12 66 40 30Z" fill="url(#body)"/>
+        <!-- windscreen -->
+        <path d="M44 34 Q52 14 92 12 L130 12 L120 118 L18 118 Q22 64 44 34Z" fill="url(#glass)"/>
+        <path d="M58 30 L96 16 L70 110 L40 110Z" fill="#fff" opacity=".07"/>
+        <!-- passenger windows -->
+        <rect x="140" y="12" width="644" height="92" rx="10" fill="url(#glass)"/>
+        <g fill="#ffd98a" opacity=".22">
+          <rect x="150" y="60" width="90" height="40" rx="4"/><rect x="262" y="60" width="90" height="40" rx="4"/><rect x="374" y="60" width="90" height="40" rx="4"/>
+          <rect x="486" y="60" width="90" height="40" rx="4"/><rect x="598" y="60" width="90" height="40" rx="4"/><rect x="700" y="60" width="78" height="40" rx="4"/>
+        </g>
+        <g stroke="#0a0d13" stroke-width="5"><line x1="252" y1="12" x2="252" y2="104"/><line x1="364" y1="12" x2="364" y2="104"/><line x1="476" y1="12" x2="476" y2="104"/><line x1="588" y1="12" x2="588" y2="104"/><line x1="694" y1="12" x2="694" y2="104"/></g>
+        <path d="M150 18 L620 18" stroke="#fff" stroke-opacity=".18" stroke-width="3"/>
+        <!-- door -->
+        <rect x="134" y="16" width="0" height="0"/>
+        <path d="M128 118 L132 176" stroke="#59606d" stroke-width="2"/>
+        <!-- accent stripe + branding -->
+        <path d="M14 132 L792 132 L792 142 L12 142Z" fill="#f5a524"/>
+        <text x="300" y="168" font-family="Segoe UI" font-weight="700" font-size="20" letter-spacing="6" fill="#2b313c">HIGH 5</text>
+        <text x="410" y="168" font-family="Segoe UI" font-size="13" letter-spacing="3" fill="#4a515d">INTERCITY</text>
+        <!-- wheels -->
+        <g>
+          <path d="M100 186 a46 46 0 0 1 92 0" fill="#0b0e13"/><circle cx="146" cy="190" r="34" fill="#15181e"/><circle cx="146" cy="190" r="18" fill="#6b7280"/><circle cx="146" cy="190" r="7" fill="#1d2129"/>
+          <path d="M600 186 a46 46 0 0 1 92 0" fill="#0b0e13"/><circle cx="646" cy="190" r="34" fill="#15181e"/><circle cx="646" cy="190" r="18" fill="#6b7280"/><circle cx="646" cy="190" r="7" fill="#1d2129"/>
+        </g>
+        <!-- headlight -->
+        <rect x="14" y="150" width="34" height="10" rx="5" fill="#fff"/>
+        <circle cx="26" cy="155" r="70" fill="url(#head)" opacity=".85"/>
+        <ellipse cx="-40" cy="190" rx="160" ry="14" fill="#cfdcff" opacity=".22" filter="url(#blur6)"/>
+      </g>
+    </svg>
+
+    <nav>
+      <div class="brand"><div class="brand-mark">H5</div>HIGH&nbsp;5</div>
+      <div class="links">
+        <span class="active">Book a Trip</span>
+        <span>My Bookings<span class="badge">1</span></span>
+        <span>Routes</span>
+        <span>History</span>
+        <span>Support</span>
+      </div>
+      <div class="nav-right">
+        <div class="icon-btn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#e6e9ef" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>
+        <div class="pill">Sign in <span>→</span></div>
+      </div>
+    </nav>
+
+    <div class="trip-meta">
+      <div class="meta"><small>Date</small><b>Fri, 21 Nov</b></div>
+      <div class="meta"><small>Passengers</small><b>2 adults</b></div>
+      <div class="meta"><small>Bus</small><b>Executive · 44 seats</b></div>
+    </div>
+
+    <div class="hero-copy">
+      <div class="tagline">Intercity coaches for<br>a smoother journey</div>
+      <div class="times">
+        <div class="t-block"><div class="time">07:30</div><div class="city">Eastgate</div><div class="term">Central Terminal · Bay 4</div></div>
+        <div class="arrow">→</div>
+        <div class="t-block dest"><div class="time">13:45</div><div class="city">Riverside</div><div class="term">North Park Terminal</div></div>
+      </div>
+      <div class="chips">
+        <div class="chip"><svg viewBox="0 0 24 24"><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/><circle cx="12" cy="12" r="9"/></svg>Free Wi-Fi</div>
+        <div class="chip"><svg viewBox="0 0 24 24"><path d="M12 2v20M4.9 6l14.2 12M19.1 6L4.9 18"/></svg>Air-conditioned</div>
+        <div class="chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>6 h 15 min</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PANELS ============ -->
+  <div class="panels">
+    <div class="panel">
+      <h3>Journey <span>3 stops</span></h3>
+      <div class="stops">
+        <div class="stop major"><div class="dot"></div><div class="name">Eastgate</div><div class="tm">07:30</div><div class="info">Bay 4</div></div>
+        <div class="stop"><div class="dot"></div><div class="name">Millbrook</div><div class="tm">09:05</div><div class="info">5 min stop</div></div>
+        <div class="stop"><div class="dot"></div><div class="name">Stonebridge</div><div class="tm">10:40</div><div class="info">20 min rest</div></div>
+        <div class="stop"><div class="dot"></div><div class="name">Oakfield</div><div class="tm">12:10</div><div class="info">5 min stop</div></div>
+        <div class="stop major"><div class="dot"></div><div class="name">Riverside</div><div class="tm">13:45</div><div class="info">Gate 2</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="seat-head">
+        <h3>Choose your seats</h3>
+        <div class="legend"><span><i class="lg-a"></i>Available</span><span><i class="lg-t"></i>Taken</span><span><i class="lg-s"></i>Your seats</span></div>
+      </div>
+      <div class="coach">
+        <div class="driver"></div><div class="front-l">DRIVER</div>
+        <div class="door"></div><div class="door-l">DOOR</div>
+        <div class="grid" id="grid"></div>
+      </div>
+      <div class="seat-foot">
+        <div><b>16 of 44</b> seats available<div class="avail-bar"><i></i></div></div>
+        <div>Selected: <b>7A, 7B</b></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Select fare <span>per passenger</span></h3>
+      <div class="fares">
+        <div class="fare on"><div><b>Standard</b><small>Reclining seat, 1 bag included</small></div><div class="price">$24</div><div class="go">→</div></div>
+        <div class="fare"><div><b>Executive</b><small>Extra legroom, USB charging, snack</small></div><div class="price">$38</div><div class="go">→</div></div>
+      </div>
+      <div class="summary">
+        <div><small>Passengers</small><b>2</b></div>
+        <div><small>Seats</small><b>7A, 7B</b></div>
+        <div><small>Total</small><b>$48.00</b></div>
+      </div>
+      <div class="cta"><span>Proceed to Checkout</span><span>→</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 11 rows x 4 seats (A B | aisle | C D) = 44 seats. Coach front is on the left.
+  const taken = new Set(["1A","1B","1C","1D","2A","2B","2C","2D","3A","3B","3D","4C","4D","5A","5B","6C","6D","8C","8D","9A","9B","10C","10D","11A","11B","11D"]);
+  const selected = new Set(["7A","7B"]);
+  const check = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const grid = document.getElementById("grid");
+  const mkRow = (letter) => {
+    const r = document.createElement("div"); r.className = "row";
+    r.innerHTML = `<span class="rl">${letter}</span>`;
+    for (let n = 1; n <= 11; n++) {
+      const id = n + letter;
+      const cls = selected.has(id) ? "s" : taken.has(id) ? "t" : "a";
+      r.innerHTML += `<div class="seat ${cls}">${cls === "s" ? check : ""}</div>`;
+    }
+    return r;
+  };
+  ["A","B"].forEach(l => grid.appendChild(mkRow(l)));
+  const aisle = document.createElement("div"); aisle.className = "aisle";
+  aisle.innerHTML = "<span></span>" + Array.from({length: 11}, (_, i) => `<span>${i + 1}</span>`).join("");
+  grid.appendChild(aisle);
+  ["C","D"].forEach(l => grid.appendChild(mkRow(l)));
+</script>
+</body>
+</html>

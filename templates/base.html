@@ -1,0 +1,25 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07090d">
+  <title>{% block title %}Welcome{% endblock %} | HIGH 5</title>
+  <meta name="description" content="HIGH 5 – Online Transportation & Bus Ticket Booking">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="{% static 'css/high5.css' %}?v={{ ASSET_VERSION }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="d-flex flex-column min-vh-100 {% block body_class %}{% endblock %}">
+  <a class="visually-hidden-focusable" href="#main">Skip to main content</a>
+  {% block navbar %}{% include "partials/navbar.html" %}{% endblock %}
+  <main id="main" class="flex-grow-1 {% block main_class %}container-xl h5-main{% endblock %}">
+    {% block messages %}{% include "partials/messages.html" %}{% endblock %}
+    {% block content %}{% endblock %}
+  </main>
+  {% block footer %}{% include "partials/footer.html" %}{% endblock %}
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script src="{% static 'js/high5.js' %}?v={{ ASSET_VERSION }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

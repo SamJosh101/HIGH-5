@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Book a trip{% endblock %}
+{% block content %}
+{% comment %} Raheem: render the matching schedules below the search bar.
+   The search bar keeps the submitted values (partials/search_bar.html). {% endcomment %}
+<div class="h5-page-head"><h1>Book a trip</h1></div>
+{% include "partials/search_bar.html" %}
+<div class="h5-panel mt-4">
+  <div class="h5-empty">
+    <div class="h5-empty-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>
+    <h3>{% if request.GET.origin %}No trips found yet{% else %}Search to see trips{% endif %}</h3>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HIGH 5 – Landing page concept</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #07090d; --panel: #11141b; --panel2: #151922; --line: rgba(255,255,255,0.08);
+    --text: #f2f4f8; --muted: #8b93a3; --blue: #2f6bff; --blue-glow: rgba(47,107,255,0.5); --amber: #f5a524;
+  }
+  html, body { width: 1600px; background: var(--bg); overflow: hidden; }
+  body { font-family: "Segoe UI", system-ui, sans-serif; color: var(--text); }
+  .wrap { padding: 0 80px; }
+
+  /* ---------- NAV (links centred) ---------- */
+  nav { position: absolute; z-index: 5; top: 0; left: 0; right: 0; height: 92px;
+        display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 56px; }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 600; letter-spacing: .32em; font-size: 19px; }
+  .brand-mark { width: 34px; height: 34px; border-radius: 9px; background: var(--amber); color: #111; display: grid; place-items: center; font-weight: 800; letter-spacing: 0; font-size: 15px; }
+  .links { display: flex; gap: 8px; padding: 6px; border-radius: 999px; background: rgba(12,15,21,.55); border: 1px solid var(--line); backdrop-filter: blur(10px); font-size: 15px; color: #c9ced8; }
+  .links span { padding: 9px 20px; border-radius: 999px; }
+  .links .active { background: rgba(255,255,255,.1); color: #fff; }
+  .nav-right { justify-self: end; display: flex; align-items: center; gap: 14px; }
+  .icon-btn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; background: rgba(255,255,255,.04); }
+  .ghost { padding: 11px 20px; font-size: 14px; color: #e6e9ef; }
+  .pill { background: #fff; color: #0b0d12; border-radius: 999px; padding: 11px 22px; font-size: 14px; font-weight: 600; }
+
+  /* ---------- HERO ---------- */
+  .hero { position: relative; height: 860px; overflow: hidden; }
+  .hero svg.scene { position: absolute; inset: 0; width: 100%; height: 640px; }
+  .hero::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(7,9,13,.95) 0%, rgba(7,9,13,.6) 34%, rgba(7,9,13,0) 58%),
+                linear-gradient(0deg, var(--bg) 22%, rgba(7,9,13,0) 50%); }
+  .hero-copy { position: absolute; z-index: 4; left: 80px; top: 170px; width: 640px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: #c9ced8; padding: 7px 14px 7px 8px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.04); }
+  .eyebrow b { background: var(--amber); color: #111; font-size: 11px; padding: 3px 9px; border-radius: 999px; }
+  h1 { font-size: 76px; font-weight: 300; line-height: 1.04; letter-spacing: -1.5px; margin-top: 26px; font-family: "Segoe UI Light", "Segoe UI", sans-serif; }
+  h1 em { font-style: normal; color: #9fb8ff; }
+  .sub { font-size: 19px; color: #aab2c0; margin-top: 22px; line-height: 1.55; width: 520px; }
+  .chips { display: flex; gap: 12px; margin-top: 30px; }
+  .chip { font-size: 14px; color: #d4d8e0; padding: 9px 15px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.035); }
+
+  /* search bar */
+  .search { position: absolute; z-index: 6; left: 80px; right: 80px; top: 640px; padding: 22px; border-radius: 24px;
+            background: rgba(17,20,27,.94); border: 1px solid var(--line); box-shadow: 0 30px 70px rgba(0,0,0,.55); }
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; font-size: 14px; color: var(--muted); }
+  .tabs span { padding: 7px 14px; border-radius: 8px; } .tabs .on { background: rgba(255,255,255,.08); color: #fff; }
+  .fields { display: grid; grid-template-columns: 1.3fr 52px 1.3fr 1fr 1fr 190px; gap: 12px; align-items: stretch; }
+  .field { background: #0b0e14; border: 1px solid var(--line); border-radius: 16px; padding: 14px 18px; }
+  .field small { display: block; font-size: 11px; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; }
+  .field b { display: block; font-weight: 500; font-size: 18px; margin-top: 5px; }
+  .field span { font-size: 12px; color: var(--muted); }
+  .swap { display: grid; place-items: center; border-radius: 50%; width: 52px; height: 52px; align-self: center; background: #1b2030; border: 1px solid var(--line); font-size: 20px; color: #c9ced8; }
+  .go { border-radius: 16px; background: linear-gradient(180deg, #3b77ff, #2457e6); box-shadow: 0 10px 30px var(--blue-glow);
+        display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; font-size: 17px; }
+
+  /* ---------- SECTIONS ---------- */
+  section { padding: 90px 0 0; }
+  .sec-head { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 34px; }
+  .kicker { font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--amber); }
+  h2 { font-size: 44px; font-weight: 300; letter-spacing: -.5px; margin-top: 10px; }
+  .link { font-size: 15px; color: #c9ced8; border-bottom: 1px solid #3a4150; padding-bottom: 3px; }
+
+  /* routes */
+  .routes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .route { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 24px; position: relative; overflow: hidden; }
+  .route.hot { background: radial-gradient(120% 90% at 100% 0%, rgba(47,107,255,.28), transparent 60%), var(--panel); border-color: rgba(120,150,255,.3); }
+  .tag { position: absolute; right: 78px; bottom: 35px; font-size: 11px; padding: 4px 10px; border-radius: 999px; background: rgba(245,165,36,.15); color: var(--amber); }
+  .r-line { display: flex; align-items: center; gap: 10px; margin: 6px 0 22px; }
+  .r-line i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; }
+  .r-line i.f { background: #fff; }
+  .r-line hr { flex: 1; border: 0; border-top: 2px dashed #3a4252; }
+  .r-line span { font-size: 12px; color: var(--muted); }
+  .cities { display: flex; justify-content: space-between; font-size: 21px; font-weight: 500; }
+  .r-meta { display: flex; justify-content: space-between; margin-top: 6px; font-size: 13px; color: var(--muted); }
+  .r-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .r-foot small { color: var(--muted); font-size: 12px; display: block; }
+  .r-foot b { font-size: 24px; font-weight: 400; }
+  .arrow-btn { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.07); }
+  .route.hot .arrow-btn { background: var(--blue); box-shadow: 0 0 18px var(--blue-glow); }
+
+  /* steps */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; position: relative; }
+  .steps::before { content: ""; position: absolute; left: 60px; right: 60px; top: 51px; border-top: 2px dashed #2c3342; }
+  .step { position: relative; padding: 0 24px 0 0; }
+  .num { width: 64px; height: 64px; border-radius: 20px; display: grid; place-items: center; font-size: 22px; background: var(--panel2); border: 1px solid var(--line); position: relative; margin-top: 20px; }
+  .step.on .num { background: linear-gradient(180deg, #3b77ff, #2457e6); box-shadow: 0 0 24px var(--blue-glow); border: 0; }
+  .step h4 { font-size: 21px; font-weight: 500; margin-top: 24px; }
+  .step p { font-size: 15px; color: var(--muted); line-height: 1.6; margin-top: 10px; }
+
+  /* why */
+  .why { display: grid; grid-template-columns: 1fr 560px; gap: 50px; align-items: center; }
+  .feats { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .feat { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 24px; }
+  .ico { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: rgba(47,107,255,.14); }
+  .ico svg { width: 22px; height: 22px; stroke: #9fb8ff; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .feat h4 { font-size: 18px; font-weight: 500; margin-top: 18px; }
+  .feat p { font-size: 14px; color: var(--muted); line-height: 1.6; margin-top: 8px; }
+
+  /* ticket visual */
+  .ticket-stage { position: relative; height: 520px; border-radius: 28px; background: radial-gradient(70% 70% at 50% 40%, rgba(47,107,255,.25), transparent 70%), #0c0f16; border: 1px solid var(--line); overflow: hidden; }
+  .mini-seats { position: absolute; left: 50%; transform: translateX(-50%); top: 36px; display: grid; grid-template-columns: repeat(11, 26px); gap: 7px; opacity: .9; }
+  .ms { width: 26px; height: 26px; border-radius: 7px; background: #f4f6fb; }
+  .ms.t { background: #222733; border: 1px solid #353c4a; } .ms.s { background: var(--blue); box-shadow: 0 0 10px var(--blue-glow); } .ms.x { background: transparent; height: 8px; }
+  .ticket { position: absolute; left: 70px; top: 150px; width: 420px; border-radius: 22px; background: #f6f7fb; color: #121620; box-shadow: 0 40px 80px rgba(0,0,0,.6); transform: rotate(-4deg); }
+  .t-top { padding: 24px 26px 20px; }
+  .t-row { display: flex; justify-content: space-between; align-items: center; }
+  .t-brand { font-weight: 700; letter-spacing: .25em; font-size: 13px; display: flex; gap: 8px; align-items: center; }
+  .t-brand i { width: 22px; height: 22px; border-radius: 6px; background: var(--amber); display: inline-block; }
+  .t-status { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #dff5e6; color: #177a3c; }
+  .t-route { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 22px; }
+  .t-route b { font-size: 34px; font-weight: 300; display: block; }
+  .t-route span { font-size: 13px; color: #5b6577; }
+  .t-route .mid { font-size: 22px; color: #9aa3b2; padding-bottom: 14px; }
+  .perf { position: relative; border-top: 2px dashed #cfd4de; margin: 0 22px; }
+  .perf::before, .perf::after { content: ""; position: absolute; top: -13px; width: 24px; height: 24px; border-radius: 50%; background: #0c0f16; }
+  .perf::before { left: -35px; } .perf::after { right: -35px; }
+  .t-bot { padding: 18px 26px 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .t-bot small { display: block; font-size: 11px; color: #6b7487; text-transform: uppercase; letter-spacing: .1em; }
+  .t-bot b { font-size: 16px; font-weight: 600; }
+  .ref { grid-column: 1 / -1; margin-top: 6px; display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 12px; background: #eceff5; }
+  .ref b { font-family: Consolas, monospace; letter-spacing: .12em; font-size: 17px; }
+  .bars { display: flex; gap: 2px; height: 26px; }
+  .bars i { width: 2px; background: #121620; } .bars i:nth-child(3n) { width: 4px; } .bars i:nth-child(4n) { width: 1px; }
+
+  /* CTA + footer */
+  .cta { margin-top: 100px; border-radius: 28px; padding: 54px 60px; display: flex; justify-content: space-between; align-items: center;
+         background: radial-gradient(80% 140% at 100% 0%, rgba(47,107,255,.45), transparent 60%), linear-gradient(135deg, #10172a, #0c1020); border: 1px solid rgba(120,150,255,.25); }
+  .cta h3 { font-size: 40px; font-weight: 300; } .cta p { color: #aab2c0; font-size: 17px; margin-top: 10px; }
+  .cta-btns { display: flex; gap: 14px; }
+  .btn-w { background: #fff; color: #0b0d12; padding: 16px 26px; border-radius: 14px; font-weight: 600; }
+  .btn-o { border: 1px solid rgba(255,255,255,.3); padding: 16px 26px; border-radius: 14px; }
+  footer { margin-top: 80px; border-top: 1px solid var(--line); padding: 50px 80px 40px; display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 40px; }
+  footer p { color: var(--muted); font-size: 14px; line-height: 1.7; margin-top: 16px; width: 330px; }
+  footer h5 { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+  footer li { list-style: none; color: var(--muted); font-size: 14px; margin-bottom: 10px; }
+  .copy { padding: 22px 80px 34px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; font-size: 13px; color: #6b7487; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <svg class="scene" viewBox="0 0 1600 600" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#0b1019"/><stop offset=".55" stop-color="#1c2738"/><stop offset="1" stop-color="#121925"/>
+        </linearGradient>
+        <linearGradient id="mtn" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#5d6a80"/><stop offset=".35" stop-color="#2a3446"/><stop offset="1" stop-color="#151c28"/>
+        </linearGradient>
+        <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1a212d"/><stop offset="1" stop-color="#07090d"/>
+        </linearGradient>
+        <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#f3f5f9"/><stop offset=".25" stop-color="#c9cfd9"/><stop offset=".6" stop-color="#8b94a3"/><stop offset="1" stop-color="#4b525e"/>
+        </linearGradient>
+        <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#0c111a"/><stop offset=".5" stop-color="#1d2738"/><stop offset="1" stop-color="#0c111a"/>
+        </linearGradient>
+        <radialGradient id="lamp"><stop offset="0" stop-color="#fff6dc" stop-opacity="1"/><stop offset=".25" stop-color="#ffd98a" stop-opacity=".55"/><stop offset="1" stop-color="#ffb84d" stop-opacity="0"/></radialGradient>
+        <radialGradient id="head"><stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#dfe9ff" stop-opacity=".7"/><stop offset="1" stop-color="#9fb8ff" stop-opacity="0"/></radialGradient>
+        <filter id="blur6"><feGaussianBlur stdDeviation="6"/></filter>
+        <filter id="blur2"><feGaussianBlur stdDeviation="2"/></filter>
+      </defs>
+
+      <rect width="1600" height="600" fill="url(#sky)"/>
+      <!-- distant mountains with snow caps -->
+      <path d="M520 330 L640 220 L700 262 L790 160 L860 230 L930 185 L1010 250 L1100 150 L1190 232 L1260 196 L1350 262 L1440 178 L1530 246 L1600 214 L1600 360 L520 360Z" fill="url(#mtn)"/>
+      <path d="M770 180 L790 160 L812 186 L800 182 L790 196 L780 184Z M1080 172 L1100 150 L1124 178 L1110 174 L1100 190 L1090 176Z M1420 198 L1440 178 L1462 204 L1448 199 L1440 212 L1430 200Z" fill="#c9d2e0" opacity=".75"/>
+      <path d="M520 360 L620 300 L720 330 L840 280 L960 322 L1080 286 L1220 330 L1340 292 L1460 330 L1600 300 L1600 380 L520 380Z" fill="#111722"/>
+      <!-- tree line -->
+      <g fill="#0b1018">
+        <path d="M520 380 l10-34 10 34z M548 380 l12-44 12 44z M580 380 l9-30 9 30z M1450 380 l11-40 11 40z M1480 380 l9-30 9 30z M1510 380 l12-46 12 46z M1545 380 l10-34 10 34z M1572 380 l12-42 12 42z"/>
+      </g>
+
+      <!-- terminal canopy & lamp posts -->
+      <g stroke="#2b3342" stroke-width="3">
+        <line x1="600" y1="250" x2="600" y2="410"/><line x1="900" y1="230" x2="900" y2="410"/><line x1="1210" y1="230" x2="1210" y2="410"/><line x1="1500" y1="250" x2="1500" y2="410"/>
+      </g>
+      <g>
+        <circle cx="600" cy="252" r="40" fill="url(#lamp)"/><circle cx="900" cy="232" r="46" fill="url(#lamp)"/>
+        <circle cx="1210" cy="232" r="46" fill="url(#lamp)"/><circle cx="1500" cy="252" r="40" fill="url(#lamp)"/>
+      </g>
+
+      <!-- wet road -->
+      <rect y="400" width="1600" height="200" fill="url(#road)"/>
+      <g opacity=".55" filter="url(#blur6)">
+        <rect x="592" y="430" width="16" height="110" fill="#ffd98a"/><rect x="892" y="430" width="16" height="130" fill="#ffd98a"/>
+        <rect x="1202" y="430" width="16" height="130" fill="#ffd98a"/><rect x="1492" y="430" width="16" height="110" fill="#ffd98a"/>
+      </g>
+      <g stroke="#3a4352" stroke-width="3" stroke-dasharray="60 46" opacity=".6"><line x1="520" y1="520" x2="1600" y2="520"/></g>
+
+      <!-- ===== Coach (side view, front at left) ===== -->
+      <g transform="translate(700 236)">
+        <ellipse cx="380" cy="198" rx="400" ry="16" fill="#000" opacity=".6" filter="url(#blur6)"/>
+        <!-- reflection -->
+        <g transform="translate(0 392) scale(1 -1)" opacity=".18" filter="url(#blur2)">
+          <path d="M40 30 Q48 6 90 4 L760 4 Q790 4 792 30 L792 170 Q792 186 776 186 L28 186 Q10 186 10 168 L10 120 Q12 66 40 30Z" fill="url(#body)"/>
+        </g>
+        <!-- body -->
+        <path d="M40 30 Q48 6 90 4 L760 4 Q790 4 792 30 L792 170 Q792 186 776 186 L28 186 Q10 186 10 168 L10 120 Q12 66 40 30Z" fill="url(#body)"/>
+        <!-- windscreen -->
+        <path d="M44 34 Q52 14 92 12 L130 12 L120 118 L18 118 Q22 64 44 34Z" fill="url(#glass)"/>
+        <path d="M58 30 L96 16 L70 110 L40 110Z" fill="#fff" opacity=".07"/>
+        <!-- passenger windows -->
+        <rect x="140" y="12" width="644" height="92" rx="10" fill="url(#glass)"/>
+        <g fill="#ffd98a" opacity=".22">
+          <rect x="150" y="60" width="90" height="40" rx="4"/><rect x="262" y="60" width="90" height="40" rx="4"/><rect x="374" y="60" width="90" height="40" rx="4"/>
+          <rect x="486" y="60" width="90" height="40" rx="4"/><rect x="598" y="60" width="90" height="40" rx="4"/><rect x="700" y="60" width="78" height="40" rx="4"/>
+        </g>
+        <g stroke="#0a0d13" stroke-width="5"><line x1="252" y1="12" x2="252" y2="104"/><line x1="364" y1="12" x2="364" y2="104"/><line x1="476" y1="12" x2="476" y2="104"/><line x1="588" y1="12" x2="588" y2="104"/><line x1="694" y1="12" x2="694" y2="104"/></g>
+        <path d="M150 18 L620 18" stroke="#fff" stroke-opacity=".18" stroke-width="3"/>
+        <!-- door -->
+        <rect x="134" y="16" width="0" height="0"/>
+        <path d="M128 118 L132 176" stroke="#59606d" stroke-width="2"/>
+        <!-- accent stripe + branding -->
+        <path d="M14 132 L792 132 L792 142 L12 142Z" fill="#f5a524"/>
+        <text x="300" y="168" font-family="Segoe UI" font-weight="700" font-size="20" letter-spacing="6" fill="#2b313c">HIGH 5</text>
+        <text x="410" y="168" font-family="Segoe UI" font-size="13" letter-spacing="3" fill="#4a515d">INTERCITY</text>
+        <!-- wheels -->
+        <g>
+          <path d="M100 186 a46 46 0 0 1 92 0" fill="#0b0e13"/><circle cx="146" cy="190" r="34" fill="#15181e"/><circle cx="146" cy="190" r="18" fill="#6b7280"/><circle cx="146" cy="190" r="7" fill="#1d2129"/>
+          <path d="M600 186 a46 46 0 0 1 92 0" fill="#0b0e13"/><circle cx="646" cy="190" r="34" fill="#15181e"/><circle cx="646" cy="190" r="18" fill="#6b7280"/><circle cx="646" cy="190" r="7" fill="#1d2129"/>
+        </g>
+        <!-- headlight -->
+        <rect x="14" y="150" width="34" height="10" rx="5" fill="#fff"/>
+        <circle cx="26" cy="155" r="70" fill="url(#head)" opacity=".85"/>
+        <ellipse cx="-40" cy="190" rx="160" ry="14" fill="#cfdcff" opacity=".22" filter="url(#blur6)"/>
+      </g>
+    </svg>
+
+
+  <nav>
+    <div class="brand"><div class="brand-mark">H5</div>HIGH&nbsp;5</div>
+    <div class="links">
+      <span class="active">Book a Trip</span><span>My Bookings</span><span>Routes</span><span>History</span><span>Support</span>
+    </div>
+    <div class="nav-right">
+      <div class="icon-btn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#e6e9ef" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>
+      <span class="ghost">Log in</span>
+      <span class="pill">Create account</span>
+    </div>
+  </nav>
+
+  <div class="hero-copy">
+    <div class="eyebrow"><b>NEW</b> Pick your exact seat before you pay</div>
+    <h1>Intercity travel,<br><em>booked in minutes.</em></h1>
+    <p class="sub">Search routes, compare departures, choose your seat and get your ticket reference instantly – all in one place.</p>
+    <div class="chips"><span class="chip">Live seat availability</span><span class="chip">Secure booking</span><span class="chip">Easy cancellation</span></div>
+  </div>
+
+  <div class="search">
+    <div class="tabs"><span class="on">One way</span><span>Return</span></div>
+    <div class="fields">
+      <div class="field"><small>From</small><b>Eastgate</b><span>Central Terminal</span></div>
+      <div class="swap">⇄</div>
+      <div class="field"><small>To</small><b>Riverside</b><span>North Park Terminal</span></div>
+      <div class="field"><small>Travel date</small><b>Fri, 21 Nov</b><span>2026</span></div>
+      <div class="field"><small>Passengers</small><b>2 adults</b><span>Standard fare</span></div>
+      <div class="go">Search trips <span>→</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <section style="padding-top: 40px">
+    <div class="sec-head">
+      <div><div class="kicker">Popular routes</div><h2>Where people are travelling</h2></div>
+      <span class="link">View all routes →</span>
+    </div>
+    <div class="routes">
+      <div class="route hot"><span class="tag">Most booked</span>
+        <div class="r-line"><i class="f"></i><hr><span>6 h 15 m</span><hr><i></i></div>
+        <div class="cities"><span>Eastgate</span><span>Riverside</span></div>
+        <div class="r-meta"><span>8 departures daily</span><span>Executive</span></div>
+        <div class="r-foot"><div><small>From</small><b>$24</b></div><div class="arrow-btn">→</div></div></div>
+      <div class="route">
+        <div class="r-line"><i class="f"></i><hr><span>3 h 40 m</span><hr><i></i></div>
+        <div class="cities"><span>Millbrook</span><span>Harbour City</span></div>
+        <div class="r-meta"><span>6 departures daily</span><span>Standard</span></div>
+        <div class="r-foot"><div><small>From</small><b>$15</b></div><div class="arrow-btn">→</div></div></div>
+      <div class="route">
+        <div class="r-line"><i class="f"></i><hr><span>5 h 05 m</span><hr><i></i></div>
+        <div class="cities"><span>Stonebridge</span><span>Lakeview</span></div>
+        <div class="r-meta"><span>4 departures daily</span><span>Executive</span></div>
+        <div class="r-foot"><div><small>From</small><b>$21</b></div><div class="arrow-btn">→</div></div></div>
+      <div class="route">
+        <div class="r-line"><i class="f"></i><hr><span>2 h 30 m</span><hr><i></i></div>
+        <div class="cities"><span>Oakfield</span><span>Eastgate</span></div>
+        <div class="r-meta"><span>10 departures daily</span><span>Standard</span></div>
+        <div class="r-foot"><div><small>From</small><b>$11</b></div><div class="arrow-btn">→</div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><div><div class="kicker">How booking works</div><h2>Four steps to your seat</h2></div></div>
+    <div class="steps">
+      <div class="step on"><div class="num">1</div><h4>Search your trip</h4><p>Pick where you're leaving from, where you're going and your travel date.</p></div>
+      <div class="step"><div class="num">2</div><h4>Choose your seats</h4><p>See which seats are free on the bus and select the ones you want.</p></div>
+      <div class="step"><div class="num">3</div><h4>Confirm & pay</h4><p>Check your booking summary and the total fare before you confirm.</p></div>
+      <div class="step"><div class="num">4</div><h4>Get your ticket</h4><p>Receive a unique ticket reference and manage it any time in My Bookings.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="why">
+      <div>
+        <div class="kicker">Why choose HIGH 5</div><h2 style="margin-bottom: 34px">Travel with confidence</h2>
+        <div class="feats">
+          <div class="feat"><div class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><path d="M14.5 16.5l2 2 3.5-4"/></svg></div><h4>Real-time seats</h4><p>Seat availability updates the moment someone books, so no double bookings.</p></div>
+          <div class="feat"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div><h4>Secure accounts</h4><p>Your account and bookings are protected – only you can see your tickets.</p></div>
+          <div class="feat"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h4>Flexible cancellation</h4><p>Cancel before the cut-off time and your seats are released automatically.</p></div>
+          <div class="feat"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 7h16v4a2 2 0 000 4v4H4v-4a2 2 0 000-4z"/><path d="M14 7v12"/></svg></div><h4>Instant ticket reference</h4><p>Every booking gets a unique reference you can show at boarding.</p></div>
+        </div>
+      </div>
+      <div class="ticket-stage">
+        <div class="mini-seats" id="mini"></div>
+        <div class="ticket">
+          <div class="t-top">
+            <div class="t-row"><span class="t-brand"><i></i>HIGH 5</span><span class="t-status">CONFIRMED</span></div>
+            <div class="t-route"><div><b>07:30</b><span>Eastgate</span></div><div class="mid">→</div><div style="text-align:right"><b>13:45</b><span>Riverside</span></div></div>
+          </div>
+          <div class="perf"></div>
+          <div class="t-bot">
+            <div><small>Date</small><b>21 Nov</b></div><div><small>Seats</small><b>7A, 7B</b></div><div><small>Total</small><b>$48.00</b></div>
+            <div class="ref"><div><small>Ticket reference</small><b>H5-7KQ2M9XA</b></div><div class="bars" id="bars"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="cta">
+    <div><h3>Ready for your next trip?</h3><p>Create a free account and book your seat in under two minutes.</p></div>
+    <div class="cta-btns"><span class="btn-o">Browse routes</span><span class="btn-w">Create account →</span></div>
+  </div>
+</div>
+
+<footer>
+  <div><div class="brand"><div class="brand-mark">H5</div>HIGH&nbsp;5</div><p>Online transportation and bus ticket booking. Search, book and manage your intercity trips in one place.</p></div>
+  <div><h5>Travel</h5><ul><li>Book a Trip</li><li>Routes</li><li>My Bookings</li><li>History</li></ul></div>
+  <div><h5>Help</h5><ul><li>Support</li><li>Cancellation policy</li><li>FAQs</li></ul></div>
+  <div><h5>Account</h5><ul><li>Log in</li><li>Create account</li><li>Reset password</li></ul></div>
+</footer>
+<div class="copy"><span>© 2026 HIGH 5 · A BASCODETECH project</span><span>Terms · Privacy</span></div>
+
+<script>
+  const m = document.getElementById("mini");
+  "ttaatsatata atatsaxtata xxxxxxxxxxx".split(" ").forEach(r => [...r].forEach(c => {
+    const d = document.createElement("div"); d.className = "ms " + (c === "a" ? "" : c); m.appendChild(d);
+  }));
+  const b = document.getElementById("bars"); for (let i = 0; i < 28; i++) b.appendChild(document.createElement("i"));
+</script>
+</body>
+</html>

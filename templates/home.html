@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Book bus tickets online{% endblock %}
+{% block body_class %}h5-home{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/home.css' %}?v={{ ASSET_VERSION }}">{% endblock %}
+{% block main_class %}{% endblock %}
+{% block messages %}{% endblock %}
+
+{% block content %}
+<div class="h5-progress" aria-hidden="true"><span></span></div>
+
+{% if messages %}
+  <div class="h5-toasts">{% include "partials/messages.html" %}</div>
+{% endif %}
+
+<!-- HERO -->
+<section class="h5-hero">
+  {% include "partials/hero_scene.html" %}
+  <div class="h5-hero-shade" aria-hidden="true"></div>
+  <div class="container-xl h5-hero-copy">
+    <div class="h5-eyebrow h5-in" style="--d: .15s"><b>NEW</b> Pick your exact seat before you pay</div>
+    <h1 class="h5-title">
+      <span class="h5-line"><span class="h5-in" style="--d: .3s">Intercity travel,</span></span>
+      <span class="h5-line"><em class="h5-in" style="--d: .45s">booked in minutes.</em></span>
+    </h1>
+    <p class="h5-sub h5-in" style="--d: .6s">Search routes, compare departures, choose your seat and get your ticket reference instantly – all in one place.</p>
+    <div class="h5-chips h5-in" style="--d: .75s">
+      <span class="h5-chip"><i class="h5-dot"></i>Live seat availability</span>
+      <span class="h5-chip">Secure booking</span>
+      <span class="h5-chip">Easy cancellation</span>
+    </div>
+  </div>
+  <a class="h5-scroll-cue" href="#routes" aria-label="Scroll to popular routes"><span></span></a>
+</section>
+
+<!-- SEARCH -->
+<div class="container-xl h5-search-wrap">
+  {% include "partials/search_bar.html" with extra_class="h5-in" hints=True %}
+</div>
+
+<!-- POPULAR ROUTES -->
+{% comment %} PLACEHOLDER DATA from config/views.py – replace with real Route objects
+   once Daniel's transport models exist. No currency symbol until SRS Q7 is answered. {% endcomment %}
+<section class="h5-section" id="routes">
+  <div class="container-xl">
+    <div class="h5-sec-head">
+      <div class="h5-reveal">
+        <div class="h5-kicker">Popular routes</div>
+        <h2>Where people are travelling</h2>
+      </div>
+      <a class="h5-link h5-reveal" href="{% url 'bookings:search' %}">View all routes <span>&rarr;</span></a>
+    </div>
+    <div class="h5-routes">
+      {% for r in sample_routes %}
+      <button type="button" class="h5-route h5-reveal{% if forloop.first %} is-hot{% endif %}" style="--d: {{ forloop.counter0 }}00ms"
+              data-from="{{ r.0 }}" data-to="{{ r.1 }}" aria-label="Search {{ r.0 }} to {{ r.1 }}">
+        <span class="h5-route-glow" aria-hidden="true"></span>
+        <span class="h5-r-line"><i class="f"></i><hr><span>{{ r.2 }}</span><hr><i></i><span class="h5-r-bus" aria-hidden="true"></span></span>
+        <span class="h5-cities"><span>{{ r.0 }}</span><span>{{ r.1 }}</span></span>
+        <span class="h5-r-meta"><span>{{ r.3 }} departures daily</span><span>{{ r.4 }}</span></span>
+        <span class="h5-r-foot">
+          <span><small>From</small><b>{{ r.5 }}</b></span>
+          {% if forloop.first %}<span class="h5-tag">Most booked</span>{% endif %}
+          <span class="h5-arrow">&rarr;</span>
+        </span>
+      </button>
+      {% endfor %}
+    </div>
+    <p class="h5-note h5-reveal">Tap a route to fill in the search above.</p>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="h5-section" id="how">
+  <div class="container-xl">
+    <div class="h5-sec-head h5-reveal">
+      <div><div class="h5-kicker">How booking works</div><h2>Four steps to your seat</h2></div>
+    </div>
+    <ol class="h5-steps" id="h5Steps">
+      <li class="h5-step h5-reveal" style="--d: 0ms"><span class="h5-num">1</span><h3>Search your trip</h3><p>Pick where you're leaving from, where you're going and your travel date.</p></li>
+      <li class="h5-step h5-reveal" style="--d: 120ms"><span class="h5-num">2</span><h3>Choose your seats</h3><p>See which seats are free on the bus and select the ones you want.</p></li>
+      <li class="h5-step h5-reveal" style="--d: 240ms"><span class="h5-num">3</span><h3>Confirm &amp; pay</h3><p>Check your booking summary and the total fare before you confirm.</p></li>
+      <li class="h5-step h5-reveal" style="--d: 360ms"><span class="h5-num">4</span><h3>Get your ticket</h3><p>Receive a unique ticket reference and manage it any time in My Bookings.</p></li>
+    </ol>
+  </div>
+</section>
+
+<!-- WHY HIGH 5 -->
+<section class="h5-section">
+  <div class="container-xl h5-why">
+    <div>
+      <div class="h5-reveal"><div class="h5-kicker">Why choose HIGH 5</div><h2 class="mb-4">Travel with confidence</h2></div>
+      <div class="h5-feats">
+        <div class="h5-feat h5-reveal" style="--d: 0ms"><div class="h5-ico"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><path d="M14.5 16.5l2 2 3.5-4"/></svg></div><h3>Real-time seats</h3><p>Seat availability updates the moment someone books, so no double bookings.</p></div>
+        <div class="h5-feat h5-reveal" style="--d: 100ms"><div class="h5-ico"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div><h3>Secure accounts</h3><p>Your account and bookings are protected – only you can see your tickets.</p></div>
+        <div class="h5-feat h5-reveal" style="--d: 200ms"><div class="h5-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h3>Flexible cancellation</h3><p>Cancel up to {{ cancel_cutoff_hours }} hours before departure and your seats are released automatically.</p></div>
+        <div class="h5-feat h5-reveal" style="--d: 300ms"><div class="h5-ico"><svg viewBox="0 0 24 24"><path d="M4 7h16v4a2 2 0 000 4v4H4v-4a2 2 0 000-4z"/><path d="M14 7v12"/></svg></div><h3>Instant ticket reference</h3><p>Every booking gets a unique reference you can show at boarding.</p></div>
+      </div>
+    </div>
+
+    {# Interactive demo only – nothing here is saved. #}
+    <div class="h5-stage h5-reveal" id="h5Stage">
+      <div class="h5-stage-label">Try it: tap a seat</div>
+      <div class="h5-mini-seats" id="h5Mini" role="group" aria-label="Demo seat map"></div>
+      <div class="h5-ticket" id="h5Ticket">
+        <div class="h5-t-top">
+          <div class="h5-t-row"><span class="h5-t-brand"><i></i>HIGH 5</span><span class="h5-t-status">CONFIRMED</span></div>
+          <div class="h5-t-route">
+            <div><b>07:30</b><span>Eastgate</span></div>
+            <div class="h5-t-mid">&rarr;</div>
+            <div class="text-end"><b>13:45</b><span>Riverside</span></div>
+          </div>
+        </div>
+        <div class="h5-perf"></div>
+        <div class="h5-t-bot">
+          <div><small>Date</small><b>21 Nov</b></div>
+          <div><small>Seats</small><b id="h5TSeats">7A, 7B</b></div>
+          <div><small>Total</small><b id="h5TTotal">48.00</b></div>
+          <div class="h5-ref"><div><small>Ticket reference</small><b>H5-7KQ2M9XA</b></div><div class="h5-bars" id="h5Bars"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="h5-section" id="support">
+  <div class="container-xl h5-support">
+    <div class="h5-reveal">
+      <div class="h5-kicker">Support</div>
+      <h2>Questions, answered</h2>
+      <p class="h5-muted mt-3">The things passengers ask most often. Can't find your answer? Log in and check your booking in My Bookings.</p>
+    </div>
+    <div class="h5-faq">
+      <div class="h5-faq-item h5-reveal" style="--d: 0ms">
+        <button type="button" aria-expanded="false"><span>How do I book a seat?</span><i></i></button>
+        <div class="h5-faq-body"><div><p>Search for your route and date, pick a departure, choose your seats on the seat map and confirm. You'll need a free passenger account to complete a booking.</p></div></div>
+      </div>
+      <div class="h5-faq-item h5-reveal" style="--d: 80ms">
+        <button type="button" aria-expanded="false"><span>Can I cancel a booking?</span><i></i></button>
+        <div class="h5-faq-body"><div><p>Yes. Open My Bookings and cancel up to {{ cancel_cutoff_hours }} hours before departure. Your seats are released straight away so other passengers can book them.</p></div></div>
+      </div>
+      <div class="h5-faq-item h5-reveal" style="--d: 160ms">
+        <button type="button" aria-expanded="false"><span>Where do I find my ticket reference?</span><i></i></button>
+        <div class="h5-faq-body"><div><p>Every confirmed booking shows a unique reference such as H5-7KQ2M9XA. You'll find it in My Bookings and in your booking history.</p></div></div>
+      </div>
+      <div class="h5-faq-item h5-reveal" style="--d: 240ms">
+        <button type="button" aria-expanded="false"><span>I forgot my password. What now?</span><i></i></button>
+        <div class="h5-faq-body"><div><p>Use <a href="{% url 'accounts:password_reset' %}">Reset password</a> on the login page. We'll send you a secure link to choose a new one.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="h5-section pb-5">
+  <div class="container-xl">
+    <div class="h5-cta h5-reveal">
+      <div>
+        <h2>Ready for your next trip?</h2>
+        <p>{% if user.is_authenticated %}Find a departure and book your seat in under two minutes.{% else %}Create a free account and book your seat in under two minutes.{% endif %}</p>
+      </div>
+      <div class="h5-cta-btns">
+        <a class="h5-btn-outline" href="#routes">Browse routes</a>
+        {% if user.is_authenticated %}
+          <a class="h5-btn-white h5-btn-lg" href="{% url 'bookings:search' %}">Book a trip &rarr;</a>
+        {% else %}
+          <a class="h5-btn-white h5-btn-lg" href="{% url 'accounts:register' %}">Create account &rarr;</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<button class="h5-top" type="button" aria-label="Back to top">&uarr;</button>
+{% endblock %}
+
+{% block footer %}
+<footer class="h5-hfooter">
+  <div class="container-xl h5-hfooter-grid">
+    <div>
+      <a class="h5-logo" href="{% url 'home' %}"><span class="h5-logo-mark">H5</span><span class="h5-logo-text">HIGH&nbsp;5</span></a>
+      <p>Online transportation and bus ticket booking. Search, book and manage your intercity trips in one place.</p>
+    </div>
+    <div><h3>Travel</h3><ul>
+      {% if user.is_authenticated and user.is_admin_role %}
+        <li><a href="{% url 'dashboard:home' %}">Dashboard</a></li>
+        <li><a href="{% url 'transport:manage' %}">Transport</a></li>
+      {% else %}
+        <li><a href="{% url 'bookings:search' %}">Book a Trip</a></li>
+      {% endif %}
+      <li><a href="#routes">Routes</a></li>
+      {% if user.is_authenticated and user.is_passenger_role %}
+        <li><a href="{% url 'bookings:dashboard' %}">My Bookings</a></li>
+        <li><a href="{% url 'bookings:dashboard' %}#history">History</a></li>
+      {% endif %}
+    </ul></div>
+    <div><h3>Help</h3><ul>
+      <li><a href="#support">Support</a></li>
+      <li><a href="#support">Cancellation policy</a></li>
+      <li><a href="#how">How booking works</a></li>
+    </ul></div>
+    <div><h3>Account</h3><ul>
+      {% if user.is_authenticated %}
+        <li><a href="{% url 'accounts:profile' %}">My profile</a></li>
+        <li><a href="{% url 'accounts:password_change' %}">Change password</a></li>
+      {% else %}
+        <li><a href="{% url 'accounts:login' %}">Log in</a></li>
+        <li><a href="{% url 'accounts:register' %}">Create account</a></li>
+        <li><a href="{% url 'accounts:password_reset' %}">Reset password</a></li>
+      {% endif %}
+    </ul></div>
+  </div>
+  <div class="container-xl h5-copy"><span>&copy; {% now "Y" %} HIGH 5 &middot; A BASCODETECH project</span><span>Online Transportation &amp; Bus Ticket Booking</span></div>
+</footer>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/home.js' %}?v={{ ASSET_VERSION }}"></script>{% endblock %}

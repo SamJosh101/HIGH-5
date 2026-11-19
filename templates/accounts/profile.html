@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="h5-panel h5-panel-narrow">
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <span class="h5-avatar h5-avatar-lg">{{ user.get_short_name|first|upper }}</span>
+    <div>
+      <h1 class="h4 fw-normal mb-1">{{ user.full_name }}</h1>
+      <div class="text-muted small">{{ user.email }}</div>
+    </div>
+  </div>
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "partials/form_fields.html" %}
+    <button type="submit" class="btn btn-primary w-100">Save</button>
+  </form>
+  <div class="h5-auth-links justify-content-center"><a href="{% url 'accounts:password_change' %}">Change password</a></div>
+</div>
+{% endblock %}

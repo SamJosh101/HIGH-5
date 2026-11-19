@@ -1,0 +1,35 @@
+{% comment %}
+  Trip search bar (owner: Cross; used on the homepage and Raheem's search page).
+  Submits GET to bookings:search with origin, destination, date, passengers and
+  keeps the values after searching. The server must validate them again.
+  Optional: extra_class="h5-in" (entrance animation) and hints=True (small help
+  text under each field and a longer button label, used on the homepage).
+{% endcomment %}
+<form class="h5-search {{ extra_class }}" method="get" action="{% url 'bookings:search' %}" id="h5Search" role="search">
+  <div class="h5-field">
+    <label for="s-origin">From</label>
+    <input id="s-origin" name="origin" placeholder="Departure city" autocomplete="off" required value="{{ request.GET.origin|default:'' }}">
+    {% if hints %}<span class="h5-hint">Where you start</span>{% endif %}
+  </div>
+  <button class="h5-swap" type="button" aria-label="Swap departure and destination">&#8644;</button>
+  <div class="h5-field">
+    <label for="s-dest">To</label>
+    <input id="s-dest" name="destination" placeholder="Destination city" autocomplete="off" required value="{{ request.GET.destination|default:'' }}">
+    {% if hints %}<span class="h5-hint">Where you're going</span>{% endif %}
+  </div>
+  <div class="h5-field">
+    <label for="s-date">{% if hints %}Travel date{% else %}Date{% endif %}</label>
+    <input id="s-date" name="date" type="date" required value="{{ request.GET.date|default:'' }}">
+    {% if hints %}<span class="h5-hint" id="s-date-hint">Pick a day</span>{% endif %}
+  </div>
+  <div class="h5-field">
+    <label for="s-pax">Passengers</label>
+    <div class="h5-stepper">
+      <button type="button" data-step="-1" aria-label="One passenger fewer">&minus;</button>
+      <input id="s-pax" name="passengers" type="number" min="1" max="10" value="{{ request.GET.passengers|default:'1' }}" inputmode="numeric">
+      <button type="button" data-step="1" aria-label="One passenger more">+</button>
+    </div>
+    {% if hints %}<span class="h5-hint">Max 10 per booking</span>{% endif %}
+  </div>
+  <button class="h5-go" type="submit"><span>{% if hints %}Search trips{% else %}Search{% endif %}</span><span class="h5-go-arrow">&rarr;</span></button>
+</form>
