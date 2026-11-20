@@ -51,7 +51,7 @@
 
 <!-- POPULAR ROUTES -->
 {% comment %} PLACEHOLDER DATA from config/views.py – replace with real Route objects
-   once Daniel's transport models exist. No currency symbol until SRS Q7 is answered. {% endcomment %}
+   once Daniel's transport models exist. Prices use CURRENCY_SYMBOL (Naira, SRS Q7). {% endcomment %}
 <section class="h5-section" id="routes">
   <div class="container-xl">
     <div class="h5-sec-head">
@@ -71,7 +71,7 @@
         <span class="h5-cities"><span>{{ r.0 }}</span><span>{{ r.1 }}</span></span>
         <span class="h5-r-meta"><span>{{ r.3 }} departures daily</span><span>{{ r.4 }}</span></span>
         <span class="h5-r-foot">
-          <span><small>From</small><b>{{ r.5 }}</b></span>
+          <span><small>From</small><b>{{ currency }}{{ r.5 }}</b></span>
           {% if forloop.first %}<span class="h5-tag">Most booked</span>{% endif %}
           <span class="h5-arrow">&rarr;</span>
         </span>

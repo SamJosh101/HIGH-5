@@ -1,14 +1,36 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Book a trip{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/booking.css' %}?v={{ ASSET_VERSION }}">{% endblock %}
+{% block main_class %}h5-main h5-wide{% endblock %}
 {% block content %}
 {% comment %} Raheem: render the matching schedules below the search bar.
-   The search bar keeps the submitted values (partials/search_bar.html). {% endcomment %}
+   The search bar keeps the submitted values (partials/search_bar.html).
+   The trip band and the three panels below are shared pieces in
+   templates/partials/booking/; they expect `trip` shaped like
+   config.sample_data.sample_trip() (currently sample data). {% endcomment %}
 <div class="h5-page-head"><h1>Book a trip</h1></div>
 {% include "partials/search_bar.html" %}
-<div class="h5-panel mt-4">
-  <div class="h5-empty">
-    <div class="h5-empty-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>
-    <h3>{% if request.GET.origin %}No trips found yet{% else %}Search to see trips{% endif %}</h3>
+
+{% if trip %}
+  {% include "partials/booking/trip_band.html" %}
+  {% comment %} Raheem: set `action` to the booking URL once it exists and remove
+     data-preview. The view must re-check seats, passengers and the total. {% endcomment %}
+  <form class="h5-book" id="h5Book" method="post" action="" novalidate
+        data-preview="{% if trip.is_sample %}true{% endif %}"
+        data-fare="{{ trip.fare }}" data-currency="{{ trip.currency }}" data-max-passengers="{{ trip.max_passengers }}">
+    {% csrf_token %}
+    {% include "partials/booking/trip_details.html" %}
+    {% include "partials/booking/seat_map.html" %}
+    {% include "partials/booking/booking_summary.html" %}
+  </form>
+{% else %}
+  <div class="h5-panel mt-4">
+    <div class="h5-empty">
+      <div class="h5-empty-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>
+      <h3>{% if request.GET.origin %}No trips found yet{% else %}Search to see trips{% endif %}</h3>
+    </div>
   </div>
-</div>
+{% endif %}
 {% endblock %}
+{% block extra_js %}<script src="{% static 'js/booking.js' %}?v={{ ASSET_VERSION }}"></script>{% endblock %}

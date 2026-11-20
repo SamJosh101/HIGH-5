@@ -178,7 +178,7 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "HIGH 5 <no-reply@high5.local>")
 # Internationalisation
 # ------------------------------------------------------------------
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = env("TIME_ZONE", "UTC")
+TIME_ZONE = env("TIME_ZONE", "Africa/Lagos")  # Nigeria (SRS Q7)
 USE_I18N = True
 USE_TZ = True
 
@@ -198,7 +198,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 # Passengers cannot cancel a booking later than this many hours before
 # departure. VALUE TO BE CONFIRMED AGAINST THE SRS (see docs/ARCHITECTURE.md).
 BOOKING_CANCELLATION_CUTOFF_HOURS = int(env("BOOKING_CANCELLATION_CUTOFF_HOURS", "24"))
-CURRENCY_SYMBOL = env("CURRENCY_SYMBOL", "")
+CURRENCY_SYMBOL = env("CURRENCY_SYMBOL", "₦")  # Naira (SRS Q7)
 
 # Cache-busting value added to CSS/JS links (see config/context_processors.py).
 # Leave empty in development; set it per release in production.

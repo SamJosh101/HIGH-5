@@ -1,0 +1,28 @@
+{% comment %}
+  Booking summary shown before confirming (FR-23): route, date, time, seats, total.
+  One base fare per schedule (FR-15). The total here is for display only – the
+  server must calculate the real total (fare × seats) when saving the booking.
+  Expects `trip`; must sit inside the booking <form> (hidden passengers/seats fields).
+{% endcomment %}
+<section class="h5-book-panel h5-sum-panel" aria-labelledby="h5SumTitle">
+  <div class="h5-book-head"><h2 id="h5SumTitle">Booking summary</h2><span>Check before you confirm</span></div>
+  <dl class="h5-sum-rows">
+    <div><dt>Route</dt><dd>{{ trip.origin }} &rarr; {{ trip.destination }}</dd></div>
+    <div><dt>Date &amp; time</dt><dd>{{ trip.date|date:"D, j M" }} · {{ trip.departure|time:"H:i" }}</dd></div>
+    <div class="h5-sum-pax">
+      <dt id="h5PaxLabel">Passengers</dt>
+      <dd class="h5-sum-stepper">
+        <button type="button" data-pax-step="-1" aria-label="One passenger fewer">&minus;</button>
+        <output data-pax aria-labelledby="h5PaxLabel" aria-live="polite">{{ trip.passengers }}</output>
+        <button type="button" data-pax-step="1" aria-label="One passenger more">+</button>
+      </dd>
+    </div>
+    <div><dt>Seats</dt><dd data-seats-summary>Pick {{ trip.passengers }} seat{{ trip.passengers|pluralize }}</dd></div>
+    <div><dt>Fare</dt><dd data-fare-line>{{ trip.currency }}{{ trip.fare }} &times; {{ trip.passengers }}</dd></div>
+  </dl>
+  <div class="h5-sum-total"><span>Total</span><b data-total>{{ trip.currency }}{{ trip.fare }}</b></div>
+  <input type="hidden" name="passengers" id="b-pax" value="{{ trip.passengers }}">
+  <input type="hidden" name="seats" id="b-seats" value="">
+  <button type="submit" class="h5-sum-go" id="b-go" disabled><span>Confirm booking</span><span aria-hidden="true">&rarr;</span></button>
+  <p class="h5-sum-msg" data-preview-msg hidden role="status">Booking opens once live schedules are added.</p>
+</section>

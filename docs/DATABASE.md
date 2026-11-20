@@ -2,8 +2,9 @@
 
 > **Status:** `accounts.User` is implemented and migrated.
 > `transport` and `bookings` models below are a **PROPOSED CONTRACT** – the
-> team must agree on it (and confirm the open questions against the SRS)
-> before anyone writes these models. Changes to this file go through a Pull
+> team must agree on it before anyone writes these models. The open questions
+> have been checked against the **SRS v1.0 (17 Nov 2026)** – see §5; FR/NFR
+> numbers below refer to that document. Changes to this file go through a Pull
 > Request reviewed by Sam (database architect).
 
 Golden rules:
@@ -63,13 +64,15 @@ Permission helpers: `accounts.permissions` → `admin_required`, `passenger_requ
 | is_active | BooleanField | default True |
 | created_at | DateTimeField | `auto_now_add=True` |
 
-`UniqueConstraint(fields=["origin", "destination"])`.
+`UniqueConstraint(fields=["origin", "destination"])` (FR-10).
+
+A route has **no intermediate stops** in the SRS (FR-08, §5.1). Pages show departure → estimated arrival, where arrival = departure + `duration_estimate`. Adding stops would be a new feature and needs the supervisor's approval first.
 
 ### Bus
 | Field | Type | Constraints |
 |---|---|---|
 | name_or_plate | CharField(50) | **unique** |
-| bus_type | CharField(20) + choices | e.g. STANDARD / EXECUTIVE / VIP (**confirm list with SRS**) |
+| bus_type | CharField(20) + choices | `STANDARD` / `LUXURY` / `SLEEPER` (the SRS examples, FR-12) |
 | total_seats | PositiveSmallIntegerField | `MinValueValidator(1)`, CheckConstraint `> 0` |
 | is_active | BooleanField | default True |
 
@@ -80,7 +83,7 @@ Permission helpers: `accounts.permissions` → `admin_required`, `passenger_requ
 | bus | FK → Bus | `on_delete=PROTECT`, `related_name="schedules"` |
 | departure_date | DateField | indexed |
 | departure_time | TimeField | |
-| fare | DecimalField(10,2) | `MinValueValidator(0)` |
+| fare | DecimalField(10,2) | `MinValueValidator(0)`. One base fare per schedule (FR-15) – there are **no fare classes** to choose between on the same trip |
 | status | CharField + choices | `SCHEDULED` / `CANCELLED` / `COMPLETED` (default `SCHEDULED`) |
 
 * `UniqueConstraint(fields=["bus", "departure_date", "departure_time"])` – a bus cannot be scheduled twice at the same moment.
@@ -99,8 +102,8 @@ Permission helpers: `accounts.permissions` → `admin_required`, `passenger_requ
 | schedule | FK → `transport.Schedule` | `on_delete=PROTECT`, `related_name="bookings"` |
 | seats_booked | PositiveSmallIntegerField | ≥ 1 |
 | total_amount | DecimalField(10,2) | = fare × seats, **calculated on the server** |
-| status | CharField + choices | `CONFIRMED` / `CANCELLED` (see open question Q3) |
-| payment_status | CharField + choices | `PENDING` / `PAID` / `REFUNDED` – simulated / admin-confirmed |
+| status | CharField + choices | `CONFIRMED` / `CANCELLED` / `COMPLETED` (FR-29) |
+| payment_status | CharField + choices | `PENDING` / `PAID` (FR-32) – simulated; an admin marks it paid. `REFUNDED` is an optional extra of ours for cancelled paid bookings |
 | booked_at | DateTimeField | `auto_now_add=True` |
 | cancelled_at | DateTimeField | null |
 
@@ -113,7 +116,7 @@ Permission helpers: `accounts.permissions` → `admin_required`, `passenger_requ
 | full_name | CharField(150) | |
 | phone | CharField(16) | same validator as User.phone |
 | email | EmailField | blank allowed |
-| seat_number | PositiveSmallIntegerField | **only if Q1 = specific seats** |
+| seat_number | CharField(4), null | e.g. `7A`. Filled only when the passenger uses the seat map – a bonus feature (FR-21, SRS §6.3). Booking by **number of seats** must work without it |
 
 If seat numbers are used: a seat may be held by only one *active* booking per schedule. Enforce in the atomic booking service (below) and, if we denormalise `schedule` onto this table, with `UniqueConstraint(fields=["schedule", "seat_number"], condition=Q(is_active=True))`.
 
@@ -147,15 +150,22 @@ def create_booking(*, user, schedule_id, passengers):
 
 MySQL's InnoDB engine supports `SELECT ... FOR UPDATE` row locks, which is what `select_for_update()` produces.
 
-## 5. Open questions (must be confirmed against the SRS)
+## 5. Questions checked against the SRS (v1.0, 17 Nov 2026)
 
-| # | Question | Default assumed until confirmed |
-|---|---|---|
-| Q1 | Do passengers choose **specific seat numbers** (seat map), or just a **number of seats**? The objective says "view available seats / seat selection" but the SRS BOOKING table only has `seats_booked`. | Specific seat numbers stored on `PassengerDetail.seat_number` |
-| Q2 | What is the **cancellation cut-off**? | 24 hours before departure (`BOOKING_CANCELLATION_CUTOFF_HOURS`) |
-| Q3 | Which **booking statuses** does the SRS list (e.g. PENDING, CONFIRMED, CANCELLED, COMPLETED)? | CONFIRMED / CANCELLED |
-| Q4 | Which **payment statuses** and is a booking confirmed before payment? | PENDING / PAID / REFUNDED; seats held on booking |
-| Q5 | Which **bus types** does the SRS list? | STANDARD / EXECUTIVE / VIP |
-| Q6 | One `PassengerDetail` per **booking** or per **seat**? | Per seat |
-| Q7 | Which **currency** and **time zone**? | Configurable in `.env` (`CURRENCY_SYMBOL`, `TIME_ZONE`) |
-| Q8 | Can admins be created only by another admin / superuser? | Yes – public registration creates passengers only |
+| # | Question | Answer | SRS reference |
+|---|---|---|---|
+| Q1 | Specific seat numbers or just a number of seats? | **Number of seats is required.** Specific seat numbers are allowed when a seat layout is implemented; the interactive seat map is a recommended **bonus** feature | FR-21, §6.3 |
+| Q2 | Cancellation cut-off? | "A configurable number of hours before departure" – no value given, so we keep 24 h in `BOOKING_CANCELLATION_CUTOFF_HOURS` | FR-28 |
+| Q3 | Booking statuses? | **Confirmed / Cancelled / Completed** | FR-29, §5.1 |
+| Q4 | Payment statuses? | Simulated payment; an admin marks bookings **Paid / Pending**. The booking is confirmed (seats held) when it is made | FR-32, §2.5 |
+| Q5 | Bus types? | Examples given: **Standard, Luxury, Sleeper** | FR-12 |
+| Q6 | `PassengerDetail` per booking or per seat? | Details are recorded against each booking, "optional per seat" – useful for multiple travellers. We keep **one row per seat** | FR-25, §5.1 |
+| Q7 | Currency and time zone? | **Answered (team decision, 20 Nov 2026):** Nigerian Naira (`CURRENCY_SYMBOL=₦`), time zone `Africa/Lagos`. One currency only; multi-currency stays out of scope. Both are set in `.env` | §1.3 |
+| Q8 | Who creates admins? | Public registration creates passengers only (FR-01). Admins are created with `createsuperuser` / by another admin. The README must list **default admin credentials for testing** | FR-01, §6.1 |
+
+Other SRS points that affect the models and pages:
+
+* Trip search is for **authenticated passengers** (FR-19) – already enforced by `bookings:search`.
+* Search results show departure time, bus name/type, available seats and fare (FR-20). Only active routes and active buses appear (§5.3).
+* Before confirming, show a booking summary: route, date, time, seats, total amount (FR-23).
+* Routes have no intermediate stops and schedules have one base fare (see §2).
