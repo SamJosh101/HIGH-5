@@ -1,0 +1,40 @@
+{% comment %}
+  Interactive seat map – a bonus feature in the SRS (§6.3, FR-21). Expects `trip`
+  with `seat_rows` (see config/sample_data.seat_grid). Picking seats only fills a
+  hidden field; the server must check again that every seat is still free when
+  the booking is saved (select_for_update – docs/DATABASE.md §4).
+{% endcomment %}
+<section class="h5-book-panel h5-seat-panel" aria-labelledby="h5SeatTitle">
+  <div class="h5-book-head">
+    <h2 id="h5SeatTitle">Choose your seats</h2>
+    <div class="h5-seat-legend" aria-hidden="true"><span><i class="is-free"></i>Available</span><span><i class="is-taken"></i>Taken</span><span><i class="is-mine"></i>Your seats</span></div>
+  </div>
+  <div class="h5-coach-scroll">
+    <div class="h5-coach" role="group" aria-label="Seat map, front of the bus on the left">
+      <div class="h5-coach-driver" aria-hidden="true"><span></span>DRIVER</div>
+      <div class="h5-coach-door" aria-hidden="true">DOOR</div>
+      {% for row in trip.seat_rows %}
+        <div class="h5-seat-row">
+          <b aria-hidden="true">{{ row.letter }}</b>
+          {% for seat in row.seats %}
+            {% if seat.taken %}
+              <button type="button" class="h5-seat is-taken" disabled aria-label="Seat {{ seat.code }}, taken"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>
+            {% else %}
+              <button type="button" class="h5-seat" data-seat="{{ seat.code }}" aria-pressed="false" aria-label="Seat {{ seat.code }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% if row.aisle_after %}
+          <div class="h5-seat-row h5-seat-nums" aria-hidden="true"><b></b>{% for seat in row.seats %}<span>{{ seat.number }}</span>{% endfor %}</div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  <div class="h5-seat-foot">
+    <div>
+      <div class="h5-seat-avail"><b>{{ trip.seats_left }} of {{ trip.total_seats }}</b> seats available</div>
+      <div class="h5-seat-bar"><i style="width: {{ trip.seats_left_percent }}%"></i></div>
+    </div>
+    <div class="h5-seat-selected">Selected: <b data-selected>–</b></div>
+  </div>
+</section>

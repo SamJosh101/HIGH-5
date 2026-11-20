@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HIGH 5 – hero fade concept</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #07090d; --card: #0b0e15; --line: rgba(255,255,255,.08);
+    --text: #f2f4f8; --muted: #8b93a3; --blue: #2f6bff; --blue2: #3b77ff; --amber: #f5a524;
+  }
+  html, body { background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+
+  /* ---------- nav (unchanged design) ---------- */
+  nav { height: 88px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 44px; }
+  .logo { display: flex; align-items: center; gap: 12px; font-weight: 600; letter-spacing: .32em; font-size: 18px; }
+  .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--amber); color: #111; display: grid; place-items: center; font-weight: 800; letter-spacing: 0; font-size: 15px; }
+  .pill { display: flex; gap: 4px; padding: 6px; border-radius: 999px; background: rgba(12,15,21,.55); border: 1px solid var(--line); font-size: 15px; color: #c9ced8; }
+  .pill span { padding: 9px 20px; border-radius: 999px; }
+  .pill .on { background: rgba(255,255,255,.11); color: #fff; }
+  .right { justify-self: end; display: flex; gap: 10px; align-items: center; font-size: 14px; }
+  .ghost { padding: 10px 16px; }
+  .white { background: #fff; color: #0b0d12; border-radius: 999px; padding: 10px 20px; font-weight: 600; }
+
+  /* ---------- hero card: fills the screen below the nav ---------- */
+  .hero {
+    position: relative; margin: 0 20px; height: calc(100vh - 88px - 20px);
+    border-radius: 32px; background: var(--card); overflow: hidden;
+    border: 1px solid var(--line);
+  }
+
+  /* THE FADE: the scene only fills the right part of the card, and a mask
+     makes its left edge melt into the card colour (like GlowFit). No overlay
+     is drawn on top of the bus – the right side stays 100% clear. */
+  .scene-wrap {
+    position: absolute; top: 0; right: 0; bottom: 0; width: 76%;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,.03) 5%, rgba(0,0,0,.1) 10%, rgba(0,0,0,.22) 15%, rgba(0,0,0,.38) 20%, rgba(0,0,0,.56) 25%, rgba(0,0,0,.73) 30%, rgba(0,0,0,.87) 35%, rgba(0,0,0,.96) 40%, #000 45%);
+            mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,.03) 5%, rgba(0,0,0,.1) 10%, rgba(0,0,0,.22) 15%, rgba(0,0,0,.38) 20%, rgba(0,0,0,.56) 25%, rgba(0,0,0,.73) 30%, rgba(0,0,0,.87) 35%, rgba(0,0,0,.96) 40%, #000 45%);
+  }
+  .scene-wrap svg { width: 100%; height: 100%; display: block; }
+
+  .copy { position: absolute; z-index: 2; left: 72px; top: 50%; transform: translateY(-64%); width: 760px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: #c9ced8; padding: 7px 14px 7px 8px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.04); }
+  .eyebrow b { background: var(--amber); color: #111; font-size: 11px; padding: 3px 9px; border-radius: 999px; }
+  h1 { font-size: 84px; font-weight: 600; line-height: 1.0; letter-spacing: -2.5px; margin-top: 28px; }
+  h1 em { font-style: normal; color: #9fb8ff; }
+  .sub { font-size: 20px; color: #b4bccb; line-height: 1.6; margin-top: 26px; max-width: 520px; }
+  .chips { display: flex; gap: 12px; margin-top: 32px; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: #d4d8e0; padding: 10px 16px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.035); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #3ddc84; box-shadow: 0 0 0 4px rgba(61,220,132,.18); }
+
+  /* ---------- bigger search panel, inside the bottom of the hero ---------- */
+  .search {
+    position: absolute; z-index: 3; left: 72px; right: 72px; bottom: 28px;
+    display: grid; grid-template-columns: 1.35fr 60px 1.35fr 1fr 1fr 230px; gap: 14px; align-items: stretch;
+    padding: 18px; border-radius: 26px; background: rgba(15,19,28,.88);
+    border: 1px solid rgba(255,255,255,.12); box-shadow: 0 30px 70px rgba(0,0,0,.55);
+    backdrop-filter: blur(14px);
+  }
+  .field { background: #080b11; border: 1px solid rgba(255,255,255,.1); border-radius: 18px; padding: 16px 22px; }
+  .field.focus { border-color: rgba(120,150,255,.75); box-shadow: 0 0 0 4px rgba(47,107,255,.16); }
+  .field label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #c9d2e6; }
+  .field label svg { width: 16px; height: 16px; stroke: #9fb8ff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .field .v { display: block; font-size: 23px; font-weight: 600; margin-top: 8px; color: #fff; }
+  .field .ph { color: #5d6575; font-weight: 500; }
+  .field .h { display: block; font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .swap { align-self: center; width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; background: #1b2030; border: 1px solid var(--line); font-size: 22px; color: #dfe4ee; }
+  .step { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+  .step i { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--line); background: rgba(255,255,255,.06); display: grid; place-items: center; font-style: normal; font-size: 18px; }
+  .step b { font-size: 23px; font-weight: 600; }
+  .go { border-radius: 18px; background: linear-gradient(180deg, var(--blue2), #2457e6); box-shadow: 0 12px 34px rgba(47,107,255,.5);
+        display: flex; align-items: center; justify-content: center; gap: 12px; font-weight: 700; font-size: 20px; }
+
+  .label { position: fixed; right: 30px; top: 104px; z-index: 9; font-size: 12px; color: #6b7487; letter-spacing: .14em; text-transform: uppercase; }
+
+  /* ---------- mobile variant ---------- */
+  body.m nav { height: 72px; padding: 0 18px; grid-template-columns: 1fr auto; }
+  body.m .pill, body.m .ghost, body.m .white { display: none; }
+  body.m .burger { display: grid; }
+  .burger { display: none; width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--line); place-items: center; }
+  .burger span { display: block; width: 18px; height: 2px; background: #fff; box-shadow: 0 6px 0 #fff, 0 -6px 0 #fff; }
+  body.m .hero { margin: 0 12px; height: auto; border-radius: 26px; display: flex; flex-direction: column; }
+  body.m .copy { position: relative; left: 0; top: 0; transform: none; width: auto; padding: 34px 24px 0; }
+  body.m h1 { font-size: 46px; letter-spacing: -1.2px; margin-top: 20px; }
+  body.m .sub { font-size: 16px; margin-top: 16px; }
+  body.m .chips { flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  body.m .chip { font-size: 13px; padding: 8px 12px; }
+  /* on phones the scene sits under the text, so the fade runs top-to-bottom */
+  body.m .scene-wrap { position: relative; width: 100%; height: 300px; margin-top: -10px;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.4) 18%, #000 40%, #000 82%, transparent 100%);
+            mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.4) 18%, #000 40%, #000 82%, transparent 100%); }
+  body.m .search { position: relative; left: 0; right: 0; bottom: 0; margin: 0 24px 18px; grid-template-columns: 1fr; padding: 14px; gap: 10px; border-radius: 22px; }
+  body.m .swap { justify-self: center; transform: rotate(90deg); width: 50px; height: 50px; margin: -4px 0; }
+  body.m .go { min-height: 64px; }
+</style>
+</head>
+<body class="">
+<nav>
+  <div class="logo"><div class="mark">H5</div>HIGH&nbsp;5</div>
+  <div class="pill"><span class="on">Book a Trip</span><span>Routes</span><span>Support</span></div>
+  <div class="right"><span class="ghost">Log in</span><span class="white">Sign up</span><div class="burger"><span></span></div></div>
+</nav>
+
+<section class="hero">
+  <div class="scene-wrap"><svg class="h5-scene" viewBox="282 -251 1318 991" preserveAspectRatio="xMaxYMax slice" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="h5sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b1019"/><stop offset=".55" stop-color="#1c2738"/><stop offset="1" stop-color="#121925"/>
+    </linearGradient>
+    <linearGradient id="h5mtn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5d6a80"/><stop offset=".35" stop-color="#2a3446"/><stop offset="1" stop-color="#151c28"/>
+    </linearGradient>
+    <linearGradient id="h5road" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a212d"/><stop offset="1" stop-color="#07090d"/>
+    </linearGradient>
+    <linearGradient id="h5body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3f5f9"/><stop offset=".25" stop-color="#c9cfd9"/><stop offset=".6" stop-color="#8b94a3"/><stop offset="1" stop-color="#4b525e"/>
+    </linearGradient>
+    <linearGradient id="h5glass" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0c111a"/><stop offset=".5" stop-color="#1d2738"/><stop offset="1" stop-color="#0c111a"/>
+    </linearGradient>
+    <radialGradient id="h5lamp"><stop offset="0" stop-color="#fff6dc"/><stop offset=".25" stop-color="#ffd98a" stop-opacity=".55"/><stop offset="1" stop-color="#ffb84d" stop-opacity="0"/></radialGradient>
+    <radialGradient id="h5head"><stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#dfe9ff" stop-opacity=".7"/><stop offset="1" stop-color="#9fb8ff" stop-opacity="0"/></radialGradient>
+    <filter id="h5blur6"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="h5blur2"><feGaussianBlur stdDeviation="2"/></filter>
+  </defs>
+
+  <rect y="-420" width="1600" height="1020" fill="url(#h5sky)"/>
+
+  <!-- twinkling stars -->
+  <g class="h5-stars" fill="#dfe6f5"><circle cx="963" cy="-303" r="1.5" opacity="0.9"/><circle cx="398" cy="-343" r="0.9" opacity="0.7"/><circle cx="1493" cy="-351" r="1" opacity="0.5"/><circle cx="476" cy="-158" r="1.5" opacity="0.5"/><circle cx="792" cy="-334" r="1.5" opacity="0.5"/><circle cx="1458" cy="-317" r="1" opacity="0.9"/><circle cx="1584" cy="-82" r="0.9" opacity="0.9"/><circle cx="1499" cy="-177" r="0.9" opacity="0.5"/><circle cx="395" cy="-95" r="1" opacity="0.7"/><circle cx="1158" cy="-307" r="0.9" opacity="0.9"/><circle cx="931" cy="-94" r="1" opacity="0.5"/><circle cx="1491" cy="-88" r="1" opacity="0.7"/><circle cx="499" cy="-100" r="0.9" opacity="0.9"/><circle cx="422" cy="-64" r="1" opacity="0.7"/><circle cx="1388" cy="-162" r="1.2" opacity="0.7"/><circle cx="1499" cy="-148" r="1.2" opacity="0.7"/><circle cx="808" cy="26" r="1" opacity="0.9"/><circle cx="799" cy="-339" r="1.2" opacity="0.9"/><circle cx="1313" cy="-205" r="1.5" opacity="0.7"/><circle cx="1547" cy="-343" r="0.9" opacity="0.9"/><circle cx="1156" cy="-296" r="1.2" opacity="0.5"/><circle cx="1301" cy="-165" r="0.9" opacity="0.9"/><circle cx="458" cy="11" r="1.2" opacity="0.7"/><circle cx="1017" cy="-76" r="1.5" opacity="0.9"/><circle cx="1234" cy="-345" r="0.9" opacity="0.7"/><circle cx="1270" cy="-24" r="0.9" opacity="0.5"/><circle cx="934" cy="-49" r="1.5" opacity="0.7"/><circle cx="1090" cy="-38" r="1.2" opacity="0.5"/><circle cx="1245" cy="-199" r="1" opacity="0.9"/><circle cx="539" cy="-128" r="0.9" opacity="0.5"/><circle cx="888" cy="-314" r="1" opacity="0.7"/><circle cx="1100" cy="-126" r="0.9" opacity="0.5"/><circle cx="1219" cy="-175" r="1.2" opacity="0.5"/><circle cx="1181" cy="-99" r="1.2" opacity="0.9"/><circle cx="1150" cy="-197" r="1.5" opacity="0.5"/><circle cx="609" cy="-338" r="1" opacity="0.5"/><circle cx="775" cy="-43" r="1" opacity="0.5"/><circle cx="1293" cy="-79" r="1" opacity="0.7"/><circle cx="877" cy="-378" r="1" opacity="0.7"/><circle cx="1394" cy="-191" r="1.2" opacity="0.5"/><circle cx="1355" cy="-64" r="0.9" opacity="0.7"/><circle cx="1445" cy="-180" r="1.5" opacity="0.7"/><circle cx="1107" cy="-327" r="1.5" opacity="0.9"/><circle cx="1120" cy="-349" r="1" opacity="0.5"/><circle cx="727" cy="-155" r="1" opacity="0.5"/><circle cx="996" cy="-73" r="0.9" opacity="0.5"/>
+    <circle cx="620" cy="60" r="1.4"/><circle cx="700" cy="110" r="1"/><circle cx="790" cy="48" r="1.6"/>
+    <circle cx="880" cy="96" r="1"/><circle cx="960" cy="40" r="1.3"/><circle cx="1040" cy="82" r="1"/>
+    <circle cx="1130" cy="58" r="1.5"/><circle cx="1220" cy="104" r="1"/><circle cx="1300" cy="36" r="1.2"/>
+    <circle cx="1380" cy="88" r="1.6"/><circle cx="1460" cy="54" r="1"/><circle cx="1540" cy="110" r="1.3"/>
+  </g>
+
+  <defs><mask id="h5moon"><circle cx="1330" cy="-140" r="38" fill="#fff"/><circle cx="1348" cy="-152" r="33" fill="#000"/></mask><radialGradient id="h5moonglow"><stop offset="0" stop-color="#dfe6f5" stop-opacity=".18"/><stop offset="1" stop-color="#dfe6f5" stop-opacity="0"/></radialGradient></defs><circle cx="1330" cy="-140" r="110" fill="url(#h5moonglow)"/><circle cx="1330" cy="-140" r="38" fill="#e9edf6" mask="url(#h5moon)"/>
+  <!-- mountains (parallax layer, moved by home.js on scroll) -->
+  <g class="h5-parallax" data-speed="0.25">
+    <path d="M520 330 L640 220 L700 262 L790 160 L860 230 L930 185 L1010 250 L1100 150 L1190 232 L1260 196 L1350 262 L1440 178 L1530 246 L1600 214 L1600 360 L520 360Z" fill="url(#h5mtn)"/>
+    <path d="M770 180 L790 160 L812 186 L800 182 L790 196 L780 184Z M1080 172 L1100 150 L1124 178 L1110 174 L1100 190 L1090 176Z M1420 198 L1440 178 L1462 204 L1448 199 L1440 212 L1430 200Z" fill="#c9d2e0" opacity=".75"/>
+  </g>
+  <g class="h5-parallax" data-speed="0.12">
+    <path d="M520 360 L620 300 L720 330 L840 280 L960 322 L1080 286 L1220 330 L1340 292 L1460 330 L1600 300 L1600 380 L520 380Z" fill="#111722"/>
+    <path fill="#0b1018" d="M520 380 l10-34 10 34z M548 380 l12-44 12 44z M580 380 l9-30 9 30z M1450 380 l11-40 11 40z M1480 380 l9-30 9 30z M1510 380 l12-46 12 46z M1545 380 l10-34 10 34z M1572 380 l12-42 12 42z"/>
+  </g>
+
+  <!-- lamp posts -->
+  <g stroke="#2b3342" stroke-width="3">
+    <line x1="600" y1="250" x2="600" y2="410"/><line x1="900" y1="230" x2="900" y2="410"/>
+    <line x1="1210" y1="230" x2="1210" y2="410"/><line x1="1500" y1="250" x2="1500" y2="410"/>
+  </g>
+  <g class="h5-lamps">
+    <circle cx="600" cy="252" r="40" fill="url(#h5lamp)"/><circle cx="900" cy="232" r="46" fill="url(#h5lamp)"/>
+    <circle cx="1210" cy="232" r="46" fill="url(#h5lamp)"/><circle cx="1500" cy="252" r="40" fill="url(#h5lamp)"/>
+  </g>
+
+  <!-- wet road with reflections and moving lane dashes -->
+  <rect y="400" width="1600" height="420" fill="url(#h5road)"/>
+  <g class="h5-lamps" opacity=".55" filter="url(#h5blur6)">
+    <rect x="592" y="430" width="16" height="110" fill="#ffd98a"/><rect x="892" y="430" width="16" height="130" fill="#ffd98a"/>
+    <rect x="1202" y="430" width="16" height="130" fill="#ffd98a"/><rect x="1492" y="430" width="16" height="110" fill="#ffd98a"/>
+  </g>
+  <line class="h5-lane" x1="0" y1="520" x2="1600" y2="520" stroke="#3a4352" stroke-width="3" stroke-dasharray="60 46" opacity=".6"/>
+
+  <!-- coach (front at left). Outer g = position, inner g = drive-in animation -->
+  <g transform="translate(700 236)">
+    <g class="h5-coach">
+      <ellipse cx="380" cy="198" rx="400" ry="16" fill="#000" opacity=".6" filter="url(#h5blur6)"/>
+      <g transform="translate(0 392) scale(1 -1)" opacity=".18" filter="url(#h5blur2)">
+        <path d="M40 30 Q48 6 90 4 L760 4 Q790 4 792 30 L792 170 Q792 186 776 186 L28 186 Q10 186 10 168 L10 120 Q12 66 40 30Z" fill="url(#h5body)"/>
+      </g>
+      <g class="h5-coach-body">
+        <path d="M40 30 Q48 6 90 4 L760 4 Q790 4 792 30 L792 170 Q792 186 776 186 L28 186 Q10 186 10 168 L10 120 Q12 66 40 30Z" fill="url(#h5body)"/>
+        <path d="M44 34 Q52 14 92 12 L130 12 L120 118 L18 118 Q22 64 44 34Z" fill="url(#h5glass)"/>
+        <path d="M58 30 L96 16 L70 110 L40 110Z" fill="#fff" opacity=".07"/>
+        <rect x="140" y="12" width="644" height="92" rx="10" fill="url(#h5glass)"/>
+        <g class="h5-cabin" fill="#ffd98a" opacity=".22">
+          <rect x="150" y="60" width="90" height="40" rx="4"/><rect x="262" y="60" width="90" height="40" rx="4"/><rect x="374" y="60" width="90" height="40" rx="4"/>
+          <rect x="486" y="60" width="90" height="40" rx="4"/><rect x="598" y="60" width="90" height="40" rx="4"/><rect x="700" y="60" width="78" height="40" rx="4"/>
+        </g>
+        <g stroke="#0a0d13" stroke-width="5"><line x1="252" y1="12" x2="252" y2="104"/><line x1="364" y1="12" x2="364" y2="104"/><line x1="476" y1="12" x2="476" y2="104"/><line x1="588" y1="12" x2="588" y2="104"/><line x1="694" y1="12" x2="694" y2="104"/></g>
+        <path d="M150 18 L620 18" stroke="#fff" stroke-opacity=".18" stroke-width="3"/>
+        <path d="M128 118 L132 176" stroke="#59606d" stroke-width="2"/>
+        <path d="M14 132 L792 132 L792 142 L12 142Z" fill="#f5a524"/>
+        <text x="300" y="168" font-family="Segoe UI, system-ui, sans-serif" font-weight="700" font-size="20" letter-spacing="6" fill="#2b313c">HIGH 5</text>
+        <text x="410" y="168" font-family="Segoe UI, system-ui, sans-serif" font-size="13" letter-spacing="3" fill="#4a515d">INTERCITY</text>
+      </g>
+      <path d="M100 186 a46 46 0 0 1 92 0" fill="#0b0e13"/><path d="M600 186 a46 46 0 0 1 92 0" fill="#0b0e13"/>
+      <g class="h5-wheel">
+        <circle cx="146" cy="190" r="34" fill="#15181e"/><circle cx="146" cy="190" r="18" fill="#6b7280"/>
+        <path d="M146 174 V206 M130 190 H162" stroke="#3b414c" stroke-width="3"/><circle cx="146" cy="190" r="7" fill="#1d2129"/>
+      </g>
+      <g class="h5-wheel">
+        <circle cx="646" cy="190" r="34" fill="#15181e"/><circle cx="646" cy="190" r="18" fill="#6b7280"/>
+        <path d="M646 174 V206 M630 190 H662" stroke="#3b414c" stroke-width="3"/><circle cx="646" cy="190" r="7" fill="#1d2129"/>
+      </g>
+      <rect x="14" y="150" width="34" height="10" rx="5" fill="#fff"/>
+      <g class="h5-headlight">
+        <circle cx="26" cy="155" r="70" fill="url(#h5head)" opacity=".85"/>
+        <ellipse cx="-40" cy="190" rx="160" ry="14" fill="#cfdcff" opacity=".22" filter="url(#h5blur6)"/>
+      </g>
+    </g>
+  </g>
+</svg>
+</div>
+
+  <div class="copy">
+    <div class="eyebrow"><b>NEW</b> Pick your exact seat before you pay</div>
+    <h1>Intercity travel,<br><em>booked in minutes.</em></h1>
+    <p class="sub">Search routes, compare departures, choose your seat and get your ticket reference instantly – all in one place.</p>
+    <div class="chips"><span class="chip"><i class="dot"></i>Live seat availability</span><span class="chip">Secure booking</span><span class="chip">Easy cancellation</span></div>
+  </div>
+
+  <div class="search">
+    <div class="field focus"><label><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/></svg>From</label><span class="v">Eastgate</span><span class="h">Central Terminal</span></div>
+    <div class="swap">&#8644;</div>
+    <div class="field"><label><svg viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>To</label><span class="v ph">Destination city</span><span class="h">Where you're going</span></div>
+    <div class="field"><label><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Travel date</label><span class="v">Fri, 21 Nov</span><span class="h">Tomorrow</span></div>
+    <div class="field"><label><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0113 0M16 4.5a3.5 3.5 0 010 7M21.5 20a6.5 6.5 0 00-4-6"/></svg>Passengers</label><div class="step"><i>&minus;</i><b>2</b><i>+</i></div><span class="h">Max 10 per booking</span></div>
+    <div class="go">Search trips <span>&rarr;</span></div>
+  </div>
+</section>
+</body>
+</html>

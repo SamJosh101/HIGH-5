@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HIGH 5 – booking page concept (SRS-aligned)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --bg: #07090d; --card: #0b0e15; --panel: #0e121a; --line: rgba(255,255,255,.08); --text: #f2f4f8; --muted: #8b93a3; --blue: #2f6bff; --blue2: #3b77ff; --amber: #f5a524; }
+  html, body { width: 1600px; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+  svg { display: block; }
+
+  /* nav – passenger view (Book a Trip · My Bookings · History) */
+  nav { height: 88px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 44px; }
+  .logo { display: flex; align-items: center; gap: 12px; font-weight: 600; letter-spacing: .32em; font-size: 18px; }
+  .mark { width: 34px; height: 34px; border-radius: 9px; background: var(--amber); color: #111; display: grid; place-items: center; font-weight: 800; letter-spacing: 0; font-size: 15px; }
+  .pill { display: flex; gap: 4px; padding: 6px; border-radius: 999px; background: rgba(12,15,21,.55); border: 1px solid var(--line); font-size: 15px; color: #c9ced8; }
+  .pill span { padding: 9px 20px; border-radius: 999px; }
+  .pill .on { background: rgba(255,255,255,.11); color: #fff; }
+  .user { justify-self: end; display: flex; align-items: center; gap: 10px; font-size: 14px; padding: 5px 14px 5px 5px; border: 1px solid var(--line); border-radius: 999px; }
+  .av { width: 30px; height: 30px; border-radius: 50%; background: #4a5cff; display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+
+  /* trip band: same card + mask fade as the homepage hero */
+  .band { position: relative; margin: 0 20px; height: 372px; border-radius: 28px; background: var(--card); border: 1px solid var(--line); overflow: hidden; }
+  .art { position: absolute; top: 0; right: 0; bottom: 0; width: 62%;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,.1) 8%, rgba(0,0,0,.35) 16%, rgba(0,0,0,.7) 26%, #000 36%);
+            mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,.1) 8%, rgba(0,0,0,.35) 16%, rgba(0,0,0,.7) 26%, #000 36%); }
+  .art svg { width: 100%; height: 100%; }
+  .trip { position: absolute; left: 48px; top: 40px; z-index: 2; }
+  .crumb { font-size: 15px; color: #b4bccb; display: flex; gap: 10px; align-items: center; }
+  .crumb i { width: 4px; height: 4px; border-radius: 50%; background: #4b5363; }
+  .times { display: flex; align-items: flex-start; gap: 36px; margin-top: 26px; }
+  .t b { display: block; font-size: 92px; font-weight: 200; letter-spacing: -2px; line-height: .95; }
+  .t strong { display: block; font-size: 28px; font-weight: 500; margin-top: 14px; }
+  .t small { display: block; font-size: 14px; color: var(--muted); margin-top: 4px; }
+  .arrow { font-size: 44px; color: #c9ced8; margin-top: 26px; font-weight: 200; }
+  .chips { display: flex; gap: 10px; margin-top: 26px; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: #d4d8e0; padding: 9px 15px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.035); }
+  .chip svg { width: 16px; height: 16px; stroke: #9fb8ff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* the three panels */
+  .panels { display: grid; grid-template-columns: 380px 1fr 380px; gap: 20px; margin: 20px 20px 0; height: 500px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 24px; padding: 26px 28px; display: flex; flex-direction: column; }
+  .ph { display: flex; justify-content: space-between; align-items: baseline; }
+  .ph h2 { font-size: 19px; font-weight: 600; }
+  .ph span { font-size: 13px; color: var(--muted); }
+
+  /* 1. trip (journey without intermediate stops – SRS routes have none) */
+  .line { position: relative; margin: 30px 0 6px; padding-left: 30px; }
+  .line::before { content: ""; position: absolute; left: 7px; top: 12px; bottom: 12px; width: 2px; background: linear-gradient(#9fb8ff, #3a4252 40%, #3a4252 60%, #9fb8ff); }
+  .stop { position: relative; display: grid; grid-template-columns: 1fr auto; align-items: baseline; }
+  .stop::before { content: ""; position: absolute; left: -30px; top: 5px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(159,184,255,.2); }
+  .stop b { font-size: 20px; font-weight: 600; }
+  .stop em { font-style: normal; font-size: 20px; font-weight: 500; }
+  .stop small { grid-column: 1 / -1; font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .mid { margin: 22px 0; font-size: 13px; color: #b4bccb; display: flex; gap: 8px; align-items: center; }
+  .mid svg { width: 15px; height: 15px; stroke: #9fb8ff; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .facts { margin-top: auto; border-top: 1px solid var(--line); }
+  .fact { display: flex; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .fact:last-child { border-bottom: 0; padding-bottom: 0; }
+  .fact span { color: var(--muted); }
+  .fact b { font-weight: 600; }
+
+  /* 2. seat map (bonus feature in SRS §6.3) */
+  .legend { display: flex; gap: 18px; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 13px; height: 13px; border-radius: 4px; vertical-align: -2px; margin-right: 6px; }
+  .coach { position: relative; margin: 26px auto 0; padding: 22px 26px 22px 120px; border-radius: 70px 26px 26px 70px; background: linear-gradient(180deg, #151c2c, #10151f); border: 1px solid rgba(120,150,255,.22); width: fit-content; }
+  .coach::before { content: ""; position: absolute; left: 14px; top: 26px; bottom: 26px; width: 26px; border-radius: 30px 0 0 30px; background: linear-gradient(180deg, #2c3c86, #1d2a5e); }
+  .driver { position: absolute; left: 56px; top: 34px; text-align: center; font-size: 10px; letter-spacing: .14em; color: var(--muted); }
+  .driver span { display: block; width: 36px; height: 36px; margin: 0 auto 8px; border-radius: 50%; border: 2px solid #4b5568; position: relative; }
+  .driver span::after { content: ""; position: absolute; inset: 11px; border-radius: 50%; background: #4b5568; }
+  .door { position: absolute; left: 62px; bottom: 26px; font-size: 10px; letter-spacing: .14em; color: var(--muted); }
+  .door::after { content: ""; display: block; height: 3px; border-radius: 2px; background: var(--amber); margin-top: 6px; }
+  .srow { display: flex; align-items: center; gap: 9px; }
+  .srow + .srow { margin-top: 9px; }
+  .srow > b { width: 14px; font-size: 11px; color: var(--muted); font-weight: 500; }
+  .srow.nums { margin: 14px 0; }
+  .srow.nums span { width: 40px; text-align: center; font-size: 11px; color: #5d6575; }
+  .seat { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; }
+  .seat svg { width: 18px; height: 18px; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .seat.taken { background: #1a2030; border: 1px solid #2a3243; }
+  .seat.taken svg { stroke: #5d6575; }
+  .seat.free { background: #f4f6fb; box-shadow: inset 0 -3px 0 #c9d0de; }
+  .seat.mine { background: linear-gradient(180deg, var(--blue2), #2457e6); box-shadow: 0 0 18px rgba(47,107,255,.55); }
+  .seat.mine svg { stroke: #fff; }
+  .sfoot { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; }
+  .avail { font-size: 14px; color: #b4bccb; }
+  .avail b { color: #fff; }
+  .bar { width: 230px; height: 5px; border-radius: 3px; background: #1d2330; margin-top: 10px; overflow: hidden; }
+  .bar i { display: block; width: 36%; height: 100%; background: var(--blue2); }
+  .sel { font-size: 14px; color: var(--muted); }
+  .sel b { color: #fff; }
+
+  /* 3. booking summary (one base fare per schedule – FR-15, FR-23) */
+  .rows { margin-top: 20px; }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .row span { color: var(--muted); }
+  .row b { font-weight: 600; }
+  .step { display: flex; align-items: center; gap: 14px; }
+  .step i { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255,255,255,.06); display: grid; place-items: center; font-style: normal; font-size: 16px; color: #fff; }
+  .total { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 0 6px; }
+  .total span { font-size: 15px; color: #c9ced8; }
+  .total b { font-size: 36px; font-weight: 600; letter-spacing: -.5px; }
+  .note { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .go { margin-top: auto; height: 58px; border-radius: 16px; background: linear-gradient(180deg, var(--blue2), #2457e6); box-shadow: 0 12px 34px rgba(47,107,255,.45);
+        display: flex; align-items: center; justify-content: space-between; padding: 0 24px; font-weight: 700; font-size: 17px; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo"><div class="mark">H5</div>HIGH&nbsp;5</div>
+  <div class="pill"><span class="on">Book a Trip</span><span>My Bookings</span><span>History</span></div>
+  <div class="user"><span class="av">P</span>Pat</div>
+</nav>
+
+<section class="band">
+  <div class="art"><svg class="h5-scene" viewBox="380 -40 1220 640" preserveAspectRatio="xMaxYMax slice" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="h5sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b1019"/><stop offset=".55" stop-color="#1c2738"/><stop offset="1" stop-color="#121925"/>
+    </linearGradient>
+    <linearGradient id="h5mtn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5d6a80"/><stop offset=".35" stop-color="#2a3446"/><stop offset="1" stop-color="#151c28"/>
+    </linearGradient>
+    <linearGradient id="h5road" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a212d"/><stop offset="1" stop-color="#07090d"/>
+    </linearGradient>
+    <linearGradient id="h5body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f3f5f9"/><stop offset=".25" stop-color="#c9cfd9"/><stop offset=".6" stop-color="#8b94a3"/><stop offset="1" stop-color="#4b525e"/>
+    </linearGradient>
+    <linearGradient id="h5glass" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0c111a"/><stop offset=".5" stop-color="#1d2738"/><stop offset="1" stop-color="#0c111a"/>
+    </linearGradient>
+    <radialGradient id="h5lamp"><stop offset="0" stop-color="#fff6dc"/><stop offset=".25" stop-color="#ffd98a" stop-opacity=".55"/><stop offset="1" stop-color="#ffb84d" stop-opacity="0"/></radialGradient>
+    <radialGradient id="h5head"><stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#dfe9ff" stop-opacity=".7"/><stop offset="1" stop-color="#9fb8ff" stop-opacity="0"/></radialGradient>
+    <filter id="h5blur6"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="h5blur2"><feGaussianBlur stdDeviation="2"/></filter>
+  </defs>
+
+  <rect y="-420" width="1600" height="1020" fill="url(#h5sky)"/>
+
+  <!-- twinkling stars -->
+  <g class="h5-stars" fill="#dfe6f5">
+    <!-- extra stars higher up, only visible in the tall homepage view -->
+    <circle cx="963" cy="-303" r="1.5" opacity="0.9"/><circle cx="398" cy="-343" r="0.9" opacity="0.7"/><circle cx="1493" cy="-351" r="1" opacity="0.5"/><circle cx="476" cy="-158" r="1.5" opacity="0.5"/><circle cx="792" cy="-334" r="1.5" opacity="0.5"/><circle cx="1458" cy="-317" r="1" opacity="0.9"/><circle cx="1584" cy="-82" r="0.9" opacity="0.9"/><circle cx="1499" cy="-177" r="0.9" opacity="0.5"/><circle cx="395" cy="-95" r="1" opacity="0.7"/><circle cx="1158" cy="-307" r="0.9" opacity="0.9"/><circle cx="931" cy="-94" r="1" opacity="0.5"/><circle cx="1491" cy="-88" r="1" opacity="0.7"/><circle cx="499" cy="-100" r="0.9" opacity="0.9"/><circle cx="422" cy="-64" r="1" opacity="0.7"/><circle cx="1388" cy="-162" r="1.2" opacity="0.7"/><circle cx="1499" cy="-148" r="1.2" opacity="0.7"/><circle cx="808" cy="26" r="1" opacity="0.9"/><circle cx="799" cy="-339" r="1.2" opacity="0.9"/><circle cx="1313" cy="-205" r="1.5" opacity="0.7"/><circle cx="1547" cy="-343" r="0.9" opacity="0.9"/><circle cx="1156" cy="-296" r="1.2" opacity="0.5"/><circle cx="1301" cy="-165" r="0.9" opacity="0.9"/><circle cx="458" cy="11" r="1.2" opacity="0.7"/><circle cx="1017" cy="-76" r="1.5" opacity="0.9"/><circle cx="1234" cy="-345" r="0.9" opacity="0.7"/><circle cx="1270" cy="-24" r="0.9" opacity="0.5"/><circle cx="934" cy="-49" r="1.5" opacity="0.7"/><circle cx="1090" cy="-38" r="1.2" opacity="0.5"/><circle cx="1245" cy="-199" r="1" opacity="0.9"/><circle cx="539" cy="-128" r="0.9" opacity="0.5"/><circle cx="888" cy="-314" r="1" opacity="0.7"/><circle cx="1100" cy="-126" r="0.9" opacity="0.5"/><circle cx="1219" cy="-175" r="1.2" opacity="0.5"/><circle cx="1181" cy="-99" r="1.2" opacity="0.9"/><circle cx="1150" cy="-197" r="1.5" opacity="0.5"/><circle cx="609" cy="-338" r="1" opacity="0.5"/><circle cx="775" cy="-43" r="1" opacity="0.5"/><circle cx="1293" cy="-79" r="1" opacity="0.7"/><circle cx="877" cy="-378" r="1" opacity="0.7"/><circle cx="1394" cy="-191" r="1.2" opacity="0.5"/><circle cx="1355" cy="-64" r="0.9" opacity="0.7"/><circle cx="1445" cy="-180" r="1.5" opacity="0.7"/><circle cx="1107" cy="-327" r="1.5" opacity="0.9"/><circle cx="1120" cy="-349" r="1" opacity="0.5"/><circle cx="727" cy="-155" r="1" opacity="0.5"/><circle cx="996" cy="-73" r="0.9" opacity="0.5"/>
+    <circle cx="620" cy="60" r="1.4"/><circle cx="700" cy="110" r="1"/><circle cx="790" cy="48" r="1.6"/>
+    <circle cx="880" cy="96" r="1"/><circle cx="960" cy="40" r="1.3"/><circle cx="1040" cy="82" r="1"/>
+    <circle cx="1130" cy="58" r="1.5"/><circle cx="1220" cy="104" r="1"/><circle cx="1300" cy="36" r="1.2"/>
+    <circle cx="1380" cy="88" r="1.6"/><circle cx="1460" cy="54" r="1"/><circle cx="1540" cy="110" r="1.3"/>
+  </g>
+
+  <!-- crescent moon (only visible in the tall homepage view) -->
+  <defs><mask id="h5moon"><circle cx="1330" cy="-140" r="38" fill="#fff"/><circle cx="1348" cy="-152" r="33" fill="#000"/></mask><radialGradient id="h5moonglow"><stop offset="0" stop-color="#dfe6f5" stop-opacity=".18"/><stop offset="1" stop-color="#dfe6f5" stop-opacity="0"/></radialGradient></defs><circle cx="1330" cy="-140" r="110" fill="url(#h5moonglow)"/><circle cx="1330" cy="-140" r="38" fill="#e9edf6" mask="url(#h5moon)"/>
+
+  <!-- mountains (parallax layer, moved by home.js on scroll) -->
+  <g class="h5-parallax" data-speed="0.25">
+    <path d="M520 330 L640 220 L700 262 L790 160 L860 230 L930 185 L1010 250 L1100 150 L1190 232 L1260 196 L1350 262 L1440 178 L1530 246 L1600 214 L1600 360 L520 360Z" fill="url(#h5mtn)"/>
+    <path d="M770 180 L790 160 L812 186 L800 182 L790 196 L780 184Z M1080 172 L1100 150 L1124 178 L1110 174 L1100 190 L1090 176Z M1420 198 L1440 178 L1462 204 L1448 199 L1440 212 L1430 200Z" fill="#c9d2e0" opacity=".75"/>
+  </g>
+  <g class="h5-parallax" data-speed="0.12">
+    <path d="M520 360 L620 300 L720 330 L840 280 L960 322 L1080 286 L1220 330 L1340 292 L1460 330 L1600 300 L1600 380 L520 380Z" fill="#111722"/>
+    <path fill="#0b1018" d="M520 380 l10-34 10 34z M548 380 l12-44 12 44z M580 380 l9-30 9 30z M1450 380 l11-40 11 40z M1480 380 l9-30 9 30z M1510 380 l12-46 12 46z M1545 380 l10-34 10 34z M1572 380 l12-42 12 42z"/>
+  </g>
+
+  <!-- lamp posts -->
+  <g stroke="#2b3342" stroke-width="3">
+    <line x1="600" y1="250" x2="600" y2="410"/><line x1="900" y1="230" x2="900" y2="410"/>
+    <line x1="1210" y1="230" x2="1210" y2="410"/><line x1="1500" y1="250" x2="1500" y2="410"/>
+  </g>
+  <g class="h5-lamps">
+    <circle cx="600" cy="252" r="40" fill="url(#h5lamp)"/><circle cx="900" cy="232" r="46" fill="url(#h5lamp)"/>
+    <circle cx="1210" cy="232" r="46" fill="url(#h5lamp)"/><circle cx="1500" cy="252" r="40" fill="url(#h5lamp)"/>
+  </g>
+
+  <!-- wet road with reflections and moving lane dashes -->
+  <rect y="400" width="1600" height="420" fill="url(#h5road)"/>
+  <g class="h5-lamps" opacity=".55" filter="url(#h5blur6)">
+    <rect x="592" y="430" width="16" height="110" fill="#ffd98a"/><rect x="892" y="430" width="16" height="130" fill="#ffd98a"/>
+    <rect x="1202" y="430" width="16" height="130" fill="#ffd98a"/><rect x="1492" y="430" width="16" height="110" fill="#ffd98a"/>
+  </g>
+  <line class="h5-lane" x1="0" y1="520" x2="1600" y2="520" stroke="#3a4352" stroke-width="3" stroke-dasharray="60 46" opacity=".6"/>
+
+  <!-- coach (front at left). Outer g = position, inner g = drive-in animation -->
+  <g transform="translate(700 236)">
+    <g class="h5-coach">
+      <ellipse cx="380" cy="198" rx="400" ry="16" fill="#000" opacity=".6" filter="url(#h5blur6)"/>
+      <g transform="translate(0 392) scale(1 -1)" opacity=".18" filter="url(#h5blur2)">
+        <path d="M40 30 Q48 6 90 4 L760 4 Q790 4 792 30 L792 170 Q792 186 776 186 L28 186 Q10 186 10 168 L10 120 Q12 66 40 30Z" fill="url(#h5body)"/>
+      </g>
+      <g class="h5-coach-body">
+        <path d="M40 30 Q48 6 90 4 L760 4 Q790 4 792 30 L792 170 Q792 186 776 186 L28 186 Q10 186 10 168 L10 120 Q12 66 40 30Z" fill="url(#h5body)"/>
+        <path d="M44 34 Q52 14 92 12 L130 12 L120 118 L18 118 Q22 64 44 34Z" fill="url(#h5glass)"/>
+        <path d="M58 30 L96 16 L70 110 L40 110Z" fill="#fff" opacity=".07"/>
+        <rect x="140" y="12" width="644" height="92" rx="10" fill="url(#h5glass)"/>
+        <g class="h5-cabin" fill="#ffd98a" opacity=".22">
+          <rect x="150" y="60" width="90" height="40" rx="4"/><rect x="262" y="60" width="90" height="40" rx="4"/><rect x="374" y="60" width="90" height="40" rx="4"/>
+          <rect x="486" y="60" width="90" height="40" rx="4"/><rect x="598" y="60" width="90" height="40" rx="4"/><rect x="700" y="60" width="78" height="40" rx="4"/>
+        </g>
+        <g stroke="#0a0d13" stroke-width="5"><line x1="252" y1="12" x2="252" y2="104"/><line x1="364" y1="12" x2="364" y2="104"/><line x1="476" y1="12" x2="476" y2="104"/><line x1="588" y1="12" x2="588" y2="104"/><line x1="694" y1="12" x2="694" y2="104"/></g>
+        <path d="M150 18 L620 18" stroke="#fff" stroke-opacity=".18" stroke-width="3"/>
+        <path d="M128 118 L132 176" stroke="#59606d" stroke-width="2"/>
+        <path d="M14 132 L792 132 L792 142 L12 142Z" fill="#f5a524"/>
+        <text x="300" y="168" font-family="Segoe UI, system-ui, sans-serif" font-weight="700" font-size="20" letter-spacing="6" fill="#2b313c">HIGH 5</text>
+        <text x="410" y="168" font-family="Segoe UI, system-ui, sans-serif" font-size="13" letter-spacing="3" fill="#4a515d">INTERCITY</text>
+      </g>
+      <path d="M100 186 a46 46 0 0 1 92 0" fill="#0b0e13"/><path d="M600 186 a46 46 0 0 1 92 0" fill="#0b0e13"/>
+      <g class="h5-wheel">
+        <circle cx="146" cy="190" r="34" fill="#15181e"/><circle cx="146" cy="190" r="18" fill="#6b7280"/>
+        <path d="M146 174 V206 M130 190 H162" stroke="#3b414c" stroke-width="3"/><circle cx="146" cy="190" r="7" fill="#1d2129"/>
+      </g>
+      <g class="h5-wheel">
+        <circle cx="646" cy="190" r="34" fill="#15181e"/><circle cx="646" cy="190" r="18" fill="#6b7280"/>
+        <path d="M646 174 V206 M630 190 H662" stroke="#3b414c" stroke-width="3"/><circle cx="646" cy="190" r="7" fill="#1d2129"/>
+      </g>
+      <rect x="14" y="150" width="34" height="10" rx="5" fill="#fff"/>
+      <g class="h5-headlight">
+        <circle cx="26" cy="155" r="70" fill="url(#h5head)" opacity=".85"/>
+        <ellipse cx="-40" cy="190" rx="160" ry="14" fill="#cfdcff" opacity=".22" filter="url(#h5blur6)"/>
+      </g>
+    </g>
+  </g>
+</svg></div>
+  <div class="trip">
+    <div class="crumb">Fri, 21 Nov 2026 <i></i> 2 passengers</div>
+    <div class="times">
+      <div class="t"><b>07:30</b><strong>Eastgate</strong><small>Departs</small></div>
+      <div class="arrow">&rarr;</div>
+      <div class="t"><b>13:45</b><strong>Riverside</strong><small>Estimated arrival</small></div>
+    </div>
+    <div class="chips">
+      <span class="chip"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 18v3M16 18v3"/></svg>Luxury coach</span>
+      <span class="chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>About 6 h 15 min</span>
+      <span class="chip"><svg viewBox="0 0 24 24"><path d="M6 19v-7a3 3 0 013-3h6a3 3 0 013 3v7M4 19h16M9 9V6a3 3 0 016 0v3"/></svg>16 seats left</span>
+    </div>
+  </div>
+</section>
+
+<section class="panels">
+  <div class="panel">
+    <div class="ph"><h2>Your trip</h2><span>Direct</span></div>
+    <div class="line">
+      <div class="stop"><b>Eastgate</b><em>07:30</em><small>Departure</small></div>
+      <div class="mid"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>About 6 h 15 min on the road</div>
+      <div class="stop"><b>Riverside</b><em>13:45</em><small>Estimated arrival</small></div>
+    </div>
+    <div class="facts">
+      <div class="fact"><span>Bus</span><b>H5 Coach 07 · Luxury</b></div>
+      <div class="fact"><span>Seats left</span><b>16 of 44</b></div>
+      <div class="fact"><span>Fare per passenger</span><b>24.00</b></div>
+      <div class="fact"><span>Free cancellation</span><b>Up to 24 h before</b></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h2>Choose your seats</h2>
+      <div class="legend"><span><i style="background:#f4f6fb"></i>Available</span><span><i style="background:#1a2030;border:1px solid #2a3243"></i>Taken</span><span><i style="background:#3b77ff"></i>Your seats</span></div>
+    </div>
+    <div class="coach">
+      <div class="driver"><span></span>DRIVER</div>
+      <div class="door">DOOR</div>
+      <div class="srow"><b>A</b><span class="seat taken" title="1A"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat taken" title="2A"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat taken" title="3A"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat free" title="4A"></span><span class="seat taken" title="5A"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat free" title="6A"></span><span class="seat mine" title="7A"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="seat free" title="8A"></span><span class="seat taken" title="9A"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat free" title="10A"></span><span class="seat taken" title="11A"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span></div><div class="srow"><b>B</b><span class="seat taken" title="1B"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat taken" title="2B"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat taken" title="3B"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat free" title="4B"></span><span class="seat taken" title="5B"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat free" title="6B"></span><span class="seat mine" title="7B"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="seat free" title="8B"></span><span class="seat taken" title="9B"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat free" title="10B"></span><span class="seat taken" title="11B"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span></div><div class="srow nums"><b></b><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span></div><div class="srow"><b>C</b><span class="seat taken" title="1C"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat taken" title="2C"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat free" title="3C"></span><span class="seat taken" title="4C"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat free" title="5C"></span><span class="seat taken" title="6C"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat free" title="7C"></span><span class="seat taken" title="8C"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat free" title="9C"></span><span class="seat taken" title="10C"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat free" title="11C"></span></div><div class="srow"><b>D</b><span class="seat taken" title="1D"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat taken" title="2D"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat taken" title="3D"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat taken" title="4D"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat free" title="5D"></span><span class="seat taken" title="6D"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat free" title="7D"></span><span class="seat taken" title="8D"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat free" title="9D"></span><span class="seat taken" title="10D"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span><span class="seat taken" title="11D"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></span></div>
+    </div>
+    <div class="sfoot">
+      <div><div class="avail"><b>16 of 44</b> seats available</div><div class="bar"><i></i></div></div>
+      <div class="sel">Selected: <b>7A, 7B</b></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><h2>Booking summary</h2><span>Check before you confirm</span></div>
+    <div class="rows">
+      <div class="row"><span>Route</span><b>Eastgate &rarr; Riverside</b></div>
+      <div class="row"><span>Date &amp; time</span><b>Fri, 21 Nov · 07:30</b></div>
+      <div class="row"><span>Passengers</span><div class="step"><i>&minus;</i><b>2</b><i>+</i></div></div>
+      <div class="row"><span>Seats</span><b>7A, 7B</b></div>
+      <div class="row"><span>Fare</span><b>24.00 &times; 2</b></div>
+    </div>
+    <div class="total"><span>Total</span><b>48.00</b></div>
+    <p class="note">You get your ticket reference straight away. Payment status shows as Pending until it is confirmed.</p>
+    <div class="go">Confirm booking <span>&rarr;</span></div>
+  </div>
+</section>
+</body>
+</html>

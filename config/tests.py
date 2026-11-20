@@ -205,6 +205,61 @@ class PopularRouteAccessTests(TestCase):
                 self.assertTrue(response["Location"].startswith(reverse("accounts:login")))
 
 
+class BookTripPageTests(TestCase):
+    """Book a Trip page: trip band + "Your trip", seat map and booking summary (sample data for now)."""
+
+    def setUp(self):
+        self.client.force_login(make_user("PASSENGER"))
+
+    def search(self, **params):
+        query = {"origin": "Eastgate", "destination": "Riverside", **params}
+        return self.client.get(f'{reverse("bookings:search")}?{urlencode(query)}')
+
+    def test_searching_a_route_shows_the_three_panels(self):
+        response = self.search()
+        for marker in ('class="h5-trip-band"', ">Your trip<", ">Choose your seats<", ">Booking summary<",
+                       ">Confirm booking<", 'name="seats"', 'name="passengers"', "Sample trip", "css/booking.css",
+                       "js/booking.js"):
+            self.assertContains(response, marker)
+        self.assertNotContains(response, "Payment status")
+
+    def test_page_without_a_route_shows_the_empty_state_only(self):
+        response = self.client.get(reverse("bookings:search"))
+        self.assertContains(response, "Search to see trips")
+        self.assertNotContains(response, 'id="h5Book"')
+
+    def test_same_origin_and_destination_shows_no_trip(self):
+        response = self.search(destination="eastgate")
+        self.assertNotContains(response, 'id="h5Book"')
+
+    def test_trip_details_follow_the_route(self):
+        trip = self.search(origin="Millbrook", destination="Harbour City").context["trip"]
+        self.assertEqual(str(trip["fare"]), "15.00")
+        self.assertEqual(trip["bus_type"], "Standard")
+        self.assertEqual(trip["arrival"].strftime("%H:%M"), "11:10")  # 07:30 + 3 h 40 m
+
+    def test_seat_map_counts_and_taken_seats(self):
+        response = self.search()
+        trip = response.context["trip"]
+        self.assertEqual((trip["total_seats"], trip["seats_left"]), (44, 18))
+        self.assertContains(response, 'aria-label="Seat 1A, taken"')
+        self.assertContains(response, 'data-seat="7A"')
+        self.assertContains(response, "18 of 44")
+
+    def test_passenger_count_is_kept_within_limits(self):
+        for raw, expected in (("2", 2), ("0", 1), ("abc", 1), ("50", 10)):
+            with self.subTest(passengers=raw):
+                self.assertEqual(self.search(passengers=raw).context["trip"]["passengers"], expected)
+
+    def test_missing_past_or_invalid_dates_fall_back_to_today(self):
+        from django.utils import timezone
+
+        today = timezone.localdate()
+        for raw in ("", "2000-01-01", "2026-02-30", "not-a-date"):
+            with self.subTest(date=raw):
+                self.assertEqual(self.search(date=raw).context["trip"]["date"], today)
+
+
 class DatabaseTests(TestCase):
     def test_database_connection_works(self):
         with connection.cursor() as cursor:

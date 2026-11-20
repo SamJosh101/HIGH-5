@@ -1,0 +1,18 @@
+{% comment %}
+  "Your trip" panel. SRS routes have no intermediate stops, so it shows departure
+  → estimated arrival (departure + route duration). Expects `trip`.
+{% endcomment %}
+<section class="h5-book-panel h5-trip-panel" aria-labelledby="h5TripTitle">
+  <div class="h5-book-head"><h2 id="h5TripTitle">Your trip</h2><span>Direct</span></div>
+  <div class="h5-trip-line">
+    <div class="h5-trip-stop"><b>{{ trip.origin }}</b><em>{{ trip.departure|time:"H:i" }}</em><small>Departure</small></div>
+    <div class="h5-trip-mid"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>About {{ trip.duration }} on the road</div>
+    <div class="h5-trip-stop"><b>{{ trip.destination }}</b><em>{{ trip.arrival|time:"H:i" }}{% if trip.arrives_next_day %} +1{% endif %}</em><small>Estimated arrival</small></div>
+  </div>
+  <dl class="h5-trip-facts">
+    <div><dt>Bus</dt><dd>{{ trip.bus_name }} · {{ trip.bus_type }}</dd></div>
+    <div><dt>Seats left</dt><dd>{{ trip.seats_left }} of {{ trip.total_seats }}</dd></div>
+    <div><dt>Fare per passenger</dt><dd>{{ trip.currency }}{{ trip.fare }}</dd></div>
+    <div><dt>Free cancellation</dt><dd>Up to {{ trip.cancel_cutoff_hours }} h before</dd></div>
+  </dl>
+</section>

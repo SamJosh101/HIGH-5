@@ -1,0 +1,25 @@
+{% comment %}
+  Book a Trip – top band (owner: Sam/Cross). Expects `trip` (see config/sample_data.sample_trip).
+  Same rounded card and mask fade as the homepage hero (static/css/booking.css).
+{% endcomment %}
+<section class="h5-trip-band" aria-label="Selected trip">
+  <div class="h5-trip-art" aria-hidden="true">
+    {% include "partials/hero_scene.html" with viewbox="380 -40 1220 640" align="xMaxYMax" %}
+  </div>
+  <div class="h5-trip-copy">
+    <div class="h5-trip-crumb">
+      <span>{{ trip.date|date:"D, j M Y" }}</span><i></i><span data-pax-label>{{ trip.passengers }} passenger{{ trip.passengers|pluralize }}</span>
+      {% if trip.is_sample %}<span class="h5-sample-tag">Sample trip</span>{% endif %}
+    </div>
+    <div class="h5-trip-times">
+      <div><b>{{ trip.departure|time:"H:i" }}</b><strong>{{ trip.origin }}</strong><small>Departs</small></div>
+      <div class="h5-trip-arrow" aria-hidden="true">&rarr;</div>
+      <div><b>{{ trip.arrival|time:"H:i" }}{% if trip.arrives_next_day %}<sup>+1</sup>{% endif %}</b><strong>{{ trip.destination }}</strong><small>Estimated arrival</small></div>
+    </div>
+    <div class="h5-trip-chips">
+      <span class="h5-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 18v3M16 18v3"/></svg>{{ trip.bus_type }} coach</span>
+      <span class="h5-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>About {{ trip.duration }}</span>
+      <span class="h5-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19v-7a3 3 0 013-3h6a3 3 0 013 3v7M4 19h16M9 9V6a3 3 0 016 0v3"/></svg>{{ trip.seats_left }} seats left</span>
+    </div>
+  </div>
+</section>
