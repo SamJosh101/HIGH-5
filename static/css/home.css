@@ -9,16 +9,30 @@
 /* ==========================================================================
    HERO
    ========================================================================== */
-.h5-hero { position: relative; min-height: 640px; height: min(100vh, 860px); overflow: hidden; display: flex; align-items: center; }
-.h5-scene { position: absolute; inset: 0; width: 100%; height: 100%; }
-.h5-hero-shade {
-  position: absolute; inset: 0; pointer-events: none;
-  background:
-    linear-gradient(90deg, rgba(7, 9, 13, .95) 0%, rgba(7, 9, 13, .6) 34%, rgba(7, 9, 13, 0) 58%),
-    linear-gradient(0deg, var(--hx-bg) 4%, rgba(7, 9, 13, 0) 40%);
+/* The hero is a rounded card that fills the screen below the fixed nav (88px). */
+.h5-hero { padding: 88px 20px 0; }
+.h5-hero-card {
+  position: relative; overflow: hidden; display: flex; flex-direction: column;
+  min-height: max(640px, calc(100vh - 108px)); min-height: max(640px, calc(100svh - 108px));
+  border-radius: 32px; background: #0b0e15; border: 1px solid var(--hx-line);
 }
-.h5-hero-copy { position: relative; z-index: 2; padding-top: 40px; padding-bottom: 120px; will-change: transform, opacity; }
-.h5-title { font-size: clamp(44px, 6vw, 80px); font-weight: 300; line-height: 1.04; letter-spacing: -1.5px; margin: 26px 0 0; }
+
+/* THE FADE: the night scene only covers the right part of the card, and a mask
+   makes its left edge melt into the card colour. Nothing is drawn on top of the
+   scene, so the bus stays fully bright. Many gradient stops = no visible band. */
+.h5-hero-art {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 76%;
+  --h5-fade: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, .03) 5%, rgba(0, 0, 0, .1) 10%, rgba(0, 0, 0, .22) 15%,
+    rgba(0, 0, 0, .38) 20%, rgba(0, 0, 0, .56) 25%, rgba(0, 0, 0, .73) 30%, rgba(0, 0, 0, .87) 35%, rgba(0, 0, 0, .96) 40%, #000 45%);
+  -webkit-mask-image: var(--h5-fade); mask-image: var(--h5-fade);
+}
+.h5-hero-art .h5-scene { display: block; width: 100%; height: 100%; }
+
+.h5-hero-copy {
+  position: relative; z-index: 2; margin: auto 0; max-width: 900px;
+  padding: 56px 72px 64px; will-change: transform, opacity;
+}
+.h5-title { font-size: clamp(44px, 5.4vw, 84px); font-weight: 600; line-height: 1.02; letter-spacing: -2px; margin: 28px 0 0; }
 .h5-line { display: block; overflow: hidden; padding-bottom: .06em; }
 .h5-line > * { display: inline-block; }
 .h5-title em {
@@ -28,12 +42,9 @@
   animation: h5-up 1s var(--hx-ease) var(--d) both, h5-sheen 6s linear 1.5s infinite;
 }
 
-.h5-scroll-cue {
-  position: absolute; z-index: 3; left: 50%; bottom: 150px; width: 26px; height: 42px; margin-left: -13px;
-  border: 2px solid rgba(255, 255, 255, .35); border-radius: 14px; opacity: 0;
-  animation: h5-fade 1s ease 1.8s forwards;
-}
-.h5-scroll-cue span { position: absolute; left: 50%; top: 8px; width: 4px; height: 8px; margin-left: -2px; border-radius: 2px; background: #fff; animation: h5-wheel 1.8s ease-in-out infinite; }
+/* ---------- hero call-to-action (trip search lives on the Book a Trip page) ---------- */
+.h5-hero-cta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 36px; }
+.h5-hero-cta .h5-btn-lg { padding: 17px 30px; font-size: 16px; }
 
 /* ==========================================================================
    SECTIONS
@@ -59,7 +70,7 @@
 /* ---------- routes ---------- */
 .h5-routes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
 .h5-route {
-  position: relative; overflow: hidden; display: block; width: 100%; text-align: left; color: var(--hx-text);
+  position: relative; overflow: hidden; display: block; width: 100%; text-align: left; color: var(--hx-text); text-decoration: none;
   background: var(--hx-panel); border: 1px solid var(--hx-line); border-radius: 22px; padding: 24px; cursor: pointer;
   transition: transform .45s var(--hx-ease), border-color .3s, box-shadow .45s, opacity .8s var(--hx-ease);
 }
@@ -258,18 +269,20 @@
   .h5-routes { grid-template-columns: repeat(2, 1fr); }
   .h5-why { grid-template-columns: 1fr; }
   .h5-stage { max-width: 560px; width: 100%; justify-self: center; }
-  .h5-hero-shade {
-    background:
-      linear-gradient(90deg, rgba(7, 9, 13, .96) 0%, rgba(7, 9, 13, .78) 45%, rgba(7, 9, 13, .1) 75%),
-      linear-gradient(0deg, var(--hx-bg) 4%, rgba(7, 9, 13, 0) 40%);
-  }
+  .h5-hero-copy { padding-left: 48px; padding-right: 48px; }
 }
 @media (max-width: 991.98px) {
   .h5-steps { grid-template-columns: repeat(2, 1fr); row-gap: 40px; }
   .h5-steps::before { display: none; }
   .h5-support { grid-template-columns: 1fr; gap: 30px; }
-  .h5-hero-shade { background: linear-gradient(0deg, var(--hx-bg) 6%, rgba(7, 9, 13, .55) 60%, rgba(7, 9, 13, .75) 100%); }
-  .h5-scroll-cue { display: none; }
+  /* tablets and phones: scene on top, fading top-to-bottom into the card, then text, then search */
+  .h5-hero { padding: 84px 12px 0; }
+  .h5-hero-card { min-height: 0; border-radius: 26px; }
+  .h5-hero-art {
+    position: relative; width: 100%; height: clamp(280px, 56vw, 440px); margin-bottom: -10px;
+    --h5-fade: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, .4) 18%, #000 40%, #000 82%, transparent 100%);
+  }
+  .h5-hero-copy { margin: 0; padding: 0 24px 36px; }
 }
 @media (max-width: 767.98px) {
   .h5-routes, .h5-feats, .h5-steps { grid-template-columns: 1fr; }
@@ -277,12 +290,7 @@
   .h5-ms { width: 22px; height: 22px; }
   .h5-ref b { font-size: 14px; letter-spacing: .06em; }
   .h5-t-route b { font-size: 28px; }
-  .h5-hero { height: auto; min-height: 0; display: block; }
-  .h5-hero-copy { padding-top: 120px; padding-bottom: 250px; }
-  /* bus scene sits in the lower part of the hero, below the text */
-  .h5-hero .h5-scene { top: auto; bottom: 0; height: 380px; }
-  .h5-hero-shade { background: linear-gradient(180deg, var(--hx-bg) 0%, var(--hx-bg) calc(100% - 380px), rgba(7, 9, 13, .2) calc(100% - 300px), rgba(7, 9, 13, 0) 70%, var(--hx-bg) 100%); }
-  .h5-search-wrap { margin-top: -60px; }
+  .h5-title { letter-spacing: -1.2px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .h5-js .h5-reveal, .h5-js .h5-stage .h5-ms { opacity: 1; transform: none; }

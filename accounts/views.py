@@ -1,9 +1,11 @@
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth import views as auth_views
+from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_http_methods
 
 from .forms import (
@@ -16,17 +18,28 @@ from .forms import (
 )
 
 
+def _safe_next(request):
+    """The ?next= page to return to, only if it is on this site (no open redirects)."""
+    target = request.POST.get(REDIRECT_FIELD_NAME) or request.GET.get(REDIRECT_FIELD_NAME, "")
+    if target and url_has_allowed_host_and_scheme(
+        target, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return target
+    return ""
+
+
 @require_http_methods(["GET", "POST"])
 def register(request):
+    next_url = _safe_next(request)
     if request.user.is_authenticated:
-        return redirect("accounts:after_login")
+        return redirect(next_url or "accounts:after_login")
     form = PassengerRegistrationForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = form.save()
         login(request, user, backend="django.contrib.auth.backends.ModelBackend")
         messages.success(request, "Welcome to HIGH 5! Your account has been created.")
-        return redirect("accounts:after_login")
-    return render(request, "accounts/register.html", {"form": form})
+        return redirect(next_url or "accounts:after_login")
+    return render(request, "accounts/register.html", {"form": form, "next": next_url})
 
 
 class HighFiveLoginView(auth_views.LoginView):

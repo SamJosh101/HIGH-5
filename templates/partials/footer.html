@@ -8,13 +8,13 @@
       {% if user.is_authenticated and user.is_admin_role %}
         <li><a href="{% url 'dashboard:home' %}">Dashboard</a></li>
         <li><a href="{% url 'transport:manage' %}">Transport</a></li>
-      {% else %}
+      {% elif user.is_authenticated %}
         <li><a href="{% url 'bookings:search' %}">Book a Trip</a></li>
-      {% endif %}
-      <li><a href="{% url 'home' %}#routes">Routes</a></li>
-      {% if user.is_authenticated and user.is_passenger_role %}
         <li><a href="{% url 'bookings:dashboard' %}">My Bookings</a></li>
         <li><a href="{% url 'bookings:dashboard' %}#history">History</a></li>
+      {% else %}
+        <li><a href="{% url 'home' %}#routes">Routes</a></li>
+        <li><a href="{% url 'home' %}#how">How It Works</a></li>
       {% endif %}
     </ul></div>
     <div><h3>Help</h3><ul>

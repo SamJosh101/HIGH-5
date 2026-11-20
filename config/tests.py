@@ -5,6 +5,22 @@ from django.contrib.auth import get_user_model
 from django.db import connection
 from django.test import TestCase
 from django.urls import reverse
+from django.utils.http import urlencode
+
+PASSWORD = "Str0ng-pass-123"
+
+
+def make_user(role):
+    return get_user_model().objects.create_user(
+        email=f"{role.lower()}@example.com", password=PASSWORD, full_name=f"Pat {role.title()}", role=role
+    )
+
+
+def nav_html(response):
+    """Only the site header (desktop pill + mobile menu), not the page body or footer."""
+    html = response.content.decode()
+    start = html.index('<header class="h5-hnav"')
+    return html[start:html.index("</header>", start)]
 
 
 class ConfigurationTests(TestCase):
@@ -38,8 +54,21 @@ class ConfigurationTests(TestCase):
 
 
 class HomepageTests(TestCase):
-    def test_search_form_submits_to_trip_search(self):
-        response = self.client.get(reverse("home"))
+    def test_homepage_has_no_trip_search_form(self):
+        """Trip search lives on the Book a Trip page only, for every visitor type."""
+        for role in (None, "PASSENGER"):
+            with self.subTest(role=role):
+                self.client.logout()
+                if role:
+                    self.client.force_login(make_user(role))
+                response = self.client.get(reverse("home"))
+                self.assertNotContains(response, 'id="h5Search"')
+                for field in ('name="origin"', 'name="destination"', 'name="date"', 'name="passengers"'):
+                    self.assertNotContains(response, field)
+
+    def test_book_a_trip_page_still_has_the_search_form(self):
+        self.client.force_login(make_user("PASSENGER"))
+        response = self.client.get(reverse("bookings:search"))
         self.assertContains(response, f'action="{reverse("bookings:search")}"')
         for field in ('name="origin"', 'name="destination"', 'name="date"', 'name="passengers"'):
             self.assertContains(response, field)
@@ -66,48 +95,114 @@ class AssetVersionTests(TestCase):
 
 
 class NavigationVisibilityTests(TestCase):
-    """The nav shows different links to visitors, passengers and admins."""
+    """The navbar follows Django's real login state (strict lists, see nav_links.html)."""
 
-    def make_user(self, role):
-        return get_user_model().objects.create_user(
-            email=f"{role.lower()}@example.com", password="Str0ng-pass-123", full_name=f"Pat {role.title()}", role=role
-        )
+    LOGGED_OUT = (">Routes<", ">Support<", ">How It Works<")
+    PASSENGER = (">Book a Trip<", ">My Bookings<", ">History<")
 
-    def test_visitor_sees_public_links_only(self):
+    def assert_nav(self, response, shown, hidden):
+        nav = nav_html(response)
+        for label in shown:
+            self.assertIn(label, nav)
+        for label in hidden:
+            self.assertNotIn(label, nav)
+
+    def test_logged_out_nav(self):
         response = self.client.get(reverse("home"))
-        for label in (">Book a Trip<", ">Routes<", ">Support<"):
-            self.assertContains(response, label)
-        for label in (">My Bookings<", ">History<", ">Dashboard<"):
+        self.assert_nav(response, self.LOGGED_OUT, self.PASSENGER + (">Dashboard<", ">Transport<"))
+        nav = nav_html(response)
+        self.assertIn(reverse("accounts:login"), nav)
+        self.assertIn(reverse("accounts:register"), nav)
+        self.assertNotIn(reverse("accounts:logout"), nav)
+
+    def test_logged_out_page_never_offers_booking_links(self):
+        response = self.client.get(reverse("home"))
+        for label in (">Book a Trip<", ">My Bookings<", ">History<", "Book a trip &rarr;"):
             self.assertNotContains(response, label)
-        self.assertContains(response, reverse("accounts:login"))
-        self.assertContains(response, reverse("accounts:register"))
 
-    def test_passenger_sees_my_bookings_and_history(self):
-        self.client.force_login(self.make_user("PASSENGER"))
+    def test_passenger_nav(self):
+        self.client.force_login(make_user("PASSENGER"))
         response = self.client.get(reverse("home"))
-        for label in (">Book a Trip<", ">My Bookings<", ">Routes<", ">History<", ">Support<"):
-            self.assertContains(response, label)
-        self.assertNotContains(response, ">Dashboard<")
-        self.assertContains(response, reverse("accounts:logout"))
-        self.assertNotContains(response, ">Sign up</a>")
+        self.assert_nav(response, self.PASSENGER, self.LOGGED_OUT + (">Dashboard<", ">Log in<", ">Sign up<"))
+        self.assertIn(reverse("accounts:logout"), nav_html(response))
 
-    def test_admin_sees_dashboard_and_transport_not_passenger_links(self):
-        self.client.force_login(self.make_user("ADMIN"))
+    def test_admin_nav(self):
+        self.client.force_login(make_user("ADMIN"))
         response = self.client.get(reverse("home"))
-        self.assertContains(response, reverse("dashboard:home"))
-        self.assertContains(response, reverse("transport:manage"))
-        for label in (">My Bookings<", ">History<"):
-            self.assertNotContains(response, label)
+        self.assert_nav(response, (">Dashboard<", ">Transport<"), self.LOGGED_OUT + self.PASSENGER)
+
+    def test_nav_changes_immediately_on_login_and_logout(self):
+        make_user("PASSENGER")
+        self.client.post(reverse("accounts:login"), {"username": "passenger@example.com", "password": PASSWORD})
+        self.assert_nav(self.client.get(reverse("home")), self.PASSENGER, self.LOGGED_OUT)
+        self.client.post(reverse("accounts:logout"))
+        self.assert_nav(self.client.get(reverse("home")), self.LOGGED_OUT, self.PASSENGER)
 
     def test_current_page_is_marked_active(self):
+        self.client.force_login(make_user("PASSENGER"))
         response = self.client.get(reverse("bookings:search"))
         self.assertContains(response, 'class="is-active" aria-current="page">Book a Trip<')
 
     def test_same_nav_and_footer_on_inner_pages(self):
-        for name in ("accounts:login", "accounts:register", "bookings:search"):
+        for name in ("accounts:login", "accounts:register"):
             response = self.client.get(reverse(name))
             self.assertTemplateUsed(response, "partials/navbar.html")
             self.assertContains(response, 'data-bs-theme="dark"')
+
+
+class PopularRouteAccessTests(TestCase):
+    """Popular routes are visible to everyone, but opening one needs a login (server-enforced)."""
+
+    def route_url(self, origin="Eastgate", destination="Riverside"):
+        return f'{reverse("bookings:search")}?{urlencode({"origin": origin, "destination": destination})}'
+
+    def test_routes_are_visible_and_link_to_the_trip_search_when_logged_out(self):
+        response = self.client.get(reverse("home"))
+        self.assertContains(response, 'id="routes"')
+        self.assertContains(response, f'href="{reverse("bookings:search")}?origin=', count=4)
+
+    def test_logged_out_route_click_redirects_to_login_with_the_route_kept(self):
+        response = self.client.get(self.route_url())
+        expected = f'{reverse("accounts:login")}?{urlencode({"next": self.route_url()})}'
+        self.assertRedirects(response, expected)
+
+    def test_after_login_the_user_lands_on_the_prefilled_search(self):
+        make_user("PASSENGER")
+        login_url = f'{reverse("accounts:login")}?{urlencode({"next": self.route_url()})}'
+        page = self.client.get(login_url)
+        self.assertContains(page, "?next=")  # the Sign up link keeps the route too
+        response = self.client.post(login_url, {"username": "passenger@example.com", "password": PASSWORD}, follow=True)
+        self.assertEqual(response.redirect_chain[-1][0], self.route_url())
+        self.assertContains(response, 'value="Eastgate"')
+        self.assertContains(response, 'value="Riverside"')
+
+    def test_after_sign_up_the_user_lands_on_the_prefilled_search(self):
+        data = {"full_name": "New Rider", "email": "rider@example.com", "phone": "+2348000000000",
+                "password1": PASSWORD, "password2": PASSWORD, "next": self.route_url()}
+        response = self.client.post(reverse("accounts:register"), data)
+        self.assertRedirects(response, self.route_url())
+
+    def test_sign_up_ignores_next_urls_on_other_sites(self):
+        data = {"full_name": "New Rider", "email": "rider@example.com", "phone": "+2348000000000",
+                "password1": PASSWORD, "password2": PASSWORD, "next": "https://evil.example.com/"}
+        response = self.client.post(reverse("accounts:register"), data)
+        self.assertRedirects(response, reverse("accounts:after_login"), fetch_redirect_response=False)
+
+    def test_logged_in_route_click_opens_book_a_trip_prefilled(self):
+        self.client.force_login(make_user("PASSENGER"))
+        response = self.client.get(self.route_url())
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "bookings/search.html")
+        self.assertContains(response, 'value="Eastgate"')
+        self.assertContains(response, 'value="Riverside"')
+
+    def test_protected_pages_redirect_to_login_when_logged_out(self):
+        for name in ("bookings:search", "bookings:dashboard", "dashboard:home", "transport:manage",
+                     "accounts:profile", "accounts:password_change"):
+            with self.subTest(url=name):
+                response = self.client.get(reverse(name))
+                self.assertEqual(response.status_code, 302)
+                self.assertTrue(response["Location"].startswith(reverse("accounts:login")))
 
 
 class DatabaseTests(TestCase):

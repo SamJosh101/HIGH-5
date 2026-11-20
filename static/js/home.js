@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const { reduceMotion, $, $$, flashField } = window.H5;
+  const { reduceMotion, $, $$ } = window.H5;
   document.body.classList.add("h5-js"); // CSS only hides reveal elements when JS runs
 
   /* ---------- scroll: progress bar, back-to-top, parallax ---------- */
@@ -31,6 +31,20 @@
   onScroll();
   topBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }));
 
+  /* ---------- hero scene: show a closer, centred view on tablets and phones ---------- */
+  const art = $(".h5-hero-art");
+  const scene = art && $("svg", art);
+  if (scene && art.dataset.viewboxMobile) {
+    const wide = { box: scene.getAttribute("viewBox"), fit: scene.getAttribute("preserveAspectRatio") };
+    const narrow = window.matchMedia("(max-width: 991.98px)");
+    const frame = () => {
+      scene.setAttribute("viewBox", narrow.matches ? art.dataset.viewboxMobile : wide.box);
+      scene.setAttribute("preserveAspectRatio", narrow.matches ? "xMidYMax slice" : wide.fit);
+    };
+    narrow.addEventListener("change", frame);
+    frame();
+  }
+
   /* ---------- reveal on scroll ---------- */
   const revealObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
@@ -45,27 +59,14 @@
   }, { threshold: 0.15, rootMargin: "0px 0px -40px 0px" });
   $$(".h5-reveal").forEach((el) => revealObserver.observe(el));
 
-  /* ---------- route cards: cursor glow + click fills the search ---------- */
-  const form = $("#h5Search");
+  /* ---------- route cards: cursor glow ----------
+     The cards are plain links to the trip search. Logged-out visitors are sent
+     to the login page by the server (bookings.views.trip_search), not by JS. */
   $$(".h5-route").forEach((card) => {
     card.addEventListener("pointermove", (e) => {
       const r = card.getBoundingClientRect();
       card.style.setProperty("--mx", `${e.clientX - r.left}px`);
       card.style.setProperty("--my", `${e.clientY - r.top}px`);
-    });
-    card.addEventListener("click", () => {
-      const origin = $("#s-origin");
-      const dest = $("#s-dest");
-      origin.value = card.dataset.from;
-      dest.value = card.dataset.to;
-      const top = form.getBoundingClientRect().top + window.scrollY - 110;
-      window.scrollTo({ top, behavior: reduceMotion ? "auto" : "smooth" });
-      setTimeout(() => {
-        [origin, dest].forEach(flashField);
-        form.classList.add("is-flash");
-        setTimeout(() => form.classList.remove("is-flash"), 1400);
-        $("#s-date").focus({ preventScroll: true });
-      }, reduceMotion ? 0 : 600);
     });
   });
 

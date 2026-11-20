@@ -155,7 +155,6 @@ h1, h2, h3, h4, h5 { color: var(--hx-text); }
 /* ==========================================================================
    SEARCH BAR
    ========================================================================== */
-.h5-search-wrap { position: relative; z-index: 5; margin-top: -110px; }
 .h5-search {
   display: grid; grid-template-columns: 1.3fr 52px 1.3fr 1fr 1fr 200px; gap: 12px; align-items: stretch;
   padding: 22px; border-radius: 24px; background: rgba(17, 20, 27, .94);
@@ -372,6 +371,7 @@ h1, h2, h3, h4, h5 { color: var(--hx-text); }
 .h5-auth-panel { display: flex; align-items: center; justify-content: center; padding: 110px clamp(20px, 4vw, 64px) 48px; }
 .h5-auth-card { width: 100%; max-width: 420px; animation: h5-rise .8s var(--hx-ease) .15s both; }
 .h5-auth-card h1 { font-size: 36px; font-weight: 300; letter-spacing: -.5px; margin: 0 0 28px; }
+.h5-auth-note { color: var(--hx-muted); margin: -16px 0 24px; }
 .h5-auth-card .btn-primary { width: 100%; padding: 15px; font-size: 16px; margin-top: 6px; }
 .h5-auth-links { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 22px; font-size: 14px; color: var(--hx-muted); }
 .h5-auth-links a { color: #c9d6ff; text-decoration: none; }

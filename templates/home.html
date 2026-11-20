@@ -13,30 +13,41 @@
   <div class="h5-toasts">{% include "partials/messages.html" %}</div>
 {% endif %}
 
-<!-- HERO -->
+<!-- HERO: a rounded card that fills the screen below the nav. Trip search lives
+     on the Book a Trip page (bookings:search), not here. The night scene
+     sits on the right and its left edge fades into the card (CSS mask in
+     home.css); on phones it sits on top and fades top-to-bottom. -->
 <section class="h5-hero">
-  {% include "partials/hero_scene.html" %}
-  <div class="h5-hero-shade" aria-hidden="true"></div>
-  <div class="container-xl h5-hero-copy">
-    <div class="h5-eyebrow h5-in" style="--d: .15s"><b>NEW</b> Pick your exact seat before you pay</div>
-    <h1 class="h5-title">
-      <span class="h5-line"><span class="h5-in" style="--d: .3s">Intercity travel,</span></span>
-      <span class="h5-line"><em class="h5-in" style="--d: .45s">booked in minutes.</em></span>
-    </h1>
-    <p class="h5-sub h5-in" style="--d: .6s">Search routes, compare departures, choose your seat and get your ticket reference instantly – all in one place.</p>
-    <div class="h5-chips h5-in" style="--d: .75s">
-      <span class="h5-chip"><i class="h5-dot"></i>Live seat availability</span>
-      <span class="h5-chip">Secure booking</span>
-      <span class="h5-chip">Easy cancellation</span>
+  <div class="h5-hero-card">
+    <div class="h5-hero-art" data-viewbox-mobile="590 -190 1010 830">
+      {% include "partials/hero_scene.html" with viewbox="282 -251 1318 991" align="xMaxYMax" %}
+    </div>
+    <div class="h5-hero-copy">
+      <div class="h5-eyebrow h5-in" style="--d: .15s"><b>NEW</b> Pick your exact seat before you pay</div>
+      <h1 class="h5-title">
+        <span class="h5-line"><span class="h5-in" style="--d: .3s">Intercity travel,</span></span>
+        <span class="h5-line"><em class="h5-in" style="--d: .45s">booked in minutes.</em></span>
+      </h1>
+      <p class="h5-sub h5-in" style="--d: .6s">Search routes, compare departures, choose your seat and get your ticket reference instantly – all in one place.</p>
+      <div class="h5-chips h5-in" style="--d: .75s">
+        <span class="h5-chip"><i class="h5-dot"></i>Live seat availability</span>
+        <span class="h5-chip">Secure booking</span>
+        <span class="h5-chip">Easy cancellation</span>
+      </div>
+      <div class="h5-hero-cta h5-in" style="--d: .9s">
+        {% if user.is_authenticated and user.is_admin_role %}
+          <a class="h5-btn-white h5-btn-lg" href="{% url 'dashboard:home' %}">Open dashboard &rarr;</a>
+        {% elif user.is_authenticated %}
+          <a class="h5-btn-white h5-btn-lg" href="{% url 'bookings:search' %}">Book a trip &rarr;</a>
+          <a class="h5-btn-outline h5-btn-lg" href="{% url 'bookings:dashboard' %}">My bookings</a>
+        {% else %}
+          <a class="h5-btn-white h5-btn-lg" href="{% url 'accounts:register' %}">Sign up free &rarr;</a>
+          <a class="h5-btn-outline h5-btn-lg" href="#routes">See popular routes</a>
+        {% endif %}
+      </div>
     </div>
   </div>
-  <a class="h5-scroll-cue" href="#routes" aria-label="Scroll to popular routes"><span></span></a>
 </section>
-
-<!-- SEARCH -->
-<div class="container-xl h5-search-wrap">
-  {% include "partials/search_bar.html" with extra_class="h5-in" hints=True %}
-</div>
 
 <!-- POPULAR ROUTES -->
 {% comment %} PLACEHOLDER DATA from config/views.py – replace with real Route objects
@@ -48,12 +59,13 @@
         <div class="h5-kicker">Popular routes</div>
         <h2>Where people are travelling</h2>
       </div>
-      <a class="h5-link h5-reveal" href="{% url 'bookings:search' %}">View all routes <span>&rarr;</span></a>
+      {% if user.is_authenticated %}<a class="h5-link h5-reveal" href="{% url 'bookings:search' %}">Search all routes <span>&rarr;</span></a>{% endif %}
     </div>
     <div class="h5-routes">
       {% for r in sample_routes %}
-      <button type="button" class="h5-route h5-reveal{% if forloop.first %} is-hot{% endif %}" style="--d: {{ forloop.counter0 }}00ms"
-              data-from="{{ r.0 }}" data-to="{{ r.1 }}" aria-label="Search {{ r.0 }} to {{ r.1 }}">
+      <a class="h5-route h5-reveal{% if forloop.first %} is-hot{% endif %}" style="--d: {{ forloop.counter0 }}00ms"
+         href="{% url 'bookings:search' %}?origin={{ r.0|urlencode }}&amp;destination={{ r.1|urlencode }}"
+         aria-label="{% if user.is_authenticated %}Find trips{% else %}Log in to find trips{% endif %} from {{ r.0 }} to {{ r.1 }}">
         <span class="h5-route-glow" aria-hidden="true"></span>
         <span class="h5-r-line"><i class="f"></i><hr><span>{{ r.2 }}</span><hr><i></i><span class="h5-r-bus" aria-hidden="true"></span></span>
         <span class="h5-cities"><span>{{ r.0 }}</span><span>{{ r.1 }}</span></span>
@@ -63,10 +75,10 @@
           {% if forloop.first %}<span class="h5-tag">Most booked</span>{% endif %}
           <span class="h5-arrow">&rarr;</span>
         </span>
-      </button>
+      </a>
       {% endfor %}
     </div>
-    <p class="h5-note h5-reveal">Tap a route to fill in the search above.</p>
+    <p class="h5-note h5-reveal">{% if user.is_authenticated %}Tap a route to see its trips.{% else %}Tap a route to log in and see its trips.{% endif %}</p>
   </div>
 </section>
 
@@ -162,7 +174,9 @@
       </div>
       <div class="h5-cta-btns">
         <a class="h5-btn-outline" href="#routes">Browse routes</a>
-        {% if user.is_authenticated %}
+        {% if user.is_authenticated and user.is_admin_role %}
+          <a class="h5-btn-white h5-btn-lg" href="{% url 'dashboard:home' %}">Open dashboard &rarr;</a>
+        {% elif user.is_authenticated %}
           <a class="h5-btn-white h5-btn-lg" href="{% url 'bookings:search' %}">Book a trip &rarr;</a>
         {% else %}
           <a class="h5-btn-white h5-btn-lg" href="{% url 'accounts:register' %}">Create account &rarr;</a>
@@ -186,13 +200,13 @@
       {% if user.is_authenticated and user.is_admin_role %}
         <li><a href="{% url 'dashboard:home' %}">Dashboard</a></li>
         <li><a href="{% url 'transport:manage' %}">Transport</a></li>
-      {% else %}
+      {% elif user.is_authenticated %}
         <li><a href="{% url 'bookings:search' %}">Book a Trip</a></li>
-      {% endif %}
-      <li><a href="#routes">Routes</a></li>
-      {% if user.is_authenticated and user.is_passenger_role %}
         <li><a href="{% url 'bookings:dashboard' %}">My Bookings</a></li>
         <li><a href="{% url 'bookings:dashboard' %}#history">History</a></li>
+      {% else %}
+        <li><a href="#routes">Routes</a></li>
+        <li><a href="#how">How It Works</a></li>
       {% endif %}
     </ul></div>
     <div><h3>Help</h3><ul>

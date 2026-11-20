@@ -6,9 +6,10 @@
 <form method="post" novalidate>
   {% csrf_token %}
   {% include "partials/form_fields.html" %}
+  {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
   <button type="submit" class="btn btn-primary">Create account</button>
 </form>
 <div class="h5-auth-links">
-  <span>Have an account? <a href="{% url 'accounts:login' %}">Log in</a></span>
+  <span>Have an account? <a href="{% url 'accounts:login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Log in</a></span>
 </div>
 {% endblock %}

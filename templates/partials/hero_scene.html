@@ -1,8 +1,10 @@
 {% comment %} Decorative night scene behind the homepage hero (owner: Cross).
    Pure SVG, no images. Classes on the groups are animation hooks used by
    static/css/home.css and static/js/home.js. aria-hidden: screen readers skip it.
-   Optional: align="xMaxYMid" keeps the right side (the bus) in view on narrow panels. {% endcomment %}
-<svg class="h5-scene" viewBox="0 0 1600 600" preserveAspectRatio="{{ align|default:'xMidYMid' }} slice" aria-hidden="true" focusable="false">
+   Optional: align="xMaxYMid" keeps the right side (the bus) in view on narrow panels;
+   viewbox="..." shows a different part of the scene. The default 0 0 1600 600 view
+   never shows the extra sky above y=0 (stars and moon), used by the homepage hero. {% endcomment %}
+<svg class="h5-scene" viewBox="{{ viewbox|default:'0 0 1600 600' }}" preserveAspectRatio="{{ align|default:'xMidYMid' }} slice" aria-hidden="true" focusable="false">
   <defs>
     <linearGradient id="h5sky" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#0b1019"/><stop offset=".55" stop-color="#1c2738"/><stop offset="1" stop-color="#121925"/>
@@ -25,15 +27,20 @@
     <filter id="h5blur2"><feGaussianBlur stdDeviation="2"/></filter>
   </defs>
 
-  <rect width="1600" height="600" fill="url(#h5sky)"/>
+  <rect y="-420" width="1600" height="1020" fill="url(#h5sky)"/>
 
   <!-- twinkling stars -->
   <g class="h5-stars" fill="#dfe6f5">
+    <!-- extra stars higher up, only visible in the tall homepage view -->
+    <circle cx="963" cy="-303" r="1.5" opacity="0.9"/><circle cx="398" cy="-343" r="0.9" opacity="0.7"/><circle cx="1493" cy="-351" r="1" opacity="0.5"/><circle cx="476" cy="-158" r="1.5" opacity="0.5"/><circle cx="792" cy="-334" r="1.5" opacity="0.5"/><circle cx="1458" cy="-317" r="1" opacity="0.9"/><circle cx="1584" cy="-82" r="0.9" opacity="0.9"/><circle cx="1499" cy="-177" r="0.9" opacity="0.5"/><circle cx="395" cy="-95" r="1" opacity="0.7"/><circle cx="1158" cy="-307" r="0.9" opacity="0.9"/><circle cx="931" cy="-94" r="1" opacity="0.5"/><circle cx="1491" cy="-88" r="1" opacity="0.7"/><circle cx="499" cy="-100" r="0.9" opacity="0.9"/><circle cx="422" cy="-64" r="1" opacity="0.7"/><circle cx="1388" cy="-162" r="1.2" opacity="0.7"/><circle cx="1499" cy="-148" r="1.2" opacity="0.7"/><circle cx="808" cy="26" r="1" opacity="0.9"/><circle cx="799" cy="-339" r="1.2" opacity="0.9"/><circle cx="1313" cy="-205" r="1.5" opacity="0.7"/><circle cx="1547" cy="-343" r="0.9" opacity="0.9"/><circle cx="1156" cy="-296" r="1.2" opacity="0.5"/><circle cx="1301" cy="-165" r="0.9" opacity="0.9"/><circle cx="458" cy="11" r="1.2" opacity="0.7"/><circle cx="1017" cy="-76" r="1.5" opacity="0.9"/><circle cx="1234" cy="-345" r="0.9" opacity="0.7"/><circle cx="1270" cy="-24" r="0.9" opacity="0.5"/><circle cx="934" cy="-49" r="1.5" opacity="0.7"/><circle cx="1090" cy="-38" r="1.2" opacity="0.5"/><circle cx="1245" cy="-199" r="1" opacity="0.9"/><circle cx="539" cy="-128" r="0.9" opacity="0.5"/><circle cx="888" cy="-314" r="1" opacity="0.7"/><circle cx="1100" cy="-126" r="0.9" opacity="0.5"/><circle cx="1219" cy="-175" r="1.2" opacity="0.5"/><circle cx="1181" cy="-99" r="1.2" opacity="0.9"/><circle cx="1150" cy="-197" r="1.5" opacity="0.5"/><circle cx="609" cy="-338" r="1" opacity="0.5"/><circle cx="775" cy="-43" r="1" opacity="0.5"/><circle cx="1293" cy="-79" r="1" opacity="0.7"/><circle cx="877" cy="-378" r="1" opacity="0.7"/><circle cx="1394" cy="-191" r="1.2" opacity="0.5"/><circle cx="1355" cy="-64" r="0.9" opacity="0.7"/><circle cx="1445" cy="-180" r="1.5" opacity="0.7"/><circle cx="1107" cy="-327" r="1.5" opacity="0.9"/><circle cx="1120" cy="-349" r="1" opacity="0.5"/><circle cx="727" cy="-155" r="1" opacity="0.5"/><circle cx="996" cy="-73" r="0.9" opacity="0.5"/>
     <circle cx="620" cy="60" r="1.4"/><circle cx="700" cy="110" r="1"/><circle cx="790" cy="48" r="1.6"/>
     <circle cx="880" cy="96" r="1"/><circle cx="960" cy="40" r="1.3"/><circle cx="1040" cy="82" r="1"/>
     <circle cx="1130" cy="58" r="1.5"/><circle cx="1220" cy="104" r="1"/><circle cx="1300" cy="36" r="1.2"/>
     <circle cx="1380" cy="88" r="1.6"/><circle cx="1460" cy="54" r="1"/><circle cx="1540" cy="110" r="1.3"/>
   </g>
+
+  <!-- crescent moon (only visible in the tall homepage view) -->
+  <defs><mask id="h5moon"><circle cx="1330" cy="-140" r="38" fill="#fff"/><circle cx="1348" cy="-152" r="33" fill="#000"/></mask><radialGradient id="h5moonglow"><stop offset="0" stop-color="#dfe6f5" stop-opacity=".18"/><stop offset="1" stop-color="#dfe6f5" stop-opacity="0"/></radialGradient></defs><circle cx="1330" cy="-140" r="110" fill="url(#h5moonglow)"/><circle cx="1330" cy="-140" r="38" fill="#e9edf6" mask="url(#h5moon)"/>
 
   <!-- mountains (parallax layer, moved by home.js on scroll) -->
   <g class="h5-parallax" data-speed="0.25">
@@ -56,7 +63,7 @@
   </g>
 
   <!-- wet road with reflections and moving lane dashes -->
-  <rect y="400" width="1600" height="200" fill="url(#h5road)"/>
+  <rect y="400" width="1600" height="420" fill="url(#h5road)"/>
   <g class="h5-lamps" opacity=".55" filter="url(#h5blur6)">
     <rect x="592" y="430" width="16" height="110" fill="#ffd98a"/><rect x="892" y="430" width="16" height="130" fill="#ffd98a"/>
     <rect x="1202" y="430" width="16" height="130" fill="#ffd98a"/><rect x="1492" y="430" width="16" height="110" fill="#ffd98a"/>

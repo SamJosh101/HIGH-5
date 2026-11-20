@@ -109,8 +109,8 @@ Frontend (JavaScript) checks are only for convenience. **The server always re-va
 * **Keep text short.** A heading, the controls and a button: users should understand a page in a few seconds. Developer notes go in `{% comment %}`, never on the page.
 * Inner pages: start with `<div class="h5-page-head"><h1>…</h1></div>`, put content in `<div class="h5-panel">`, and show empty lists with the `h5-empty` block (see `templates/bookings/dashboard.html`).
 * Login, sign-up and password reset pages extend `accounts/auth_base.html` (split screen with the animated bus scene).
-* Navigation (`partials/navbar.html` + `partials/nav_links.html`) shows links by role: visitors see Book a Trip, Routes, Support; passengers also see My Bookings and History; admins see Dashboard, Transport, Routes, Support. The current page is highlighted automatically.
-* The trip search bar is `partials/search_bar.html` (homepage and search page).
+* Navigation (`partials/navbar.html` + `partials/nav_links.html`) follows Django's login state: logged out – Routes, Support, How It Works, plus Log in / Sign up; passengers – Book a Trip, My Bookings, History, plus the account menu; admins – Dashboard, Transport, plus the account menu. The current page is highlighted automatically.
+* The trip search bar is `partials/search_bar.html`, used only on the Book a Trip page (`bookings:search`), which requires login. The homepage has no search form; its Popular Routes link to `bookings:search?origin=…&destination=…`, so logged-out visitors are redirected to login and return to the pre-filled search afterwards (login and sign-up both keep a safe `?next=`).
 * Homepage: `templates/home.html` + `static/css/home.css` + `static/js/home.js`. Popular-route cards use placeholder data from `config/views.py` until the transport models exist. All animations respect the OS "reduce motion" setting.
 * Templates live in `templates/<app>/<page>.html`. Shared pieces live in `templates/partials/`.
 * Forms: render with `{% include "partials/form_fields.html" %}`; Python forms inherit `accounts.forms.BootstrapFormMixin` to get Bootstrap classes.

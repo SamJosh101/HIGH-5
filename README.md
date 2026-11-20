@@ -95,7 +95,7 @@ Tests use a separate database (`test_high5_db`) that Django creates and deletes 
 | `/accounts/register/` · `/accounts/login/` | everyone | Passenger sign-up / log in |
 | `/accounts/profile/` | logged-in | Profile, change password |
 | `/accounts/password/reset/` | everyone | Password reset (email printed in terminal in development) |
-| `/bookings/search/` | everyone | Trip search *(Raheem – in progress)* |
+| `/bookings/search/` | logged-in users | Book a Trip / trip search *(Raheem – in progress)*; logged-out visitors are sent to login and back |
 | `/bookings/dashboard/` | passengers | Passenger dashboard *(Raheem – in progress)* |
 | `/transport/manage/` | admins | Routes/buses/schedules *(Daniel – in progress)* |
 | `/dashboard/` | admins | Admin dashboard *(Daniel – in progress)* |

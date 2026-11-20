@@ -1,10 +1,10 @@
 {% comment %}
   Site navigation (owner: Cross). Used on every page.
-  Which links show depends on who is looking:
-    visitors   – Book a Trip · Routes · Support
-    passengers – Book a Trip · My Bookings · Routes · History · Support
-    admins     – Dashboard · Transport · Routes · Support
-  "Routes" and "Support" are homepage sections until real pages exist.
+  Which links show depends on Django's login state (see nav_links.html):
+    logged out – Routes · Support · How It Works, plus Log in / Sign up
+    passengers – Book a Trip · My Bookings · History, plus the account menu
+    admins     – Dashboard · Transport, plus the account menu
+  "Routes", "Support" and "How It Works" are homepage sections.
 {% endcomment %}
 {% with vn=request.resolver_match.view_name %}
 <header class="h5-hnav" id="h5Nav">

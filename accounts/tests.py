@@ -204,6 +204,7 @@ class RolePermissionTests(TestCase):
                 self.assertEqual(self.client.get(reverse(name)).status_code, 200)
 
     def test_public_pages_open_to_everyone(self):
-        for name in ["home", "bookings:search", "accounts:login", "accounts:register"]:
+        # bookings:search (Book a Trip) needs a login - see config.tests.PopularRouteAccessTests
+        for name in ["home", "accounts:login", "accounts:register"]:
             with self.subTest(url=name):
                 self.assertEqual(self.client.get(reverse(name)).status_code, 200)
