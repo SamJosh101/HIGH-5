@@ -219,58 +219,70 @@ class PopularRouteAccessTests(TestCase):
 
 
 class BookTripPageTests(TestCase):
-    """Book a Trip page: trip band + "Your trip", seat map and booking summary (sample data for now)."""
+    """Book a Trip page with real transport data: search results, then the chosen trip's panels."""
 
     def setUp(self):
+        from datetime import time, timedelta
+
+        from django.utils import timezone
+
+        from transport.models import Bus, Route, Schedule
+
         self.client.force_login(make_user("PASSENGER"))
+        self.today = timezone.localdate()
+        self.day = self.today + timedelta(days=3)
+        route = Route.objects.create(origin="Lagos", destination="Abuja", distance_km=760,
+                                     duration_estimate=timedelta(hours=6, minutes=15))
+        bus = Bus.objects.create(name_or_plate="H5-007", bus_type=Bus.BusType.LUXURY, total_seats=44)
+        self.schedule = Schedule.objects.create(route=route, bus=bus, departure_date=self.day,
+                                                departure_time=time(7, 30), fare="24000.00")
 
     def search(self, **params):
-        query = {"origin": "Eastgate", "destination": "Riverside", **params}
+        query = {"origin": "Lagos", "destination": "Abuja", "date": self.day.isoformat(), **params}
         return self.client.get(f'{reverse("bookings:search")}?{urlencode(query)}')
-
-    def test_searching_a_route_shows_the_three_panels(self):
-        response = self.search()
-        for marker in ('class="h5-trip-band"', ">Your trip<", ">Choose your seats<", ">Booking summary<",
-                       ">Confirm booking<", 'name="seats"', 'name="passengers"', "Sample trip", "css/booking.css",
-                       "js/booking.js"):
-            self.assertContains(response, marker)
-        self.assertNotContains(response, "Payment status")
 
     def test_page_without_a_route_shows_the_empty_state_only(self):
         response = self.client.get(reverse("bookings:search"))
         self.assertContains(response, "Search to see trips")
         self.assertNotContains(response, 'id="h5Book"')
 
+    def test_search_lists_matching_trips(self):
+        response = self.search()
+        self.assertContains(response, "Available trips")
+        self.assertContains(response, "Luxury coach")
+        self.assertContains(response, "6 h 15 min")
+        self.assertEqual([t["schedule_id"] for t in response.context["trips"]], [self.schedule.pk])
+        self.assertContains(response, "Select this trip")
+        self.assertNotContains(response, 'id="h5Book"')  # nothing chosen yet
+
+    def test_unknown_route_shows_no_trips_found(self):
+        self.assertContains(self.search(origin="Kano"), "No trips found")
+
     def test_same_origin_and_destination_shows_no_trip(self):
-        response = self.search(destination="eastgate")
+        response = self.search(destination="lagos")
+        self.assertEqual(response.context["trips"], [])
         self.assertNotContains(response, 'id="h5Book"')
 
-    def test_trip_details_follow_the_route(self):
-        trip = self.search(origin="Millbrook", destination="Harbour City").context["trip"]
-        self.assertEqual(str(trip["fare"]), "15.00")
-        self.assertEqual(trip["bus_type"], "Standard")
-        self.assertEqual(trip["arrival"].strftime("%H:%M"), "11:10")  # 07:30 + 3 h 40 m
-
-    def test_seat_map_counts_and_taken_seats(self):
-        response = self.search()
+    def test_choosing_a_trip_shows_its_booking_panels(self):
+        response = self.search(schedule_id=self.schedule.pk)
         trip = response.context["trip"]
-        self.assertEqual((trip["total_seats"], trip["seats_left"]), (44, 18))
-        self.assertContains(response, 'aria-label="Seat 1A, taken"')
-        self.assertContains(response, 'data-seat="7A"')
-        self.assertContains(response, "18 of 44")
+        self.assertEqual(str(trip["fare"]), "24000.00")
+        self.assertEqual(trip["bus_type"], "Luxury")
+        self.assertEqual(trip["arrival"].strftime("%H:%M"), "13:45")  # 07:30 + 6 h 15 min
+        self.assertEqual((trip["total_seats"], trip["seats_left"]), (44, 44))
+        for marker in ('class="h5-trip-band"', 'id="h5Book"', 'name="passengers"', "js/booking.js"):
+            self.assertContains(response, marker)
 
-    def test_passenger_count_is_kept_within_limits(self):
-        for raw, expected in (("2", 2), ("0", 1), ("abc", 1), ("50", 10)):
+    def test_passenger_count_is_cleaned(self):
+        for raw, expected in (("2", 2), ("0", 1), ("abc", 1)):
             with self.subTest(passengers=raw):
-                self.assertEqual(self.search(passengers=raw).context["trip"]["passengers"], expected)
+                self.assertEqual(self.search(passengers=raw).context["passenger_count"], expected)
+        self.assertEqual(self.search(passengers="50").context["trips"], [])  # more than the 44 seats
 
     def test_missing_past_or_invalid_dates_fall_back_to_today(self):
-        from django.utils import timezone
-
-        today = timezone.localdate()
         for raw in ("", "2000-01-01", "2026-02-30", "not-a-date"):
             with self.subTest(date=raw):
-                self.assertEqual(self.search(date=raw).context["trip"]["date"], today)
+                self.assertEqual(self.search(date=raw).context["travel_date"], self.today)
 
 
 class DatabaseTests(TestCase):

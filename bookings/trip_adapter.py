@@ -4,6 +4,12 @@ from django.conf import settings
 from .services import get_available_seats
 
 
+def _duration_label(duration):
+    """timedelta(hours=6, minutes=15) -> "6 h 15 min" (str() would give "6:15:00")."""
+    hours, minutes = divmod(int(duration.total_seconds()) // 60, 60)
+    return f"{hours} h {minutes:02d} min" if minutes else f"{hours} h"
+
+
 def schedule_to_trip(schedule, passengers=1):
     """
     Convert a real Schedule object into the dictionary
@@ -36,7 +42,7 @@ def schedule_to_trip(schedule, passengers=1):
             arrival_datetime.date() > schedule.departure_date
         ),
 
-        "duration": str(duration),
+        "duration": _duration_label(duration),
 
         "bus_name": schedule.bus.name_or_plate,
         "bus_type": schedule.bus.get_bus_type_display(),

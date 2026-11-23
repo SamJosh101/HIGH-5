@@ -58,7 +58,7 @@ INSTALLED_APPS = [
     "bookings.apps.BookingsConfig",
     "dashboard.apps.DashboardConfig",
     # Third-party apps
-    'rest_framework',
+    "rest_framework",  # Django REST Framework: booking API (bookings/views.py)
 ]
 
 MIDDLEWARE = [
@@ -205,5 +205,3 @@ CURRENCY_SYMBOL = env("CURRENCY_SYMBOL", "₦")  # Naira (SRS Q7)
 # Cache-busting value added to CSS/JS links (see config/context_processors.py).
 # Leave empty in development; set it per release in production.
 ASSET_VERSION = env("ASSET_VERSION", "")
-
-BOOKING_CANCELLATION_CUTOFF_HOURS = 24
