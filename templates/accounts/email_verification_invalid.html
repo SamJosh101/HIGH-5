@@ -1,0 +1,7 @@
+{% extends "accounts/auth_base.html" %}
+{% block title %}Email verified{% endblock %}
+{% block auth_card %}
+<h1>Verification link invalid</h1>
+<p>This verification link is invalid or has expired. Request a fresh link and try again.</p>
+<a class="btn btn-primary" href="{% url 'accounts:resend_verification' %}">Request a new link</a>
+{% endblock %}

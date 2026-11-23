@@ -7,8 +7,11 @@ app_name = "accounts"
 
 urlpatterns = [
     path("register/", views.register, name="register"),
+    path("verify-email/<str:token>/", views.verify_email, name="verify_email"),
+    path("verify-email/", views.resend_verification, name="resend_verification"),
+    path("verify-email/sent/", views.verification_sent, name="verification_sent"),
     path("login/", views.HighFiveLoginView.as_view(), name="login"),
-    path("logout/", auth_views.LogoutView.as_view(), name="logout"),  # POST only (Django 5+)
+    path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("welcome/", views.after_login, name="after_login"),
     path("profile/", views.profile, name="profile"),
     path("password/change/", views.password_change, name="password_change"),

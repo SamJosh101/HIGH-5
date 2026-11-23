@@ -1,0 +1,11 @@
+{% extends "accounts/auth_base.html" %}
+{% block title %}Verify your email{% endblock %}
+{% block auth_tagline %}One quick step<br><em>to get on board.</em>{% endblock %}
+{% block auth_card %}
+<h1>Verify your email</h1>
+<p>Confirm that you own this email address to activate your HIGH 5 account.</p>
+<form method="post">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-primary">Verify email</button>
+</form>
+{% endblock %}
