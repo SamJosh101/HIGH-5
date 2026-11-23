@@ -57,6 +57,7 @@ Open `.env` and set:
 * `DJANGO_SECRET_KEY` – generate one with
   `python -c "from django.core.management.utils import get_random_secret_key as g; print(g())"`
 * `DB_PASSWORD` – the password you chose in step 4.
+* `DEMO_ADMIN_PASSWORD` and `DEMO_PASSENGER_PASSWORD` – passwords of your choice for the test accounts (step 7).
 
 `.env` is git-ignored. **Never commit it.**
 
@@ -65,11 +66,24 @@ Open `.env` and set:
 python manage.py migrate
 ```
 
-### 7. Create an administrator account
+### 7. Create the test accounts and sample trips
 ```powershell
-python manage.py createsuperuser
+python manage.py seed_demo
 ```
-You will be asked for email, full name and password. Superusers get the `ADMIN` role automatically.
+This creates two test accounts and a week of trips on five Nigerian routes (Lagos → Abuja, Lagos → Ibadan, Lagos → Benin City, Abuja → Kaduna, Port Harcourt → Enugu), so the homepage, Book a Trip and the admin pages have data straight away. It is safe to run again (for example the next week, to add new trips).
+
+**Default test logins**
+
+| Role | Email | Password |
+|---|---|---|
+| Administrator | `admin@high5.test` | the value of `DEMO_ADMIN_PASSWORD` in your `.env` |
+| Passenger | `passenger@high5.test` | the value of `DEMO_PASSENGER_PASSWORD` in your `.env` |
+
+The passwords are deliberately not written in the code or this README (no hard-coded passwords); each person sets them in their own `.env`. `seed_demo` only runs when `DJANGO_DEBUG=True`.
+
+To create your own administrator instead, run `python manage.py createsuperuser` (superusers get the `ADMIN` role and a verified email automatically).
+
+New passengers who sign up must click the link in their verification email before they can log in. In development that email is printed in the `runserver` terminal.
 
 ### 8. Run the development server
 ```powershell
@@ -95,10 +109,10 @@ Tests use a separate database (`test_high5_db`) that Django creates and deletes 
 | `/accounts/register/` · `/accounts/login/` | everyone | Passenger sign-up / log in |
 | `/accounts/profile/` | logged-in | Profile, change password |
 | `/accounts/password/reset/` | everyone | Password reset (email printed in terminal in development) |
-| `/bookings/search/` | logged-in users | Book a Trip / trip search *(Raheem – in progress)*; logged-out visitors are sent to login and back |
-| `/bookings/dashboard/` | passengers | Passenger dashboard *(Raheem – in progress)* |
-| `/transport/manage/` | admins | Routes/buses/schedules *(Daniel – in progress)* |
-| `/dashboard/` | admins | Admin dashboard *(Daniel – in progress)* |
+| `/bookings/search/` | passengers | Book a Trip: search, choose a trip, book seats; logged-out visitors are sent to login and back |
+| `/bookings/dashboard/` | passengers | My Bookings and ticket pages |
+| `/transport/manage/` | admins | Manage routes, buses and schedules |
+| `/dashboard/` | admins | Admin dashboard, bookings and reports |
 | `/django-admin/` | superusers | Django's built-in admin site |
 
 ## Project structure
@@ -115,4 +129,5 @@ docs/          architecture, database contract, MySQL setup script
 
 ## Project status
 **Phase 1 – Foundation:** done (project setup, custom user, authentication, role permissions, base templates, docs, tests).
-**Next:** agree on the transport/booking model contract → implement models → build the features.
+**Phase 2 – Core features:** transport management (Daniel), booking and cancellation (Raheem), email verification (Cross), real Popular Routes and test data (Sam).
+**Still to do:** admin "mark as paid", trips becoming Completed after departure, editing past schedules, optional seat selection.

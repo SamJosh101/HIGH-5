@@ -13,6 +13,22 @@ from django.utils.http import urlencode
 PASSWORD = "Str0ng-pass-123"
 
 
+def add_trip(origin, destination, fare="5000.00", hours=2, at=(8, 0), days=1, status="SCHEDULED"):
+    """One schedule (and its route and bus, if new) `days` from today."""
+    from datetime import time, timedelta
+
+    from django.utils import timezone
+
+    from transport.models import Bus, Route, Schedule
+
+    route, _ = Route.objects.get_or_create(
+        origin=origin, destination=destination, defaults={"distance_km": 100, "duration_estimate": timedelta(hours=hours)}
+    )
+    bus, _ = Bus.objects.get_or_create(name_or_plate=f"T-{route.pk}", defaults={"bus_type": "STANDARD", "total_seats": 44})
+    return Schedule.objects.create(route=route, bus=bus, departure_date=timezone.localdate() + timedelta(days=days),
+                                   departure_time=time(*at), fare=fare, status=status)
+
+
 def make_user(role):
     return get_user_model().objects.create_user(
         email=f"{role.lower()}@example.com", password=PASSWORD, full_name=f"Pat {role.title()}", role=role,
@@ -161,9 +177,14 @@ class PopularRouteAccessTests(TestCase):
         return f'{reverse("bookings:search")}?{urlencode({"origin": origin, "destination": destination})}'
 
     def test_routes_are_visible_and_link_to_the_trip_search_when_logged_out(self):
+        for origin, destination in (("Lagos", "Abuja"), ("Lagos", "Ibadan"), ("Abuja", "Kaduna"),
+                                    ("Port Harcourt", "Enugu"), ("Lagos", "Benin City")):
+            add_trip(origin, destination)
         response = self.client.get(reverse("home"))
         self.assertContains(response, 'id="routes"')
-        self.assertContains(response, f'href="{reverse("bookings:search")}?origin=', count=4)
+        self.assertContains(response, f'href="{reverse("bookings:search")}?origin=', count=4)  # top 4 only
+        self.assertContains(response, 'href="/bookings/search/?origin=Abuja&amp;destination=Kaduna"')
+        self.assertNotContains(response, "Port Harcourt")  # 5th route (same score, sorted by name)
 
     def test_logged_out_route_click_redirects_to_login_with_the_route_kept(self):
         response = self.client.get(self.route_url())
@@ -216,6 +237,44 @@ class PopularRouteAccessTests(TestCase):
                 response = self.client.get(reverse(name))
                 self.assertEqual(response.status_code, 302)
                 self.assertTrue(response["Location"].startswith(reverse("accounts:login")))
+
+
+class PopularRoutesDataTests(TestCase):
+    """Homepage cards come from real routes that can be booked this week, most booked first."""
+
+    def cards(self):
+        return self.client.get(reverse("home")).context["popular_routes"]
+
+    def test_card_shows_the_route_facts(self):
+        add_trip("Lagos", "Abuja", fare="25000.00", hours=10)
+        add_trip("Lagos", "Abuja", fare="21000.00", hours=10, at=(15, 0))
+        card = self.cards()[0]
+        self.assertEqual((card["origin"], card["destination"], card["duration"]), ("Lagos", "Abuja", "10 h"))
+        self.assertEqual((card["departures"], str(card["fare_from"])), (2, "21000.00"))
+        self.assertContains(self.client.get(reverse("home")), "₦21,000")
+
+    def test_most_booked_route_comes_first(self):
+        from bookings.models import Booking
+
+        add_trip("Lagos", "Ibadan", at=(7, 0))
+        add_trip("Lagos", "Ibadan", at=(12, 0))  # more departures, but no bookings
+        busy = add_trip("Abuja", "Kaduna")
+        Booking.objects.create(passenger=make_user("PASSENGER"), schedule=busy, seats_booked=1, total_amount="1.00")
+        self.assertEqual([c["origin"] for c in self.cards()], ["Abuja", "Lagos"])
+        self.assertContains(self.client.get(reverse("home")), "Most booked")
+
+    def test_only_bookable_routes_are_shown(self):
+        from transport.models import Schedule
+
+        add_trip("Lagos", "Abuja", status=Schedule.Status.CANCELLED)
+        add_trip("Lagos", "Ibadan", days=30)  # not this week
+        add_trip("Abuja", "Kaduna").route.__class__.objects.filter(origin="Abuja").update(is_active=False)
+        self.assertEqual(self.cards(), [])
+
+    def test_no_routes_shows_a_friendly_note(self):
+        response = self.client.get(reverse("home"))
+        self.assertContains(response, "New routes are being added")
+        self.assertNotContains(response, "Most booked")
 
 
 class BookTripPageTests(TestCase):

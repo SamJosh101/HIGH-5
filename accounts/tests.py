@@ -285,3 +285,46 @@ class RolePermissionTests(TestCase):
         for name in ["home", "accounts:login", "accounts:register"]:
             with self.subTest(url=name):
                 self.assertEqual(self.client.get(reverse(name)).status_code, 200)
+
+
+class SeedDemoTests(TestCase):
+    """`python manage.py seed_demo`: test logins with passwords from .env, and sample trips."""
+
+    def run_seed(self, **env):
+        import os
+        from io import StringIO
+        from unittest import mock
+
+        from django.core.management import call_command
+
+        with mock.patch.dict(os.environ, env), self.settings(DEBUG=True):
+            call_command("seed_demo", stdout=StringIO())
+
+    def test_creates_working_test_logins_and_trips(self):
+        from transport.models import Route, Schedule
+
+        self.run_seed(DEMO_ADMIN_PASSWORD="Admin-Test-Pass-1", DEMO_PASSENGER_PASSWORD="Rider-Test-Pass-1")
+        admin = User.objects.get(email="admin@high5.test")
+        self.assertTrue(admin.is_admin_role and admin.email_verified and admin.check_password("Admin-Test-Pass-1"))
+        rider = User.objects.get(email="passenger@high5.test")
+        self.assertTrue(rider.is_passenger_role and rider.check_password("Rider-Test-Pass-1"))
+        self.assertEqual(Route.objects.count(), 5)
+        self.assertEqual(Schedule.objects.count(), 9 * 7)  # 9 departures a day for 7 days
+        self.run_seed(DEMO_ADMIN_PASSWORD="Admin-Test-Pass-1", DEMO_PASSENGER_PASSWORD="Rider-Test-Pass-1")
+        self.assertEqual(Schedule.objects.count(), 9 * 7)  # running it again adds nothing
+
+    def test_refuses_without_passwords_in_env(self):
+        from django.core.management.base import CommandError
+
+        with self.assertRaisesMessage(CommandError, "DEMO_ADMIN_PASSWORD"):
+            self.run_seed(DEMO_ADMIN_PASSWORD="", DEMO_PASSENGER_PASSWORD="")
+        self.assertFalse(User.objects.filter(email="admin@high5.test").exists())
+
+    def test_refuses_in_production(self):
+        from io import StringIO
+
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+
+        with self.settings(DEBUG=False), self.assertRaisesMessage(CommandError, "development only"):
+            call_command("seed_demo", stdout=StringIO())

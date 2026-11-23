@@ -50,8 +50,8 @@
 </section>
 
 <!-- POPULAR ROUTES -->
-{% comment %} PLACEHOLDER DATA from config/views.py – replace with real Route objects
-   once Daniel's transport models exist. Prices use CURRENCY_SYMBOL (Naira, SRS Q7). {% endcomment %}
+{% comment %} Real routes from Daniel's transport models (config/views.py popular_routes).
+   Prices use CURRENCY_SYMBOL (Naira, SRS Q7). {% endcomment %}
 <section class="h5-section" id="routes">
   <div class="container-xl">
     <div class="h5-sec-head">
@@ -61,24 +61,25 @@
       </div>
       {% if user.is_authenticated %}<a class="h5-link h5-reveal" href="{% url 'bookings:search' %}">Search all routes <span>&rarr;</span></a>{% endif %}
     </div>
+    {# Real routes with departures this week, most booked first (config/views.py popular_routes). #}
     <div class="h5-routes">
-      {% for r in sample_routes %}
+      {% for r in popular_routes %}
       <a class="h5-route h5-reveal{% if forloop.first %} is-hot{% endif %}" style="--d: {{ forloop.counter0 }}00ms"
-         href="{% url 'bookings:search' %}?origin={{ r.0|urlencode }}&amp;destination={{ r.1|urlencode }}"
-         aria-label="{% if user.is_authenticated %}Find trips{% else %}Log in to find trips{% endif %} from {{ r.0 }} to {{ r.1 }}">
+         href="{% url 'bookings:search' %}?origin={{ r.origin|urlencode }}&amp;destination={{ r.destination|urlencode }}"
+         aria-label="{% if user.is_authenticated %}Find trips{% else %}Log in to find trips{% endif %} from {{ r.origin }} to {{ r.destination }}">
         <span class="h5-route-glow" aria-hidden="true"></span>
-        <span class="h5-r-line"><i class="f"></i><hr><span>{{ r.2 }}</span><hr><i></i><span class="h5-r-bus" aria-hidden="true"></span></span>
-        <span class="h5-cities"><span>{{ r.0 }}</span><span>{{ r.1 }}</span></span>
-        <span class="h5-r-meta"><span>{{ r.3 }} departures daily</span><span>{{ r.4 }}</span></span>
+        <span class="h5-r-line"><i class="f"></i><hr><span>{{ r.duration }}</span><hr><i></i><span class="h5-r-bus" aria-hidden="true"></span></span>
+        <span class="h5-cities"><span>{{ r.origin }}</span><span>{{ r.destination }}</span></span>
+        <span class="h5-r-meta"><span>{{ r.departures }} departure{{ r.departures|pluralize }} this week</span><span>{{ r.bus_type }}</span></span>
         <span class="h5-r-foot">
-          <span><small>From</small><b>{{ currency }}{{ r.5 }}</b></span>
-          {% if forloop.first %}<span class="h5-tag">Most booked</span>{% endif %}
+          <span><small>From</small><b>{{ currency }}{{ r.fare_from|floatformat:"-2g" }}</b></span>
+          {% if forloop.first and r.bookings %}<span class="h5-tag">Most booked</span>{% endif %}
           <span class="h5-arrow">&rarr;</span>
         </span>
       </a>
       {% endfor %}
     </div>
-    <p class="h5-note h5-reveal">{% if user.is_authenticated %}Tap a route to see its trips.{% else %}Tap a route to log in and see its trips.{% endif %}</p>
+    <p class="h5-note h5-reveal">{% if not popular_routes %}New routes are being added. Check back soon.{% elif user.is_authenticated %}Tap a route to see its trips.{% else %}Tap a route to log in and see its trips.{% endif %}</p>
   </div>
 </section>
 
