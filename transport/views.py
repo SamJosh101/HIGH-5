@@ -115,9 +115,11 @@ def bus_delete(request, pk):
     bus = get_object_or_404(Bus, pk=pk)
     if request.method != "POST":
         return redirect("transport:bus_list")
-    active_schedule = bus.schedules.filter(status=Schedule.Status.SCHEDULED).exists()
-    if active_schedule:
-        messages.error(request, "Bus cannot be deleted because active schedules are linked to it.")
+    # Any schedule (also cancelled or completed ones) keeps its bus: Schedule.bus is
+    # on_delete=PROTECT, so deleting would raise ProtectedError (a 500 page).
+    # Such buses are deactivated instead (Edit -> untick "Is active").
+    if bus.schedules.exists():
+        messages.error(request, "This bus has schedules, so it cannot be deleted. Deactivate it instead.")
     else:
         bus.delete()
         messages.success(request, "Bus deleted.")

@@ -1,5 +1,5 @@
 # Transport models – owner: Daniel.
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
@@ -48,9 +48,10 @@ class Route(models.Model):
 
 class Bus(models.Model):
     class BusType(models.TextChoices):
+        # The SRS examples (FR-12), as agreed in docs/DATABASE.md.
         STANDARD = "STANDARD", "Standard"
-        EXECUTIVE = "EXECUTIVE", "Executive"
-        VIP = "VIP", "VIP"
+        LUXURY = "LUXURY", "Luxury"
+        SLEEPER = "SLEEPER", "Sleeper"
 
     class Status(models.TextChoices):
         AVAILABLE = "AVAILABLE", "Available"
@@ -98,7 +99,8 @@ class Schedule(models.Model):
     bus = models.ForeignKey(Bus, on_delete=models.PROTECT, related_name="schedules")
     departure_date = models.DateField(db_index=True)
     departure_time = models.TimeField()
-    arrival_time = models.TimeField()
+    # No arrival field: arrival = departure + route.duration_estimate (docs/DATABASE.md),
+    # so a schedule can never disagree with its route about how long the trip takes.
     fare = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -134,12 +136,12 @@ class Schedule(models.Model):
 
     @property
     def arrival_datetime(self):
-        departure = self.departure_datetime
-        hours, minutes = self.arrival_time.hour, self.arrival_time.minute
-        departure_hour = departure.hour
-        if (hours, minutes) <= (departure_hour, departure.minute):
-            return departure + timedelta(days=1, hours=hours - departure_hour, minutes=minutes - departure.minute)
-        return departure + timedelta(hours=hours - departure_hour, minutes=minutes - departure.minute)
+        return self.departure_datetime + self.route.duration_estimate
+
+    @property
+    def arrival_time(self):
+        """Estimated arrival time of day (shown in lists and the admin)."""
+        return self.arrival_datetime.time()
 
     def clean(self):
         super().clean()
@@ -153,8 +155,6 @@ class Schedule(models.Model):
             raise ValidationError({"bus": "Bus must be active."})
         if self.departure_datetime < timezone.now():
             raise ValidationError({"departure_date": "Departure cannot be in the past."})
-        if self.arrival_time == self.departure_time:
-            raise ValidationError({"arrival_time": "Arrival time must differ from departure time."})
 
         departure = self.departure_datetime
         arrival = self.arrival_datetime

@@ -19,8 +19,7 @@ class BusForm(BootstrapFormMixin, forms.ModelForm):
 class ScheduleForm(BootstrapFormMixin, forms.ModelForm):
     departure_date = forms.DateField(widget=forms.DateInput(attrs={"type": "date"}))
     departure_time = forms.TimeField(widget=forms.TimeInput(attrs={"type": "time"}))
-    arrival_time = forms.TimeField(widget=forms.TimeInput(attrs={"type": "time"}))
 
     class Meta:
         model = Schedule
-        fields = ("route", "bus", "departure_date", "departure_time", "arrival_time", "fare", "status")
+        fields = ("route", "bus", "departure_date", "departure_time", "fare", "status")
