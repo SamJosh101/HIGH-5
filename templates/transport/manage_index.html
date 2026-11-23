@@ -1,12 +1,21 @@
 {% extends "base.html" %}
 {% block title %}Transport{% endblock %}
 {% block content %}
-{% comment %} Daniel: routes, buses, schedules and fares management goes here. {% endcomment %}
-<div class="h5-page-head"><h1>Transport</h1></div>
-<div class="h5-panel">
-  <div class="h5-empty">
-    <div class="h5-empty-ico"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 21v-3M16 21v-3"/><circle cx="8" cy="14.5" r=".8"/><circle cx="16" cy="14.5" r=".8"/></svg></div>
-    <h3>Routes, buses and schedules coming soon</h3>
-  </div>
+<div class="h5-admin-layout">
+  {% include "partials/admin_sidebar.html" %}
+  <section class="h5-admin-main">
+    <div class="h5-page-head"><h1>Transport</h1></div>
+    <div class="row g-3">
+      <div class="col-sm-6 col-lg-3"><div class="h5-stat"><span>Routes</span><strong>{{ route_count }}</strong></div></div>
+      <div class="col-sm-6 col-lg-3"><div class="h5-stat"><span>Buses</span><strong>{{ bus_count }}</strong></div></div>
+      <div class="col-sm-6 col-lg-3"><div class="h5-stat"><span>Schedules</span><strong>{{ schedule_count }}</strong></div></div>
+      <div class="col-sm-6 col-lg-3"><div class="h5-stat"><span>Today's departures</span><strong>{{ today_departures }}</strong></div></div>
+    </div>
+    <div class="h5-admin-actions">
+      <a class="btn btn-primary" href="{% url 'transport:route_list' %}">Manage routes</a>
+      <a class="btn btn-outline-light" href="{% url 'transport:bus_list' %}">Manage buses</a>
+      <a class="btn btn-outline-light" href="{% url 'transport:schedule_list' %}">Manage schedules</a>
+    </div>
+  </section>
 </div>
 {% endblock %}

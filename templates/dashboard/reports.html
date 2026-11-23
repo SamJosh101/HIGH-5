@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="h5-admin-layout">{% include "partials/admin_sidebar.html" %}<section class="h5-admin-main"><div class="h5-page-head"><h1>Reports</h1></div>
+<div class="h5-panel">
+<form class="h5-filter-row" method="get"><input class="form-control" type="date" name="start" value="{{ start }}"><input class="form-control" type="date" name="end" value="{{ end }}"><button class="btn btn-outline-light" type="submit">Filter</button></form>
+<div class="row g-3 mb-4"><div class="col-sm-6"><div class="h5-stat"><span>Paid bookings</span><strong>{{ total_bookings }}</strong></div></div><div class="col-sm-6"><div class="h5-stat"><span>Paid revenue</span><strong>₦{{ total_revenue }}</strong></div></div></div>
+<div class="d-flex justify-content-end mb-3">{% if booking_model_available %}<a class="btn btn-primary" href="?start={{ start }}&end={{ end }}&export=csv">Export CSV</a>{% endif %}</div>
+<h2>Daily revenue</h2><div class="table-responsive"><table class="table"><thead><tr><th>Date</th><th>Revenue</th></tr></thead><tbody>{% for row in daily %}<tr><td>{{ row.day }}</td><td>₦{{ row.revenue }}</td></tr>{% empty %}<tr><td colspan="2" class="h5-muted">No paid records.</td></tr>{% endfor %}</tbody></table></div>
+<h2 class="mt-4">Monthly revenue</h2><div class="table-responsive"><table class="table"><thead><tr><th>Month</th><th>Revenue</th></tr></thead><tbody>{% for row in monthly %}<tr><td>{{ row.month|date:"F Y" }}</td><td>₦{{ row.revenue }}</td></tr>{% empty %}<tr><td colspan="2" class="h5-muted">No paid records.</td></tr>{% endfor %}</tbody></table></div>
+</div></section></div>
+{% endblock %}

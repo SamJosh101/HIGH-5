@@ -1,12 +1,46 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-{% comment %} Daniel: bookings, revenue and report widgets go here. {% endcomment %}
-<div class="h5-page-head"><h1>Dashboard</h1></div>
-<div class="h5-panel">
-  <div class="h5-empty">
-    <div class="h5-empty-ico"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
-    <h3>Reports coming soon</h3>
-  </div>
+<div class="h5-admin-layout">
+  {% include "partials/admin_sidebar.html" %}
+  <section class="h5-admin-main">
+    <div class="h5-page-head"><h1>Dashboard</h1></div>
+    <div class="row g-3">
+      <div class="col-6 col-lg-3"><div class="h5-stat"><span>Total buses</span><strong>{{ total_buses }}</strong></div></div>
+      <div class="col-6 col-lg-3"><div class="h5-stat"><span>Total routes</span><strong>{{ total_routes }}</strong></div></div>
+      <div class="col-6 col-lg-3"><div class="h5-stat"><span>Total schedules</span><strong>{{ total_schedules }}</strong></div></div>
+      <div class="col-6 col-lg-3"><div class="h5-stat"><span>Total bookings</span><strong>{{ total_bookings }}</strong></div></div>
+      <div class="col-6 col-lg-3"><div class="h5-stat"><span>Total revenue</span><strong>₦{{ total_revenue }}</strong></div></div>
+      <div class="col-6 col-lg-3"><div class="h5-stat"><span>Today's departures</span><strong>{{ today_departures_count }}</strong></div></div>
+      <div class="col-6 col-lg-3"><div class="h5-stat"><span>Available buses</span><strong>{{ available_buses }}</strong></div></div>
+      <div class="col-6 col-lg-3"><div class="h5-stat"><span>Pending bookings</span><strong>{{ pending_bookings }}</strong></div></div>
+    </div>
+    <div class="row g-3 mt-1">
+      <div class="col-lg-6"><div class="h5-panel"><h2>Daily revenue</h2><canvas id="dailyRevenueChart"></canvas></div></div>
+      <div class="col-lg-6"><div class="h5-panel"><h2>Monthly revenue</h2><canvas id="monthlyRevenueChart"></canvas></div></div>
+      <div class="col-lg-6"><div class="h5-panel"><h2>Booking trends</h2><canvas id="bookingTrendsChart"></canvas></div></div>
+      <div class="col-lg-6"><div class="h5-panel"><h2>Route popularity</h2><canvas id="routePopularityChart"></canvas></div></div>
+    </div>
+    <div class="row g-3 mt-1">
+      <div class="col-lg-6"><div class="h5-panel"><h2>Recent bookings</h2>{% if recent_bookings %}<div class="table-responsive"><table class="table"><tbody>{% for booking in recent_bookings %}<tr><td>{{ booking.booking_ref }}</td><td>{{ booking.schedule.route }}</td><td>{{ booking.booked_at|date:"Y-m-d H:i" }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="h5-muted">No booking records.</p>{% endif %}</div></div>
+      <div class="col-lg-6"><div class="h5-panel"><h2>Upcoming departures</h2>{% if upcoming_departures %}<div class="table-responsive"><table class="table"><tbody>{% for schedule in upcoming_departures %}<tr><td>{{ schedule.route }}</td><td>{{ schedule.departure_date }} {{ schedule.departure_time }}</td><td>{{ schedule.bus.name_or_plate }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="h5-muted">No upcoming departures.</p>{% endif %}</div></div>
+    </div>
+  </section>
 </div>
+{{ daily_revenue_json|json_script:"dailyRevenueData" }}
+{{ monthly_revenue_json|json_script:"monthlyRevenueData" }}
+{{ booking_trends_json|json_script:"bookingTrendsData" }}
+{{ route_popularity_json|json_script:"routePopularityData" }}
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+const readData=(id)=>JSON.parse(document.getElementById(id).textContent);
+const base={responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8b93a3'}},y:{ticks:{color:'#8b93a3'}}}};
+const chart=(id,type,labels,values)=>new Chart(document.getElementById(id),{type,data:{labels,datasets:[{data:values,backgroundColor:'#2f6bff',borderColor:'#3b77ff',tension:.3}]},options:base});
+chart('dailyRevenueChart','line',readData('dailyRevenueData').map(x=>x.day),readData('dailyRevenueData').map(x=>x.revenue));
+chart('monthlyRevenueChart','bar',readData('monthlyRevenueData').map(x=>x.month),readData('monthlyRevenueData').map(x=>x.revenue));
+chart('bookingTrendsChart','line',readData('bookingTrendsData').map(x=>x.day),readData('bookingTrendsData').map(x=>x.count));
+chart('routePopularityChart','bar',readData('routePopularityData').map(x=>x.route),readData('routePopularityData').map(x=>x.count));
+</script>
 {% endblock %}

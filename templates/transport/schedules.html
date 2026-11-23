@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Schedules{% endblock %}
+{% block content %}
+<div class="h5-admin-layout">
+  {% include "partials/admin_sidebar.html" %}
+  <section class="h5-admin-main">
+    <div class="h5-page-head"><h1>Schedules</h1><a class="btn btn-primary" href="{% url 'transport:schedule_create' %}">Create schedule</a></div>
+    <div class="h5-panel">
+      <form class="h5-filter-row" method="get">
+        <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Route or bus">
+        <select class="form-select" name="period"><option value="upcoming"{% if period == 'upcoming' %} selected{% endif %}>Upcoming</option><option value="completed"{% if period == 'completed' %} selected{% endif %}>Completed</option><option value="cancelled"{% if period == 'cancelled' %} selected{% endif %}>Cancelled</option></select>
+        <button class="btn btn-outline-light" type="submit">Filter</button>
+      </form>
+      <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Route</th><th>Bus</th><th>Departure</th><th>Arrival</th><th>Fare</th><th>Status</th><th></th></tr></thead><tbody>
+      {% for schedule in schedules %}
+        <tr><td>{{ schedule.route }}</td><td>{{ schedule.bus.name_or_plate }}</td><td>{{ schedule.departure_date }} {{ schedule.departure_time }}</td><td>{{ schedule.arrival_time }}</td><td>₦{{ schedule.fare }}</td><td>{{ schedule.get_status_display }}</td><td class="text-end"><a class="btn btn-sm btn-outline-light" href="{% url 'transport:schedule_edit' schedule.pk %}">Edit</a>{% if schedule.status == 'SCHEDULED' %}<form class="d-inline" method="post" action="{% url 'transport:schedule_cancel' schedule.pk %}" onsubmit="return confirm('Cancel this schedule?')">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Cancel</button></form>{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="7" class="h5-empty">No schedules found.</td></tr>{% endfor %}
+      </tbody></table></div>
+      {% include "partials/pagination.html" with page=schedules %}
+    </div>
+  </section>
+</div>
+{% endblock %}

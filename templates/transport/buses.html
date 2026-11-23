@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Buses{% endblock %}
+{% block content %}
+<div class="h5-admin-layout">
+  {% include "partials/admin_sidebar.html" %}
+  <section class="h5-admin-main">
+    <div class="h5-page-head"><h1>Buses</h1><a class="btn btn-primary" href="{% url 'transport:bus_create' %}">Register bus</a></div>
+    <div class="h5-panel">
+      <form class="h5-filter-row" method="get">
+        <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Registration number">
+        <select class="form-select" name="status"><option value="">All statuses</option>{% for value, label in statuses %}<option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+        <button class="btn btn-outline-light" type="submit">Filter</button>
+      </form>
+      <div class="table-responsive">
+        <table class="table align-middle"><thead><tr><th>Registration</th><th>Type</th><th>Seats</th><th>Status</th><th>Active</th><th></th></tr></thead><tbody>
+        {% for bus in buses %}
+          <tr><td>{{ bus.name_or_plate }}</td><td>{{ bus.get_bus_type_display }}</td><td>{{ bus.total_seats }}</td><td>{{ bus.get_status_display }}</td><td>{% if bus.is_active %}Yes{% else %}No{% endif %}</td><td class="text-end"><a class="btn btn-sm btn-outline-light" href="{% url 'transport:bus_edit' bus.pk %}">Edit</a><form class="d-inline" method="post" action="{% url 'transport:bus_delete' bus.pk %}" onsubmit="return confirm('Delete this bus?')">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button></form></td></tr>
+        {% empty %}<tr><td colspan="6" class="h5-empty">No buses found.</td></tr>{% endfor %}
+        </tbody></table>
+      </div>
+      {% include "partials/pagination.html" with page=buses %}
+    </div>
+  </section>
+</div>
+{% endblock %}
