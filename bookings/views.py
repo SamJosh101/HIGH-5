@@ -1,18 +1,38 @@
 """
 Bookings module – OWNER: Raheem.
 
-Phase 1 contains placeholders only. Implement against the contract in
-docs/DATABASE.md and the rules in docs/ARCHITECTURE.md (atomic booking,
-select_for_update, ownership checks).
+Implements booking and passenger functionality against
+docs/DATABASE.md and docs/ARCHITECTURE.md.
 """
 
-from django.contrib.auth.decorators import login_required
+from datetime import timedelta
+
+from django.apps import apps
+from django.conf import settings
+from django.http import Http404
 from django.shortcuts import render
 from django.utils import timezone
 from django.utils.dateparse import parse_date
+from django.views.decorators.csrf import ensure_csrf_cookie
+
+from rest_framework import generics, status
+from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import BasePermission, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from accounts.permissions import passenger_required
-from config.sample_data import sample_trip
+
+from .models import Booking
+from .search_services import search_available_trips
+from .serializers import BookingCreateSerializer, BookingSerializer
+from .services import (
+    BookingError,
+    cancel_booking,
+    get_booking_details,
+    get_passenger_bookings,
+)
+from .trip_adapter import schedule_to_trip
 
 
 def _travel_date(raw):
@@ -32,33 +52,261 @@ def _passenger_count(raw):
         return 1
 
 
-@login_required
+@passenger_required
 def trip_search(request):
-    """Book a Trip page: trip search for logged-in users. TODO(Raheem).
+    """Search available trips and display the selected trip."""
 
-    Login is enforced here on the server. A logged-out visitor (for example one
-    who clicked a Popular Route on the homepage) is redirected to the login page
-    with ?next=<this URL incl. origin/destination>, and comes back to this
-    search, pre-filled, after logging in or signing up.
-    """
-    context = {}
     origin = request.GET.get("origin", "").strip()
     destination = request.GET.get("destination", "").strip()
-    if origin and destination and origin.lower() != destination.lower():
-        # PLACEHOLDER (Sam): one sample trip so the page design (trip band, seat
-        # map, booking summary) can be reviewed. Raheem: replace with the real
-        # matching schedules (FR-19, FR-20) and pass the chosen one as `trip`
-        # in the same shape as config.sample_data.sample_trip().
-        context["trip"] = sample_trip(
-            origin,
-            destination,
-            _travel_date(request.GET.get("date")),
-            _passenger_count(request.GET.get("passengers")),
+
+    travel_date = _travel_date(request.GET.get("date"))
+
+    passenger_count = _passenger_count(
+        request.GET.get("passengers")
+    )
+
+    context = {
+        "origin": origin,
+        "destination": destination,
+        "travel_date": travel_date,
+        "passenger_count": passenger_count,
+        "trips": [],
+        "trip": None,
+    }
+
+    if (
+        origin
+        and destination
+        and origin.lower() != destination.lower()
+    ):
+
+        # Retrieve matching schedules.
+        context["trips"] = search_available_trips(
+            origin=origin,
+            destination=destination,
+            travel_date=travel_date,
+            passengers=passenger_count,
         )
-    return render(request, "bookings/search.html", context)
+
+        # Check whether the passenger selected a particular schedule.
+        selected_schedule_id = request.GET.get("schedule_id")
+
+        if selected_schedule_id:
+
+            Schedule = apps.get_model(
+                "transport",
+                "Schedule"
+            )
+
+            try:
+                schedule = Schedule.objects.select_related(
+                    "route",
+                    "bus"
+                ).get(
+                    pk=selected_schedule_id,
+                    route__origin__iexact=origin,
+                    route__destination__iexact=destination,
+                    route__is_active=True,
+                    bus__is_active=True,
+                    departure_date=travel_date,
+                    status="SCHEDULED",
+                )
+
+                from .services import get_available_seats
+
+                available_seats = get_available_seats(schedule)
+
+                if available_seats >= passenger_count:
+
+                    context["trip"] = schedule_to_trip(
+                        schedule=schedule,
+                        passengers=passenger_count
+                    )
+
+            except (Schedule.DoesNotExist, ValueError, TypeError):
+                context["trip"] = None
+
+    return render(
+        request,
+        "bookings/search.html",
+        context
+    )
 
 
 @passenger_required
 def passenger_dashboard(request):
-    """Passenger landing page after login. TODO(Raheem)."""
-    return render(request, "bookings/dashboard.html")
+    """Display the passenger's upcoming trips and booking history."""
+
+    bookings = get_passenger_bookings(request.user)
+    now = timezone.now()
+
+    upcoming_bookings = []
+    booking_history = []
+
+    for booking in bookings:
+        departure = booking.schedule.departure_datetime
+
+        if booking.status == Booking.Status.CONFIRMED and departure > now:
+            upcoming_bookings.append(booking)
+        else:
+            booking_history.append(booking)
+
+    context = {
+        "upcoming_bookings": upcoming_bookings,
+        "booking_history": booking_history,
+    }
+
+    return render(
+        request,
+        "bookings/dashboard.html",
+        context,
+    )
+
+
+@ensure_csrf_cookie
+@passenger_required
+def ticket_detail(request, booking_ref):
+    """Display the details of one passenger's booking."""
+
+    try:
+        booking = get_booking_details(
+            passenger=request.user,
+            booking_ref=booking_ref,
+        )
+    except BookingError:
+        raise Http404("Booking not found.")
+
+    cutoff_hours = getattr(
+        settings,
+        "BOOKING_CANCELLATION_CUTOFF_HOURS",
+        24,
+    )
+
+    cancellation_cutoff = (
+        booking.schedule.departure_datetime
+        - timedelta(hours=cutoff_hours)
+    )
+
+    can_cancel = (
+        booking.status == Booking.Status.CONFIRMED
+        and timezone.now() < cancellation_cutoff
+    )
+
+    context = {
+        "booking": booking,
+        "can_cancel": can_cancel,
+        "cutoff_hours": cutoff_hours,
+    }
+
+    return render(
+        request,
+        "bookings/ticket_detail.html",
+        context,
+    )
+
+
+class IsPassenger(BasePermission):
+    """
+    Allow access only to authenticated passenger accounts.
+    """
+
+    message = "Only passengers can access this endpoint."
+
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and request.user.role == "PASSENGER"
+        )
+
+
+class BookingCreateAPIView(generics.CreateAPIView):
+    serializer_class = BookingCreateSerializer
+    permission_classes = [IsAuthenticated, IsPassenger]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            booking = serializer.save()
+
+        except BookingError as error:
+            raise ValidationError({
+                "booking": str(error)
+            })
+
+        # Return the actual saved booking, not the input data.
+        response_serializer = BookingSerializer(
+            booking,
+            context=self.get_serializer_context()
+        )
+
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_201_CREATED
+        )
+
+
+class BookingHistoryAPIView(generics.ListAPIView):
+    serializer_class = BookingSerializer
+    permission_classes = [IsAuthenticated, IsPassenger]
+
+    def get_queryset(self):
+        return get_passenger_bookings(self.request.user)
+
+
+class BookingDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsPassenger]
+
+    def get(self, request, booking_ref):
+        try:
+            booking = get_booking_details(
+                passenger=request.user,
+                booking_ref=booking_ref
+            )
+
+            serializer = BookingSerializer(booking)
+
+            return Response(serializer.data)
+
+        except BookingError as error:
+            return Response(
+                {"error": str(error)},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class BookingCancelAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsPassenger]
+
+    def post(self, request, booking_ref):
+        try:
+            booking = Booking.objects.get(
+                booking_ref=booking_ref,
+                passenger=request.user
+            )
+
+            cancelled_booking = cancel_booking(
+                passenger=request.user,
+                booking_id=booking.pk
+            )
+
+            serializer = BookingSerializer(cancelled_booking)
+
+            return Response({
+                "message": "Booking cancelled successfully.",
+                "booking": serializer.data
+            })
+
+        except Booking.DoesNotExist:
+            return Response(
+                {"error": "Booking not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        except BookingError as error:
+            return Response(
+                {"error": str(error)},
+                status=status.HTTP_400_BAD_REQUEST
+            )

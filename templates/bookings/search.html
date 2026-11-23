@@ -1,36 +1,204 @@
+
 {% extends "base.html" %}
 {% load static %}
+
 {% block title %}Book a trip{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/booking.css' %}?v={{ ASSET_VERSION }}">{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/booking.css' %}?v={{ ASSET_VERSION }}">
+{% endblock %}
+
 {% block main_class %}h5-main h5-wide{% endblock %}
+
 {% block content %}
-{% comment %} Raheem: render the matching schedules below the search bar.
-   The search bar keeps the submitted values (partials/search_bar.html).
-   The trip band and the three panels below are shared pieces in
-   templates/partials/booking/; they expect `trip` shaped like
-   config.sample_data.sample_trip() (currently sample data). {% endcomment %}
-<div class="h5-page-head"><h1>Book a trip</h1></div>
+
+<div class="h5-page-head">
+    <h1>Book a trip</h1>
+</div>
+
 {% include "partials/search_bar.html" %}
 
-{% if trip %}
-  {% include "partials/booking/trip_band.html" %}
-  {% comment %} Raheem: set `action` to the booking URL once it exists and remove
-     data-preview. The view must re-check seats, passengers and the total. {% endcomment %}
-  <form class="h5-book" id="h5Book" method="post" action="" novalidate
-        data-preview="{% if trip.is_sample %}true{% endif %}"
-        data-fare="{{ trip.fare }}" data-currency="{{ trip.currency }}" data-max-passengers="{{ trip.max_passengers }}">
-    {% csrf_token %}
-    {% include "partials/booking/trip_details.html" %}
-    {% include "partials/booking/seat_map.html" %}
-    {% include "partials/booking/booking_summary.html" %}
-  </form>
-{% else %}
-  <div class="h5-panel mt-4">
-    <div class="h5-empty">
-      <div class="h5-empty-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>
-      <h3>{% if request.GET.origin %}No trips found yet{% else %}Search to see trips{% endif %}</h3>
+
+{% if trips %}
+
+    {% if not trip %}
+
+        <div class="h5-page-head">
+            <h2>Available trips</h2>
+            <p>
+                {{ trips|length }} trip{{ trips|length|pluralize }}
+                found for your search.
+            </p>
+        </div>
+
+        <div class="h5-trip-results">
+
+            {% for available_trip in trips %}
+
+                <article class="h5-book-panel h5-result-card">
+
+                    <div class="h5-book-head">
+                        <h2>
+                            {{ available_trip.origin }}
+                            &rarr;
+                            {{ available_trip.destination }}
+                        </h2>
+
+                        <span>{{ available_trip.bus_type }} coach</span>
+                    </div>
+
+                    <div class="h5-trip-times">
+
+                        <div>
+                            <b>{{ available_trip.departure|time:"H:i" }}</b>
+                            <strong>{{ available_trip.origin }}</strong>
+                            <small>Departure</small>
+                        </div>
+
+                        <div class="h5-trip-arrow" aria-hidden="true">
+                            &rarr;
+                        </div>
+
+                        <div>
+                            <b>{{ available_trip.arrival|time:"H:i" }}</b>
+                            <strong>{{ available_trip.destination }}</strong>
+                            <small>Estimated arrival</small>
+                        </div>
+
+                    </div>
+
+                    <div class="h5-trip-facts">
+
+                        <div>
+                            <dt>Bus</dt>
+                            <dd>{{ available_trip.bus_name }}</dd>
+                        </div>
+
+                        <div>
+                            <dt>Departure date</dt>
+                            <dd>{{ available_trip.date|date:"D, j M Y" }}</dd>
+                        </div>
+
+                        <div>
+                            <dt>Duration</dt>
+                            <dd>{{ available_trip.duration }}</dd>
+                        </div>
+
+                        <div>
+                            <dt>Available seats</dt>
+                            <dd>{{ available_trip.seats_left }}</dd>
+                        </div>
+
+                        <div>
+                            <dt>Fare per passenger</dt>
+                            <dd>
+                                {{ available_trip.currency }}{{ available_trip.fare|floatformat:2 }}
+                            </dd>
+                        </div>
+
+                    </div>
+
+                    <form method="get">
+
+                        <input
+                            type="hidden"
+                            name="origin"
+                            value="{{ origin }}"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="destination"
+                            value="{{ destination }}"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="date"
+                            value="{{ travel_date|date:'Y-m-d' }}"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="passengers"
+                            value="{{ passenger_count }}"
+                        >
+
+                        <input
+                            type="hidden"
+                            name="schedule_id"
+                            value="{{ available_trip.schedule_id }}"
+                        >
+
+                        <button type="submit" class="h5-sum-go">
+                            Select this trip
+                            <span aria-hidden="true">&rarr;</span>
+                        </button>
+
+                    </form>
+
+                </article>
+
+            {% endfor %}
+
+        </div>
+
+    {% endif %}
+
+{% elif request.GET.origin %}
+
+    <div class="h5-panel mt-4">
+        <div class="h5-empty">
+            <div class="h5-empty-ico">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="7"/>
+                    <path d="M20 20l-3.5-3.5"/>
+                </svg>
+            </div>
+
+            <h3>No trips found</h3>
+            <p>Try another route or departure date.</p>
+        </div>
     </div>
-  </div>
+
 {% endif %}
+
+
+{% if trip %}
+
+    {% include "partials/booking/trip_band.html" %}
+
+  <form
+    class="h5-book"
+    id="h5Book"
+    method="post"
+    action="{% url 'bookings:booking-create' %}"
+    novalidate
+    data-preview="{% if trip.is_sample %}true{% else %}false{% endif %}"
+    data-create-url="{% url 'bookings:booking-create' %}"
+    data-schedule-id="{{ trip.schedule_id }}"
+    data-fare="{{ trip.fare }}"
+    data-currency="{{ trip.currency }}"
+    data-max-passengers="{{ trip.max_passengers }}"
+>
+
+        {% csrf_token %}
+
+        {% include "partials/booking/trip_details.html" %}
+
+        {% include "partials/booking/seat_map.html" %}
+
+        {% include "partials/booking/passenger_details.html" %}
+
+        {% include "partials/booking/booking_summary.html" %}
+
+    </form>
+
+{% endif %}
+
 {% endblock %}
-{% block extra_js %}<script src="{% static 'js/booking.js' %}?v={{ ASSET_VERSION }}"></script>{% endblock %}
+
+
+{% block extra_js %}
+<script src="{% static 'js/booking.js' %}?v={{ ASSET_VERSION }}"></script>
+{% endblock %}
