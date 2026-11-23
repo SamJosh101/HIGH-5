@@ -1,0 +1,12 @@
+<aside class="h5-admin-sidebar" aria-label="Admin navigation">
+  <nav>
+    <a href="{% url 'dashboard:home' %}"{% if request.resolver_match.namespace == 'dashboard' %} class="active"{% endif %}>Dashboard</a>
+    <a href="{% url 'transport:route_list' %}"{% if 'routes' in request.path %} class="active"{% endif %}>Routes</a>
+    <a href="{% url 'transport:bus_list' %}"{% if 'buses' in request.path %} class="active"{% endif %}>Buses</a>
+    <a href="{% url 'transport:schedule_list' %}"{% if 'schedules' in request.path %} class="active"{% endif %}>Schedules</a>
+    <a href="{% url 'transport:schedule_list' %}">Bus Assignments</a>
+    <a href="{% url 'transport:schedule_list' %}">Fare Management</a>
+    <a href="{% url 'dashboard:bookings' %}">Bookings</a>
+    <a href="{% url 'dashboard:reports' %}">Reports</a>
+  </nav>
+</aside>

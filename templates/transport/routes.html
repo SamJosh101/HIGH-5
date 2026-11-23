@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Routes{% endblock %}
+{% block content %}
+<div class="h5-admin-layout">
+  {% include "partials/admin_sidebar.html" %}
+  <section class="h5-admin-main">
+    <div class="h5-page-head"><h1>Routes</h1><a class="btn btn-primary" href="{% url 'transport:route_create' %}">Add route</a></div>
+    <div class="h5-panel">
+      <form class="h5-filter-row" method="get">
+        <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Search origin or destination">
+        <select class="form-select" name="active">
+          <option value="">All statuses</option>
+          <option value="active"{% if active == 'active' %} selected{% endif %}>Active</option>
+          <option value="inactive"{% if active == 'inactive' %} selected{% endif %}>Inactive</option>
+        </select>
+        <button class="btn btn-outline-light" type="submit">Filter</button>
+      </form>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>Origin</th><th>Destination</th><th>Distance</th><th>Duration</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+          {% for route in routes %}
+            <tr>
+              <td>{{ route.origin }}</td><td>{{ route.destination }}</td><td>{{ route.distance_km }} km</td><td>{{ route.duration_estimate }}</td>
+              <td>{% if route.is_active %}<span class="h5-status success">Active</span>{% else %}<span class="h5-status">Inactive</span>{% endif %}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-light" href="{% url 'transport:route_edit' route.pk %}">Edit</a>
+                <form class="d-inline" method="post" action="{% url 'transport:route_delete' route.pk %}" onsubmit="return confirm('Delete this route?')">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button></form>
+              </td>
+            </tr>
+          {% empty %}<tr><td colspan="6" class="h5-empty">No routes found.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% include "partials/pagination.html" with page=routes %}
+    </div>
+  </section>
+</div>
+{% endblock %}

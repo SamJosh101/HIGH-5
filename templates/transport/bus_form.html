@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="h5-admin-layout">{% include "partials/admin_sidebar.html" %}<section class="h5-admin-main"><div class="h5-page-head"><h1>{{ title }}</h1></div><div class="h5-panel h5-panel-narrow"><form method="post">{% csrf_token %}{% include "partials/form_fields.html" %}<div class="d-flex gap-2"><button class="btn btn-primary" type="submit">Save</button><a class="btn btn-outline-light" href="{% url 'transport:bus_list' %}">Cancel</a></div></form></div></section></div>
+{% endblock %}
