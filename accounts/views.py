@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.contrib.auth import views as auth_views
 from django.contrib.auth import REDIRECT_FIELD_NAME, get_user_model
@@ -5,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.core import signing
 from django.core.cache import cache
 from django.shortcuts import redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_http_methods
 
@@ -25,13 +27,19 @@ User = get_user_model()
 
 
 def _safe_next(request):
-    """Return a same-site next URL only; reject open redirects."""
+    """The ?next= page to return to, only if it is on this site (no open redirects)."""
     target = request.POST.get(REDIRECT_FIELD_NAME) or request.GET.get(REDIRECT_FIELD_NAME, "")
     if target and url_has_allowed_host_and_scheme(
         target, allowed_hosts={request.get_host()}, require_https=request.is_secure()
     ):
         return target
     return ""
+
+
+def _login_url(next_url=""):
+    """The login page, keeping a safe ?next= so the user returns where they started."""
+    url = reverse("accounts:login")
+    return f"{url}?{urlencode({REDIRECT_FIELD_NAME: next_url})}" if next_url else url
 
 
 @require_http_methods(["GET", "POST"])
@@ -42,30 +50,36 @@ def register(request):
     form = PassengerRegistrationForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = form.save()
-        send_email_verification(request, user)
-        messages.success(request, "Check your inbox for a link to verify your email address.")
+        # Not logged in yet: the user must first prove they own the email address.
+        # The link carries `next`, so after verifying and logging in they land on
+        # the page they started from (for example a Popular Route search).
+        send_email_verification(request, user, next_url)
+        messages.success(request, "Account created. Check your inbox for a link to verify your email address.")
         return redirect("accounts:verification_sent")
     return render(request, "accounts/register.html", {"form": form, "next": next_url})
 
 
 @require_http_methods(["GET", "POST"])
 def verify_email(request, token):
-    """Show a confirmation page on GET; verify only after explicit POST."""
+    """GET shows a confirm button; only the POST verifies. (Email scanners and link
+    previews open links automatically; they must not verify accounts by accident.)"""
     try:
         payload = verify_email_verification_token(token)
         user = User.objects.get(pk=payload["user_id"], email=payload["email"])
-    except (signing.BadSignature, signing.SignatureExpired, KeyError, TypeError, ValueError, User.DoesNotExist):
+    except (signing.BadSignature, KeyError, TypeError, ValueError, User.DoesNotExist):
+        # SignatureExpired is a kind of BadSignature, so expired links land here too.
         return render(request, "accounts/email_verification_invalid.html", status=400)
 
+    next_url = _safe_next(request)
     if request.method == "POST":
         if not user.email_verified:
             user.email_verified = True
             user.save(update_fields=["email_verified"])
-        messages.success(request, "Your email is verified. You can now sign in.")
-        return redirect("accounts:login")
+        messages.success(request, "Your email is verified. You can now log in.")
+        return redirect(_login_url(next_url))
     if user.email_verified:
-        return redirect("accounts:login")
-    return render(request, "accounts/email_verification_confirm.html", {"token": token})
+        return redirect(_login_url(next_url))
+    return render(request, "accounts/email_verification_confirm.html")
 
 
 @require_http_methods(["GET", "POST"])
@@ -73,7 +87,8 @@ def resend_verification(request):
     form = EmailVerificationResendForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         email = form.cleaned_data["email"].lower()
-        # Avoid leaking account existence and limit repeated sends per email/IP.
+        # Same answer whether or not the account exists (like password reset), and
+        # at most one email per address and IP address per minute.
         throttle_key = f"email-verification:{request.META.get('REMOTE_ADDR', '')}:{email}"
         if cache.add(throttle_key, True, timeout=60):
             user = User.objects.filter(email__iexact=email, email_verified=False, is_active=True).first()
@@ -95,6 +110,7 @@ class HighFiveLoginView(auth_views.LoginView):
 
 @login_required
 def after_login(request):
+    """Send each role to its own landing page."""
     if request.user.is_admin_role:
         return redirect("dashboard:home")
     return redirect("bookings:dashboard")
@@ -111,6 +127,8 @@ def profile(request):
     return render(request, "accounts/profile.html", {"form": form})
 
 
+# Password reset/change use Django's secure built-in views
+# (signed, single-use, expiring tokens).
 password_reset = auth_views.PasswordResetView.as_view(
     template_name="accounts/password_reset_form.html",
     form_class=StyledPasswordResetForm,

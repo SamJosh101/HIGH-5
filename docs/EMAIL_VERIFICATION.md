@@ -17,3 +17,7 @@ Test the complete flow with:
 ```powershell
 python manage.py test accounts
 ```
+
+## Returning to the page the user started from
+
+If the visitor signed up from a protected page (for example by clicking a Popular Route, which sends them to log in with `?next=`), the verification link keeps that safe `next` address. After confirming, they go to the login page with the same `next`, and after logging in they land on the pre-filled Book a Trip search. Unsafe `next` values (other websites) are dropped by `accounts.views._safe_next`.

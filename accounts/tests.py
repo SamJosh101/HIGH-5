@@ -1,5 +1,8 @@
+import re
+
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.core.cache import cache
 from django.db import IntegrityError
 from django.test import TestCase
 from django.urls import reverse
@@ -9,11 +12,14 @@ PASSWORD = "Str0ng-Test-Pass!"
 
 
 def make_passenger(email="pat@example.com", **kw):
+    kw.setdefault("email_verified", True)  # most tests need a user who can log in
     return User.objects.create_user(email=email, password=PASSWORD, full_name="Pat Passenger", **kw)
 
 
 def make_admin(email="ada@example.com"):
-    return User.objects.create_user(email=email, password=PASSWORD, full_name="Ada Admin", role=User.Role.ADMIN)
+    return User.objects.create_user(
+        email=email, password=PASSWORD, full_name="Ada Admin", role=User.Role.ADMIN, email_verified=True
+    )
 
 
 class UserModelTests(TestCase):
@@ -64,12 +70,16 @@ class RegistrationTests(TestCase):
     def test_register_page_loads(self):
         self.assertEqual(self.client.get(self.url).status_code, 200)
 
-    def test_register_creates_passenger_and_logs_in(self):
+    def test_register_creates_unverified_passenger_and_sends_link(self):
         response = self.client.post(self.url, self.form_data())
-        self.assertRedirects(response, reverse("accounts:after_login"), fetch_redirect_response=False)
+        self.assertRedirects(response, reverse("accounts:verification_sent"))
         user = User.objects.get(email="rider@example.com")
         self.assertEqual(user.role, User.Role.PASSENGER)
-        self.assertEqual(int(self.client.session["_auth_user_id"]), user.pk)
+        self.assertFalse(user.email_verified)
+        self.assertNotIn("_auth_user_id", self.client.session)  # not logged in until verified
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["rider@example.com"])
+        self.assertIn("/accounts/verify-email/", mail.outbox[0].body)
 
     def test_cannot_register_as_admin_by_tampering(self):
         self.client.post(self.url, self.form_data(role="ADMIN", is_staff="on", is_superuser="on"))
@@ -142,6 +152,73 @@ class LoginLogoutTests(TestCase):
         strict = Client(enforce_csrf_checks=True)
         response = strict.post(reverse("accounts:login"), {"username": "pat@example.com", "password": PASSWORD})
         self.assertEqual(response.status_code, 403)
+
+
+def verification_link(message):
+    """The /accounts/verify-email/... address (with any ?next=) from a sent email."""
+    return re.search(r"https?://[^/\s]+(/accounts/verify-email/\S+)", message.body).group(1)
+
+
+class EmailVerificationTests(TestCase):
+    def setUp(self):
+        cache.clear()  # the resend throttle uses the cache
+
+    def register(self, **extra):
+        data = {"full_name": "New Rider", "email": "rider@example.com", "phone": "+2348000000000",
+                "password1": PASSWORD, "password2": PASSWORD, **extra}
+        self.client.post(reverse("accounts:register"), data)
+        return User.objects.get(email="rider@example.com")
+
+    def test_unverified_user_cannot_log_in(self):
+        self.register()
+        response = self.client.post(reverse("accounts:login"), {"username": "rider@example.com", "password": PASSWORD})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Verify your email address")
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_opening_the_link_does_not_verify_but_confirming_does(self):
+        user = self.register()
+        link = verification_link(mail.outbox[0])
+        self.assertContains(self.client.get(link), "Verify email")
+        user.refresh_from_db()
+        self.assertFalse(user.email_verified)  # link scanners only GET
+        response = self.client.post(link)
+        self.assertRedirects(response, reverse("accounts:login"))
+        user.refresh_from_db()
+        self.assertTrue(user.email_verified)
+        response = self.client.post(reverse("accounts:login"), {"username": "rider@example.com", "password": PASSWORD})
+        self.assertIn("_auth_user_id", self.client.session)
+
+    def test_tampered_or_unknown_token_is_rejected(self):
+        response = self.client.get(reverse("accounts:verify_email", kwargs={"token": "not-a-real-token"}))
+        self.assertEqual(response.status_code, 400)
+        self.assertContains(response, "invalid or has expired", status_code=400)
+
+    def test_verification_sent_page_is_not_mistaken_for_a_token(self):
+        response = self.client.get(reverse("accounts:verification_sent"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Check your email")
+
+    def test_resend_gives_the_same_answer_for_unknown_emails(self):
+        self.register()
+        mail.outbox.clear()
+        for email in ("rider@example.com", "nobody@example.com"):
+            with self.subTest(email=email):
+                response = self.client.post(reverse("accounts:resend_verification"), {"email": email})
+                self.assertRedirects(response, reverse("accounts:verification_sent"))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["rider@example.com"])
+
+    def test_resend_is_throttled(self):
+        self.register()
+        mail.outbox.clear()
+        for _ in range(3):
+            self.client.post(reverse("accounts:resend_verification"), {"email": "rider@example.com"})
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_superuser_is_verified_automatically(self):
+        admin = User.objects.create_superuser(email="root@example.com", password=PASSWORD, full_name="Root")
+        self.assertTrue(admin.email_verified)
 
 
 class PasswordResetTests(TestCase):

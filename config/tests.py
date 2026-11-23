@@ -1,7 +1,10 @@
 """Project-wide configuration and database tests."""
 
+import re
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.db import connection
 from django.test import TestCase
 from django.urls import reverse
@@ -12,7 +15,8 @@ PASSWORD = "Str0ng-pass-123"
 
 def make_user(role):
     return get_user_model().objects.create_user(
-        email=f"{role.lower()}@example.com", password=PASSWORD, full_name=f"Pat {role.title()}", role=role
+        email=f"{role.lower()}@example.com", password=PASSWORD, full_name=f"Pat {role.title()}", role=role,
+        email_verified=True,
     )
 
 
@@ -176,17 +180,26 @@ class PopularRouteAccessTests(TestCase):
         self.assertContains(response, 'value="Eastgate"')
         self.assertContains(response, 'value="Riverside"')
 
-    def test_after_sign_up_the_user_lands_on_the_prefilled_search(self):
+    def sign_up(self, next_url):
         data = {"full_name": "New Rider", "email": "rider@example.com", "phone": "+2348000000000",
-                "password1": PASSWORD, "password2": PASSWORD, "next": self.route_url()}
+                "password1": PASSWORD, "password2": PASSWORD, "next": next_url}
         response = self.client.post(reverse("accounts:register"), data)
-        self.assertRedirects(response, self.route_url())
+        self.assertRedirects(response, reverse("accounts:verification_sent"))
+        return re.search(r"https?://[^/\s]+(/accounts/verify-email/\S+)", mail.outbox[-1].body).group(1)
+
+    def test_after_sign_up_the_user_lands_on_the_prefilled_search(self):
+        # sign up -> verify email -> log in -> back on the route the visitor clicked
+        link = self.sign_up(self.route_url())
+        login_url = f'{reverse("accounts:login")}?{urlencode({"next": self.route_url()})}'
+        self.assertRedirects(self.client.post(link), login_url)
+        response = self.client.post(login_url, {"username": "rider@example.com", "password": PASSWORD}, follow=True)
+        self.assertEqual(response.redirect_chain[-1][0], self.route_url())
+        self.assertContains(response, 'value="Eastgate"')
 
     def test_sign_up_ignores_next_urls_on_other_sites(self):
-        data = {"full_name": "New Rider", "email": "rider@example.com", "phone": "+2348000000000",
-                "password1": PASSWORD, "password2": PASSWORD, "next": "https://evil.example.com/"}
-        response = self.client.post(reverse("accounts:register"), data)
-        self.assertRedirects(response, reverse("accounts:after_login"), fetch_redirect_response=False)
+        link = self.sign_up("https://evil.example.com/")
+        self.assertNotIn("evil.example.com", link)
+        self.assertRedirects(self.client.post(link), reverse("accounts:login"))
 
     def test_logged_in_route_click_opens_book_a_trip_prefilled(self):
         self.client.force_login(make_user("PASSENGER"))
