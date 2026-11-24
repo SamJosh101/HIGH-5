@@ -73,7 +73,7 @@ Enter an email, full name and password when asked. Nothing is hard-coded: each p
 
 **Default login for testing:** log in at `/accounts/login/` with the email and password you chose above. To add trips, log in as that administrator and add a route, a bus and a schedule under `/transport/manage/`. For a passenger login, sign up at `/accounts/register/`.
 
-New passengers who sign up must click the link in their verification email before they can log in. In development that email is printed in the `runserver` terminal.
+New passengers who sign up get a 6-digit code by email and must enter it at `/accounts/verify-email/` before they can log in (see [docs/EMAIL_VERIFICATION.md](docs/EMAIL_VERIFICATION.md)). In development the email, with the code, is printed in the `runserver` terminal.
 
 ### 8. Run the development server
 ```powershell

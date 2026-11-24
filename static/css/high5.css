@@ -376,6 +376,7 @@ h1, h2, h3, h4, h5 { color: var(--hx-text); }
 .h5-auth-links { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 22px; font-size: 14px; color: var(--hx-muted); }
 .h5-auth-links a { color: #c9d6ff; text-decoration: none; }
 .h5-auth-links a:hover { color: #fff; text-decoration: underline; }
+.h5-code-input { font-size: 26px !important; letter-spacing: .5em; text-align: center; font-variant-numeric: tabular-nums; }
 .h5-auth-done { text-align: center; }
 .h5-auth-done p { color: var(--hx-muted); margin: -14px 0 26px; }
 

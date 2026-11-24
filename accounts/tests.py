@@ -1,4 +1,5 @@
 import re
+from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.core import mail
@@ -6,6 +7,9 @@ from django.core.cache import cache
 from django.db import IntegrityError
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
+
+from .models import EmailVerificationCode
 
 User = get_user_model()
 PASSWORD = "Str0ng-Test-Pass!"
@@ -70,16 +74,16 @@ class RegistrationTests(TestCase):
     def test_register_page_loads(self):
         self.assertEqual(self.client.get(self.url).status_code, 200)
 
-    def test_register_creates_unverified_passenger_and_sends_link(self):
+    def test_register_creates_unverified_passenger_and_sends_code(self):
         response = self.client.post(self.url, self.form_data())
-        self.assertRedirects(response, reverse("accounts:verification_sent"))
+        self.assertRedirects(response, reverse("accounts:verify_email"))
         user = User.objects.get(email="rider@example.com")
         self.assertEqual(user.role, User.Role.PASSENGER)
         self.assertFalse(user.email_verified)
         self.assertNotIn("_auth_user_id", self.client.session)  # not logged in until verified
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ["rider@example.com"])
-        self.assertIn("/accounts/verify-email/", mail.outbox[0].body)
+        self.assertRegex(mail.outbox[0].body, r"\b\d{6}\b")
 
     # The next two tests come from Cross's feature/email-validation-verification branch.
     def test_invalid_email_syntax_is_rejected(self):
@@ -168,9 +172,9 @@ class LoginLogoutTests(TestCase):
         self.assertEqual(response.status_code, 403)
 
 
-def verification_link(message):
-    """The /accounts/verify-email/... address (with any ?next=) from a sent email."""
-    return re.search(r"https?://[^/\s]+(/accounts/verify-email/\S+)", message.body).group(1)
+def emailed_code(message):
+    """The 6-digit code from a verification email."""
+    return re.search(r"\b(\d{6})\b", message.body).group(1)
 
 
 class EmailVerificationTests(TestCase):
@@ -183,6 +187,13 @@ class EmailVerificationTests(TestCase):
         self.client.post(reverse("accounts:register"), data)
         return User.objects.get(email="rider@example.com")
 
+    def enter_code(self, code, email="rider@example.com"):
+        return self.client.post(reverse("accounts:verify_email"), {"email": email, "code": code})
+
+    def wrong(self, code):
+        """A 6-digit code that is not `code`."""
+        return f"{(int(code) + 1) % 1_000_000:06d}"
+
     def test_unverified_user_cannot_log_in(self):
         self.register()
         response = self.client.post(reverse("accounts:login"), {"username": "rider@example.com", "password": PASSWORD})
@@ -190,28 +201,69 @@ class EmailVerificationTests(TestCase):
         self.assertContains(response, "Verify your email address")
         self.assertNotIn("_auth_user_id", self.client.session)
 
-    def test_opening_the_link_does_not_verify_but_confirming_does(self):
+    def test_code_page_is_prefilled_after_sign_up(self):
+        self.register()
+        response = self.client.get(reverse("accounts:verify_email"))
+        self.assertContains(response, 'value="rider@example.com"')
+        self.assertContains(response, 'autocomplete="one-time-code"')
+
+    def test_correct_code_verifies_and_allows_login(self):
         user = self.register()
-        link = verification_link(mail.outbox[0])
-        self.assertContains(self.client.get(link), "Verify email")
-        user.refresh_from_db()
-        self.assertFalse(user.email_verified)  # link scanners only GET
-        response = self.client.post(link)
+        response = self.enter_code(emailed_code(mail.outbox[0]))
         self.assertRedirects(response, reverse("accounts:login"))
         user.refresh_from_db()
         self.assertTrue(user.email_verified)
-        response = self.client.post(reverse("accounts:login"), {"username": "rider@example.com", "password": PASSWORD})
+        self.assertFalse(EmailVerificationCode.objects.exists())  # a used code is deleted
+        self.client.post(reverse("accounts:login"), {"username": "rider@example.com", "password": PASSWORD})
         self.assertIn("_auth_user_id", self.client.session)
 
-    def test_tampered_or_unknown_token_is_rejected(self):
-        response = self.client.get(reverse("accounts:verify_email", kwargs={"token": "not-a-real-token"}))
-        self.assertEqual(response.status_code, 400)
-        self.assertContains(response, "invalid or has expired", status_code=400)
+    def test_code_is_stored_only_as_a_hash(self):
+        user = self.register()
+        code = emailed_code(mail.outbox[0])
+        self.assertNotIn(code, user.verification_code.code_hash)
 
-    def test_verification_sent_page_is_not_mistaken_for_a_token(self):
-        response = self.client.get(reverse("accounts:verification_sent"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Check your email")
+    def test_wrong_code_is_rejected(self):
+        user = self.register()
+        response = self.enter_code(self.wrong(emailed_code(mail.outbox[0])))
+        self.assertContains(response, "wrong or has expired")
+        user.refresh_from_db()
+        self.assertFalse(user.email_verified)
+
+    def test_code_stops_working_after_five_wrong_tries(self):
+        user = self.register()
+        code = emailed_code(mail.outbox[0])
+        for _ in range(5):
+            self.enter_code(self.wrong(code))
+        self.assertContains(self.enter_code(code), "wrong or has expired")
+        user.refresh_from_db()
+        self.assertFalse(user.email_verified)
+
+    def test_expired_code_is_rejected(self):
+        user = self.register()
+        user.verification_code.expires_at = timezone.now() - timedelta(seconds=1)
+        user.verification_code.save()
+        self.assertContains(self.enter_code(emailed_code(mail.outbox[0])), "wrong or has expired")
+
+    def test_code_only_works_for_its_own_account(self):
+        self.register()
+        User.objects.create_user(email="other@example.com", password=PASSWORD, full_name="Other")
+        response = self.enter_code(emailed_code(mail.outbox[0]), email="other@example.com")
+        self.assertContains(response, "wrong or has expired")
+
+    def test_code_must_be_six_digits(self):
+        self.register()
+        self.assertContains(self.enter_code("12ab56"), "Enter the 6 digits")
+
+    def test_new_code_replaces_the_old_one(self):
+        user = self.register()
+        old = emailed_code(mail.outbox[0])
+        self.client.post(reverse("accounts:resend_verification"), {"email": "rider@example.com"})
+        new = emailed_code(mail.outbox[-1])
+        if new != old:  # 1 in a million they match
+            self.assertContains(self.enter_code(old), "wrong or has expired")
+        self.assertRedirects(self.enter_code(new), reverse("accounts:login"))
+        user.refresh_from_db()
+        self.assertTrue(user.email_verified)
 
     def test_resend_gives_the_same_answer_for_unknown_emails(self):
         self.register()
@@ -219,7 +271,7 @@ class EmailVerificationTests(TestCase):
         for email in ("rider@example.com", "nobody@example.com"):
             with self.subTest(email=email):
                 response = self.client.post(reverse("accounts:resend_verification"), {"email": email})
-                self.assertRedirects(response, reverse("accounts:verification_sent"))
+                self.assertRedirects(response, reverse("accounts:verify_email"))
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ["rider@example.com"])
 

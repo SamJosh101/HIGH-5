@@ -205,22 +205,22 @@ class PopularRouteAccessTests(TestCase):
         data = {"full_name": "New Rider", "email": "rider@example.com", "phone": "+2348000000000",
                 "password1": PASSWORD, "password2": PASSWORD, "next": next_url}
         response = self.client.post(reverse("accounts:register"), data)
-        self.assertRedirects(response, reverse("accounts:verification_sent"))
-        return re.search(r"https?://[^/\s]+(/accounts/verify-email/\S+)", mail.outbox[-1].body).group(1)
+        self.assertRedirects(response, reverse("accounts:verify_email"))
+        code = re.search(r"\b(\d{6})\b", mail.outbox[-1].body).group(1)
+        return lambda: self.client.post(reverse("accounts:verify_email"), {"email": "rider@example.com", "code": code})
 
     def test_after_sign_up_the_user_lands_on_the_prefilled_search(self):
-        # sign up -> verify email -> log in -> back on the route the visitor clicked
-        link = self.sign_up(self.route_url())
+        # sign up -> enter the emailed code -> log in -> back on the route the visitor clicked
+        enter_code = self.sign_up(self.route_url())
         login_url = f'{reverse("accounts:login")}?{urlencode({"next": self.route_url()})}'
-        self.assertRedirects(self.client.post(link), login_url)
+        self.assertRedirects(enter_code(), login_url)
         response = self.client.post(login_url, {"username": "rider@example.com", "password": PASSWORD}, follow=True)
         self.assertEqual(response.redirect_chain[-1][0], self.route_url())
         self.assertContains(response, 'value="Eastgate"')
 
     def test_sign_up_ignores_next_urls_on_other_sites(self):
-        link = self.sign_up("https://evil.example.com/")
-        self.assertNotIn("evil.example.com", link)
-        self.assertRedirects(self.client.post(link), reverse("accounts:login"))
+        enter_code = self.sign_up("https://evil.example.com/")
+        self.assertRedirects(enter_code(), reverse("accounts:login"))
 
     def test_logged_in_route_click_opens_book_a_trip_prefilled(self):
         self.client.force_login(make_user("PASSENGER"))
