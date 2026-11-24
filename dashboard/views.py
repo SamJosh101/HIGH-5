@@ -5,10 +5,13 @@ from decimal import Decimal
 
 from django.apps import apps
 from django.core.paginator import Paginator
+from django.contrib import messages
+from django.db import transaction
+from django.views.decorators.http import require_POST
 from django.db.models import Q, Sum
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from accounts.permissions import admin_required
@@ -211,6 +214,52 @@ def booking_detail(request, pk):
         return render(request, "dashboard/booking_detail.html", {"booking_model_available": False})
     booking = get_object_or_404(Booking.objects.select_related("schedule__route", "schedule__bus", "passenger"), pk=pk)
     return render(request, "dashboard/booking_detail.html", {"booking": booking, "booking_model_available": True})
+
+
+@admin_required
+@require_POST
+def mark_booking_paid(request, pk):
+    Booking = get_booking_model()
+
+    if not Booking:
+        messages.error(request, "Booking records are unavailable.")
+        return redirect("dashboard:bookings")
+
+    with transaction.atomic():
+        booking = get_object_or_404(
+            Booking.objects.select_for_update(),
+            pk=pk
+        )
+
+        if booking.status == Booking.Status.CANCELLED:
+            messages.error(
+                request,
+                "Cancelled bookings cannot be marked as paid."
+            )
+
+        elif booking.payment_status == Booking.PaymentStatus.PAID:
+            messages.info(
+                request,
+                "This booking has already been marked as paid."
+            )
+
+        elif booking.payment_status != Booking.PaymentStatus.PENDING:
+            messages.error(
+                request,
+                "Only pending payments can be marked as paid."
+            )
+
+        else:
+            booking.payment_status = Booking.PaymentStatus.PAID
+            booking.save(update_fields=["payment_status"])
+
+            messages.success(
+                request,
+                f"Booking {booking.booking_ref} has been marked as paid."
+            )
+
+    return redirect("dashboard:booking_detail", pk=pk)
+
 
 
 @admin_required
