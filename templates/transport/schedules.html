@@ -1,23 +1,37 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 {% block title %}Schedules{% endblock %}
-{% block content %}
-<div class="h5-admin-layout">
-  {% include "partials/admin_sidebar.html" %}
-  <section class="h5-admin-main">
-    <div class="h5-page-head"><h1>Schedules</h1><a class="btn btn-primary" href="{% url 'transport:schedule_create' %}">Create schedule</a></div>
-    <div class="h5-panel">
-      <form class="h5-filter-row" method="get">
-        <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Route or bus">
-        <select class="form-select" name="period"><option value="upcoming"{% if period == 'upcoming' %} selected{% endif %}>Upcoming</option><option value="completed"{% if period == 'completed' %} selected{% endif %}>Completed</option><option value="cancelled"{% if period == 'cancelled' %} selected{% endif %}>Cancelled</option></select>
-        <button class="btn btn-outline-light" type="submit">Filter</button>
-      </form>
-      <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Route</th><th>Bus</th><th>Departure</th><th>Arrival</th><th>Fare</th><th>Status</th><th></th></tr></thead><tbody>
-      {% for schedule in schedules %}
-        <tr><td>{{ schedule.route }}</td><td>{{ schedule.bus.name_or_plate }}</td><td>{{ schedule.departure_date }} {{ schedule.departure_time }}</td><td>{{ schedule.arrival_time }}</td><td>₦{{ schedule.fare }}</td><td>{{ schedule.get_status_display }}</td><td class="text-end"><a class="btn btn-sm btn-outline-light" href="{% url 'transport:schedule_edit' schedule.pk %}">Edit</a>{% if schedule.status == 'SCHEDULED' %}<form class="d-inline" method="post" action="{% url 'transport:schedule_cancel' schedule.pk %}" onsubmit="return confirm('Cancel this schedule?')">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Cancel</button></form>{% endif %}</td></tr>
-      {% empty %}<tr><td colspan="7" class="h5-empty">No schedules found.</td></tr>{% endfor %}
-      </tbody></table></div>
-      {% include "partials/pagination.html" with page=schedules %}
-    </div>
-  </section>
-</div>
+{% block admin_eyebrow %}<p>Trips passengers can book</p>{% endblock %}
+{% block heading %}Schedules{% endblock %}
+{% block admin_actions %}<a class="h5-btn-white" href="{% url 'transport:schedule_create' %}">+ New schedule</a>{% endblock %}
+
+{% block admin_content %}
+<form class="h5-filters" method="get" role="search">
+  <input class="form-control h5-search-input" type="search" name="q" value="{{ q }}" placeholder="Route or bus" aria-label="Route or bus">
+  <input type="hidden" name="period" value="{{ period }}">
+  <a class="h5-chip{% if period == 'upcoming' %} active{% endif %}" href="?q={{ q|urlencode }}&amp;period=upcoming">Upcoming</a>
+  <a class="h5-chip{% if period == 'completed' %} active{% endif %}" href="?q={{ q|urlencode }}&amp;period=completed">Completed</a>
+  <a class="h5-chip{% if period == 'cancelled' %} active{% endif %}" href="?q={{ q|urlencode }}&amp;period=cancelled">Cancelled</a>
+</form>
+
+<table class="h5-table">
+  <thead><tr><th>Departs</th><th>Route</th><th>Bus</th><th>Fare</th><th>Status</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+  <tbody>
+  {% for schedule in schedules %}
+    <tr>
+      <td><span class="h5-time">{{ schedule.departure_time|time:"H:i" }}</span><small>{{ schedule.departure_date|date:"D j M Y" }}</small></td>
+      <td>{{ schedule.route.origin }}<span class="h5-arrow">→</span>{{ schedule.route.destination }}<small>arrives {{ schedule.arrival_time|time:"H:i" }}</small></td>
+      <td data-label="Bus"><span class="h5-ref">{{ schedule.bus.name_or_plate }}</span><small>{{ schedule.bus.get_bus_type_display }}</small></td>
+      <td data-label="Fare">{{ CURRENCY }}{{ schedule.fare|floatformat:"-2g" }}</td>
+      <td><span class="h5-status{% if schedule.status == 'SCHEDULED' %} success{% elif schedule.status == 'COMPLETED' %} info{% endif %}">{{ schedule.get_status_display }}</span></td>
+      <td class="h5-actions">
+        <a href="{% url 'transport:schedule_edit' schedule.pk %}">Edit</a>
+        {% if schedule.status == 'SCHEDULED' %}<form method="post" action="{% url 'transport:schedule_cancel' schedule.pk %}" onsubmit="return confirm('Cancel this schedule?')">{% csrf_token %}<button class="danger" type="submit">Cancel trip</button></form>{% endif %}
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="h5-empty">No schedules found.{% if period == 'upcoming' and not q %} <a href="{% url 'transport:schedule_create' %}">Create a schedule</a>{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% include "partials/pagination.html" with page=schedules %}
 {% endblock %}

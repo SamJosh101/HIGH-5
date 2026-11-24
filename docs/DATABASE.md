@@ -1,7 +1,7 @@
 # HIGH 5 – Shared Database Contract
 
 > **Status (23 Nov 2026):** all models below are **implemented** on the
-> `integration` branch (accounts 0001–0003, transport 0001–0002, bookings 0001).
+> `integration` branch (accounts 0001–0004, transport 0001–0002, bookings 0001).
 > Fields added during implementation are marked *(added)*. The open questions
 > have been checked against the **SRS v1.0 (17 Nov 2026)** – see §5; FR/NFR
 > numbers below refer to that document. Changes to this file go through a Pull
@@ -51,6 +51,17 @@ Golden rules:
 | is_staff / is_superuser | (inherited) | only control access to `/django-admin/` |
 
 Helpers: `user.is_admin_role`, `user.is_passenger_role`.
+
+### `accounts.EmailVerificationCode` *(added, migration 0004)*
+The 6-digit sign-up code (one live code per user; see docs/EMAIL_VERIFICATION.md).
+
+| Field | Type | Notes |
+|---|---|---|
+| user | OneToOne → User | `on_delete=CASCADE`, `related_name="verification_code"` |
+| code_hash | CharField(128) | hash of the code (never the code itself) |
+| expires_at | DateTimeField | 10 minutes after it was sent |
+| attempts | PositiveSmallIntegerField | wrong tries so far; the code stops working at 5 |
+| created_at | DateTimeField | `auto_now_add=True` |
 Permission helpers: `accounts.permissions` → `admin_required`, `passenger_required`, `AdminRequiredMixin`, `PassengerRequiredMixin`.
 
 ## 2. `transport` models (implemented – owner: Daniel)

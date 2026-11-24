@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HIGH 5 – admin demo</title>
+<link rel="stylesheet" href="../../static/css/high5.css">
+<style>
+  /* ---------- demo of the new admin look (sample data only) ---------- */
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--hx-bg); color: var(--hx-text); }
+  .demo-tag { position: fixed; right: 18px; bottom: 18px; z-index: 2000; font-size: 12px; color: var(--hx-amber);
+    border: 1px solid rgba(245,165,36,.35); background: rgba(245,165,36,.08); padding: 6px 12px; border-radius: 999px; }
+
+  .ax { display: grid; grid-template-columns: 240px minmax(0,1fr); gap: 56px; max-width: 1320px;
+    margin: 0 auto; padding: 128px clamp(20px,4vw,56px) 80px; }
+
+  /* Sidebar = a bus route: each page is a stop on the line */
+  .ax-side { position: sticky; top: 120px; height: fit-content; }
+  .ax-side small { display: block; color: var(--hx-muted); font-size: 11px; letter-spacing: .22em; text-transform: uppercase; margin: 0 0 18px 2px; }
+  .ax-line { position: relative; list-style: none; margin: 0 0 34px; padding: 0; }
+  .ax-line::before { content: ""; position: absolute; left: 7px; top: 10px; bottom: 10px; width: 2px;
+    background: linear-gradient(var(--hx-blue), rgba(47,107,255,.12)); }
+  .ax-line a { position: relative; display: flex; align-items: center; gap: 16px; padding: 10px 0; color: var(--hx-muted);
+    text-decoration: none; font-size: 15px; transition: color .2s; }
+  .ax-line a::before { content: ""; width: 16px; height: 16px; border-radius: 50%; flex: none; z-index: 1;
+    background: var(--hx-bg); border: 2px solid rgba(255,255,255,.22); transition: .2s; }
+  .ax-line a:hover { color: #fff; }
+  .ax-line a:hover::before { border-color: var(--hx-blue-2); }
+  .ax-line a.on { color: #fff; font-weight: 600; }
+  .ax-line a.on::before { background: var(--hx-blue); border-color: var(--hx-blue); box-shadow: 0 0 0 5px rgba(47,107,255,.18), 0 0 18px var(--hx-glow); }
+
+  /* Page heading */
+  .ax-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; margin-bottom: 48px; }
+  .ax-head p { margin: 0 0 6px; color: var(--hx-muted); font-size: 14px; }
+  .ax-head h1 { margin: 0; font-size: clamp(34px,4vw,46px); font-weight: 300; letter-spacing: -.5px; }
+  .ax-btn { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 11px 22px; font-size: 14px;
+    font-weight: 600; text-decoration: none; border: 0; background: #fff; color: #0b0d12; }
+  .ax-btn.ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.22); }
+
+  /* Key numbers: one calm strip instead of eight boxes */
+  .ax-kpis { display: grid; grid-template-columns: repeat(4,1fr); border-top: 1px solid var(--hx-line); border-bottom: 1px solid var(--hx-line); margin-bottom: 64px; }
+  .ax-kpi { padding: 28px 28px 30px; }
+  .ax-kpi + .ax-kpi { border-left: 1px solid var(--hx-line); }
+  .ax-kpi:first-child { padding-left: 0; }
+  .ax-kpi span { color: var(--hx-muted); font-size: 13px; }
+  .ax-kpi strong { display: block; font-size: 38px; font-weight: 300; margin-top: 8px; letter-spacing: -.5px; }
+  .ax-kpi em { font-style: normal; font-size: 13px; color: #9ff0c4; }
+  .ax-kpi em.amber { color: var(--hx-amber); }
+
+  /* Sections */
+  .ax-sec { margin-bottom: 64px; }
+  .ax-sec-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 22px; }
+  .ax-sec-head h2 { margin: 0; font-size: 20px; font-weight: 500; }
+  .ax-sec-head a { color: var(--hx-muted); font-size: 14px; text-decoration: none; }
+  .ax-sec-head a:hover { color: #fff; }
+
+  .ax-tabs { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--hx-panel); border: 1px solid var(--hx-line); }
+  .ax-tabs button { border: 0; background: transparent; color: var(--hx-muted); padding: 7px 16px; border-radius: 999px; font-size: 13px; cursor: pointer; }
+  .ax-tabs button.on { background: rgba(47,107,255,.2); color: #fff; }
+  .ax-chart { border-radius: 22px; background: var(--hx-panel); border: 1px solid var(--hx-line); padding: 30px 30px 18px; }
+  .ax-chart svg { width: 100%; height: 220px; display: block; }
+  .ax-chart .axis { display: flex; justify-content: space-between; color: var(--hx-muted); font-size: 12px; padding-top: 12px; }
+
+  .ax-two { display: grid; grid-template-columns: 1.25fr 1fr; gap: 48px; }
+
+  /* Departure board */
+  .ax-board { list-style: none; margin: 0; padding: 0; }
+  .ax-board li { display: grid; grid-template-columns: 74px 1fr auto; align-items: center; gap: 20px; padding: 18px 0; border-bottom: 1px solid var(--hx-line); }
+  .ax-board li:first-child { border-top: 1px solid var(--hx-line); }
+  .ax-time { font-size: 22px; font-weight: 300; font-variant-numeric: tabular-nums; }
+  .ax-route { font-size: 15px; }
+  .ax-route b { font-weight: 500; }
+  .ax-route .arrow { color: var(--hx-blue-2); margin: 0 8px; }
+  .ax-route small { display: block; color: var(--hx-muted); font-size: 13px; margin-top: 3px; }
+  .ax-seats { text-align: right; font-size: 13px; color: var(--hx-muted); min-width: 110px; }
+  .ax-bar { display: block; width: 110px; margin-left: auto; height: 4px; border-radius: 4px; background: rgba(255,255,255,.08); margin-top: 7px; overflow: hidden; }
+  .ax-bar i { display: block; height: 100%; background: var(--hx-blue); border-radius: 4px; }
+  .ax-bar i.full { background: var(--hx-amber); }
+
+  /* Recent bookings */
+  .ax-list { list-style: none; margin: 0; padding: 0; }
+  .ax-list li { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 17px 0; border-bottom: 1px solid var(--hx-line); }
+  .ax-list li:first-child { border-top: 1px solid var(--hx-line); }
+  .ax-ref { font-family: Consolas, monospace; font-size: 13px; color: #c9d6ff; letter-spacing: .04em; }
+  .ax-list small { display: block; color: var(--hx-muted); font-size: 13px; margin-top: 3px; }
+  .ax-pill { font-size: 12px; padding: 4px 11px; border-radius: 999px; white-space: nowrap; }
+  .ax-pill.paid { color: #9ff0c4; background: rgba(61,220,132,.1); }
+  .ax-pill.pending { color: var(--hx-amber); background: rgba(245,165,36,.1); }
+  .ax-pill.off { color: var(--hx-muted); background: rgba(255,255,255,.06); }
+
+  /* Routes page */
+  .ax-filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 28px; }
+  .ax-search { flex: 1 1 280px; max-width: 380px; background: var(--hx-field); border: 1px solid var(--hx-line); color: #fff;
+    border-radius: 999px; padding: 11px 20px; font-size: 14px; }
+  .ax-chip { border: 1px solid var(--hx-line); color: var(--hx-muted); background: transparent; border-radius: 999px; padding: 8px 16px; font-size: 13px; }
+  .ax-chip.on { color: #fff; border-color: rgba(47,107,255,.6); background: rgba(47,107,255,.14); }
+  .ax-table { width: 100%; border-collapse: collapse; }
+  .ax-table th { text-align: left; font-weight: 500; color: var(--hx-muted); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; padding: 0 0 14px; }
+  .ax-table td { padding: 22px 0; border-top: 1px solid var(--hx-line); font-size: 15px; vertical-align: middle; }
+  .ax-table td small { display: block; color: var(--hx-muted); font-size: 13px; margin-top: 3px; }
+  .ax-actions { text-align: right; white-space: nowrap; opacity: .35; transition: opacity .2s; }
+  .ax-table tr:hover .ax-actions { opacity: 1; }
+  .ax-actions a { color: #c9d6ff; text-decoration: none; font-size: 14px; margin-left: 18px; }
+  .ax-actions a.danger { color: #ff9b9b; }
+
+  .ax-divider { max-width: 1320px; margin: 0 auto; padding: 0 clamp(20px,4vw,56px); color: var(--hx-muted); font-size: 12px; letter-spacing: .22em; text-transform: uppercase; }
+  .ax-divider hr { border: 0; border-top: 1px dashed rgba(255,255,255,.15); margin: 0 0 14px; }
+  .ax.second { padding-top: 56px; }
+</style>
+</head>
+<body>
+
+<header class="h5-hnav" id="h5Nav">
+  <div class="h5-hnav-inner">
+    <a class="h5-logo" href="#"><span class="h5-logo-mark">H5</span><span class="h5-logo-text">HIGH&nbsp;5</span></a>
+    <nav class="h5-pill-nav" aria-label="Main">
+      <a class="active" href="#">Dashboard</a>
+      <a href="#">Transport</a>
+    </nav>
+    <div class="h5-hnav-right">
+      <button class="h5-user" type="button"><span class="h5-avatar">S</span><span>Sam</span></button>
+    </div>
+  </div>
+</header>
+
+<!-- ======================= SCREEN 1: DASHBOARD ======================= -->
+<div class="ax">
+  <aside class="ax-side" aria-label="Admin navigation">
+    <small>Admin</small>
+    <ul class="ax-line">
+      <li><a class="on" href="#">Dashboard</a></li>
+      <li><a href="#">Bookings</a></li>
+      <li><a href="#">Reports</a></li>
+    </ul>
+    <small>Transport</small>
+    <ul class="ax-line">
+      <li><a href="#">Routes</a></li>
+      <li><a href="#">Buses</a></li>
+      <li><a href="#">Schedules</a></li>
+    </ul>
+  </aside>
+
+  <main>
+    <div class="ax-head">
+      <div><p>Tuesday, 24 November</p><h1>Good morning, Sam</h1></div>
+      <a class="ax-btn" href="#">+ New schedule</a>
+    </div>
+
+    <div class="ax-kpis">
+      <div class="ax-kpi"><span>Revenue this month</span><strong>₦4.82m</strong><em>+12% on October</em></div>
+      <div class="ax-kpi"><span>Bookings this month</span><strong>312</strong><em>+8% on October</em></div>
+      <div class="ax-kpi"><span>Departures today</span><strong>9</strong><em class="amber">2 almost full</em></div>
+      <div class="ax-kpi"><span>Awaiting payment</span><strong>14</strong><em class="amber">to mark as paid</em></div>
+    </div>
+
+    <section class="ax-sec">
+      <div class="ax-sec-head">
+        <h2>Revenue</h2>
+        <div class="ax-tabs"><button class="on">Daily</button><button>Monthly</button><button>Bookings</button></div>
+      </div>
+      <div class="ax-chart">
+        <svg viewBox="0 0 700 220" preserveAspectRatio="none" aria-label="Revenue chart (sample)">
+          <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f6bff" stop-opacity=".35"/><stop offset="1" stop-color="#2f6bff" stop-opacity="0"/></linearGradient></defs>
+          <g stroke="rgba(255,255,255,.06)"><line x1="0" y1="55" x2="700" y2="55"/><line x1="0" y1="110" x2="700" y2="110"/><line x1="0" y1="165" x2="700" y2="165"/></g>
+          <path d="M0,160 C60,150 90,120 140,128 S230,90 280,104 S370,60 420,78 S520,40 560,58 S650,30 700,36 L700,220 L0,220 Z" fill="url(#g)"/>
+          <path d="M0,160 C60,150 90,120 140,128 S230,90 280,104 S370,60 420,78 S520,40 560,58 S650,30 700,36" fill="none" stroke="#3b77ff" stroke-width="2.5"/>
+          <circle cx="700" cy="36" r="5" fill="#3b77ff"/>
+        </svg>
+        <div class="axis"><span>18 Nov</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span><span>Today</span></div>
+      </div>
+    </section>
+
+    <div class="ax-two">
+      <section class="ax-sec">
+        <div class="ax-sec-head"><h2>Next departures</h2><a href="#">All schedules →</a></div>
+        <ul class="ax-board">
+          <li><span class="ax-time">12:00</span><span class="ax-route"><b>Lagos</b><span class="arrow">→</span><b>Ibadan</b><small>H5-LAG-02 · Standard · arrives 14:00</small></span><span class="ax-seats">38 / 44 seats<span class="ax-bar"><i class="full" style="width:86%"></i></span></span></li>
+          <li><span class="ax-time">14:00</span><span class="ax-route"><b>Port Harcourt</b><span class="arrow">→</span><b>Enugu</b><small>H5-PHC-01 · Sleeper · arrives 18:30</small></span><span class="ax-seats">12 / 30 seats<span class="ax-bar"><i style="width:40%"></i></span></span></li>
+          <li><span class="ax-time">15:00</span><span class="ax-route"><b>Abuja</b><span class="arrow">→</span><b>Kaduna</b><small>H5-ABJ-01 · Standard · arrives 18:00</small></span><span class="ax-seats">21 / 44 seats<span class="ax-bar"><i style="width:48%"></i></span></span></li>
+          <li><span class="ax-time">17:00</span><span class="ax-route"><b>Lagos</b><span class="arrow">→</span><b>Ibadan</b><small>H5-LAG-02 · Standard · arrives 19:00</small></span><span class="ax-seats">9 / 44 seats<span class="ax-bar"><i style="width:20%"></i></span></span></li>
+        </ul>
+      </section>
+
+      <section class="ax-sec">
+        <div class="ax-sec-head"><h2>Recent bookings</h2><a href="#">All bookings →</a></div>
+        <ul class="ax-list">
+          <li><div><span class="ax-ref">H5-7KQ2M9XA</span><small>Lagos → Abuja · 2 seats</small></div><span class="ax-pill pending">Pending</span></li>
+          <li><div><span class="ax-ref">H5-P4ZT8WQE</span><small>Lagos → Ibadan · 1 seat</small></div><span class="ax-pill paid">Paid</span></li>
+          <li><div><span class="ax-ref">H5-M2RD6HJN</span><small>Abuja → Kaduna · 3 seats</small></div><span class="ax-pill paid">Paid</span></li>
+          <li><div><span class="ax-ref">H5-X9CB3LUF</span><small>Port Harcourt → Enugu · 1 seat</small></div><span class="ax-pill off">Cancelled</span></li>
+        </ul>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- ======================= SCREEN 2: ROUTES ======================= -->
+<div class="ax-divider"><hr>Second page in the demo: Routes</div>
+<div class="ax second">
+  <aside class="ax-side" aria-label="Admin navigation">
+    <small>Admin</small>
+    <ul class="ax-line">
+      <li><a href="#">Dashboard</a></li>
+      <li><a href="#">Bookings</a></li>
+      <li><a href="#">Reports</a></li>
+    </ul>
+    <small>Transport</small>
+    <ul class="ax-line">
+      <li><a class="on" href="#">Routes</a></li>
+      <li><a href="#">Buses</a></li>
+      <li><a href="#">Schedules</a></li>
+    </ul>
+  </aside>
+
+  <main>
+    <div class="ax-head">
+      <div><p>5 routes · 4 active</p><h1>Routes</h1></div>
+      <a class="ax-btn" href="#">+ Add route</a>
+    </div>
+
+    <div class="ax-filters">
+      <input class="ax-search" type="search" placeholder="Search a city">
+      <button class="ax-chip on">All</button><button class="ax-chip">Active</button><button class="ax-chip">Inactive</button>
+    </div>
+
+    <table class="ax-table">
+      <thead><tr><th>Route</th><th>Distance</th><th>Journey time</th><th>Trips this week</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>Lagos <span style="color:var(--hx-blue-2)">→</span> Abuja<small>Luxury coach</small></td><td>760 km</td><td>10 h</td><td>7</td><td><span class="ax-pill paid">Active</span></td><td class="ax-actions"><a href="#">Edit</a><a class="danger" href="#">Deactivate</a></td></tr>
+        <tr><td>Lagos <span style="color:var(--hx-blue-2)">→</span> Ibadan<small>Standard</small></td><td>130 km</td><td>2 h</td><td>21</td><td><span class="ax-pill paid">Active</span></td><td class="ax-actions"><a href="#">Edit</a><a class="danger" href="#">Deactivate</a></td></tr>
+        <tr><td>Lagos <span style="color:var(--hx-blue-2)">→</span> Benin City<small>Standard</small></td><td>320 km</td><td>5 h 30 m</td><td>7</td><td><span class="ax-pill paid">Active</span></td><td class="ax-actions"><a href="#">Edit</a><a class="danger" href="#">Deactivate</a></td></tr>
+        <tr><td>Abuja <span style="color:var(--hx-blue-2)">→</span> Kaduna<small>Standard</small></td><td>190 km</td><td>3 h</td><td>14</td><td><span class="ax-pill paid">Active</span></td><td class="ax-actions"><a href="#">Edit</a><a class="danger" href="#">Deactivate</a></td></tr>
+        <tr><td>Port Harcourt <span style="color:var(--hx-blue-2)">→</span> Enugu<small>Sleeper</small></td><td>250 km</td><td>4 h 30 m</td><td>0</td><td><span class="ax-pill off">Inactive</span></td><td class="ax-actions"><a href="#">Edit</a><a href="#">Activate</a></td></tr>
+      </tbody>
+    </table>
+  </main>
+</div>
+
+<span class="demo-tag">Demo · sample data</span>
+</body>
+</html>

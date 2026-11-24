@@ -1,0 +1,6 @@
+{# One status pill for a booking: Cancelled / Completed, otherwise its payment state. #}
+{% if booking.status == "CANCELLED" %}<span class="h5-status">Cancelled</span>
+{% elif booking.status == "COMPLETED" %}<span class="h5-status info">Completed</span>
+{% elif booking.payment_status == "PAID" %}<span class="h5-status success">Paid</span>
+{% elif booking.payment_status == "REFUNDED" %}<span class="h5-status">Refunded</span>
+{% else %}<span class="h5-status warn">Pending</span>{% endif %}

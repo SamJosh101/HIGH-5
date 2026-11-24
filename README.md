@@ -65,11 +65,15 @@ Open `.env` and set:
 python manage.py migrate
 ```
 
-### 7. Create an administrator account
+### 7. Create the administrator (superuser)
 ```powershell
 python manage.py createsuperuser
 ```
-You will be asked for email, full name and password. Superusers get the `ADMIN` role automatically.
+Enter an email, full name and password when asked. Nothing is hard-coded: each person creates their own administrator in the terminal, and the password is stored hashed in the database. A superuser automatically gets the `ADMIN` role and a verified email, so it can log in straight away and use HIGH 5's admin pages (`/dashboard/`, `/transport/manage/`) and Django's admin site (`/django-admin/`).
+
+**Default login for testing:** log in at `/accounts/login/` with the email and password you chose above. To add trips, log in as that administrator and add a route, a bus and a schedule under `/transport/manage/`. For a passenger login, sign up at `/accounts/register/`.
+
+New passengers who sign up get a 6-digit code by email and must enter it at `/accounts/verify-email/` before they can log in (see [docs/EMAIL_VERIFICATION.md](docs/EMAIL_VERIFICATION.md)). In development the email, with the code, is printed in the `runserver` terminal.
 
 ### 8. Run the development server
 ```powershell
@@ -95,10 +99,10 @@ Tests use a separate database (`test_high5_db`) that Django creates and deletes 
 | `/accounts/register/` · `/accounts/login/` | everyone | Passenger sign-up / log in |
 | `/accounts/profile/` | logged-in | Profile, change password |
 | `/accounts/password/reset/` | everyone | Password reset (email printed in terminal in development) |
-| `/bookings/search/` | logged-in users | Book a Trip / trip search *(Raheem – in progress)*; logged-out visitors are sent to login and back |
-| `/bookings/dashboard/` | passengers | Passenger dashboard *(Raheem – in progress)* |
-| `/transport/manage/` | admins | Routes/buses/schedules *(Daniel – in progress)* |
-| `/dashboard/` | admins | Admin dashboard *(Daniel – in progress)* |
+| `/bookings/search/` | passengers | Book a Trip: search, choose a trip, book seats; logged-out visitors are sent to login and back |
+| `/bookings/dashboard/` | passengers | My Bookings and ticket pages |
+| `/transport/manage/` | admins | Manage routes, buses and schedules |
+| `/dashboard/` | admins | Admin dashboard, bookings and reports |
 | `/django-admin/` | superusers | Django's built-in admin site |
 
 ## Project structure
@@ -115,4 +119,5 @@ docs/          architecture, database contract, MySQL setup script
 
 ## Project status
 **Phase 1 – Foundation:** done (project setup, custom user, authentication, role permissions, base templates, docs, tests).
-**Next:** agree on the transport/booking model contract → implement models → build the features.
+**Phase 2 – Core features:** transport management (Daniel), booking and cancellation (Raheem), email verification (Cross), real Popular Routes (Sam).
+**Still to do:** admin "mark as paid", trips becoming Completed after departure, editing past schedules, optional seat selection.

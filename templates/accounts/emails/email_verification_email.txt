@@ -1,8 +1,12 @@
 Hello {{ user.full_name }},
 
-Verify your email address to activate your HIGH 5 account:
-{{ verification_url }}
+Your HIGH 5 verification code is:
 
-This link expires in 24 hours. If you did not create this account, you can ignore this message.
+    {{ code }}
+
+Enter it on the "Verify your email" page to activate your account.
+The code expires in {{ minutes }} minutes. Never share it with anyone: HIGH 5 staff will never ask for it.
+
+If you did not create this account, you can ignore this message.
 
 – The HIGH 5 team

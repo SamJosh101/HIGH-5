@@ -57,7 +57,7 @@ class PassengerRegistrationForm(BootstrapFormMixin, UserCreationForm):
         fields = ("full_name", "email", "phone")
 
     def clean_email(self):
-        email = self.cleaned_data["email"].lower()
+        email = self.cleaned_data["email"].strip().lower()
         if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError("An account with this email already exists.")
         return email
@@ -82,14 +82,36 @@ class EmailAuthenticationForm(BootstrapFormMixin, AuthenticationForm):
         super().confirm_login_allowed(user)
         if not user.email_verified:
             raise ValidationError(
-                "Verify your email address before signing in. "
-                "Check your inbox or request a new verification email.",
+                "Verify your email address before signing in: "
+                "enter the 6-digit code we emailed you, or request a new code.",
                 code="email_not_verified",
             )
 
 
 class EmailVerificationResendForm(BootstrapFormMixin, forms.Form):
     email = forms.EmailField(label="Email", max_length=254)
+
+    def clean_email(self):
+        # Same form as sign-up stores, so the account lookup always matches.
+        return self.cleaned_data["email"].strip().lower()
+
+
+class VerifyEmailCodeForm(EmailVerificationResendForm):
+    """Email address + the 6-digit code from the verification email."""
+
+    code = forms.CharField(
+        label="Verification code", min_length=6, max_length=7,
+        widget=forms.TextInput(attrs={
+            "inputmode": "numeric", "autocomplete": "one-time-code", "placeholder": "123456",
+            "class": "h5-code-input",
+        }),
+    )
+
+    def clean_code(self):
+        code = self.cleaned_data["code"].replace(" ", "")  # allow "123 456"
+        if not (code.isdigit() and len(code) == 6):
+            raise ValidationError("Enter the 6 digits from the email.")
+        return code
 
 
 class ProfileForm(BootstrapFormMixin, forms.ModelForm):

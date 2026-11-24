@@ -20,7 +20,7 @@ class UserManager(BaseUserManager):
     def _create_user(self, email, password, **extra_fields):
         if not email:
             raise ValueError("An email address is required.")
-        email = self.normalize_email(email).lower()
+        email = self.normalize_email(email.strip()).lower()  # "  Pat@X.com " -> "pat@x.com"
         user = self.model(email=email, **extra_fields)
         user.set_password(password)  # hashes the password; never stored as plain text
         user.save(using=self._db)
@@ -65,8 +65,8 @@ class User(AbstractUser):
     full_name = models.CharField(max_length=150)
     phone = models.CharField(max_length=16, blank=True, validators=[phone_validator])
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.PASSENGER, db_index=True)
-    # True once the user has clicked the link in their verification email
-    # (accounts/email_verification.py). Unverified users cannot log in.
+    # True once the user has typed the 6-digit code from their verification
+    # email (accounts/email_verification.py). Unverified users cannot log in.
     email_verified = models.BooleanField(default=False, db_index=True)
     # Inherited from AbstractUser: password (hashed), is_active, is_staff,
     # is_superuser, date_joined, last_login, groups, user_permissions.
@@ -86,7 +86,7 @@ class User(AbstractUser):
 
     def save(self, *args, **kwargs):
         if self.email:
-            self.email = self.email.lower()
+            self.email = self.email.strip().lower()
         super().save(*args, **kwargs)
 
     # Used by templates and the permission helpers in accounts/permissions.py.
@@ -103,3 +103,21 @@ class User(AbstractUser):
 
     def get_short_name(self):
         return self.full_name.split(" ")[0] if self.full_name else self.email
+
+
+class EmailVerificationCode(models.Model):
+    """The 6-digit code emailed to a new passenger (one live code per user).
+
+    Only a hash of the code is stored, like a password, so reading the database
+    does not reveal it. The code expires after a few minutes and allows a few
+    wrong tries; see accounts/email_verification.py.
+    """
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="verification_code")
+    code_hash = models.CharField(max_length=128)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)  # wrong tries so far
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Verification code for {self.user.email}"
