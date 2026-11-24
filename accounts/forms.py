@@ -57,7 +57,7 @@ class PassengerRegistrationForm(BootstrapFormMixin, UserCreationForm):
         fields = ("full_name", "email", "phone")
 
     def clean_email(self):
-        email = self.cleaned_data["email"].lower()
+        email = self.cleaned_data["email"].strip().lower()
         if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError("An account with this email already exists.")
         return email
@@ -90,6 +90,10 @@ class EmailAuthenticationForm(BootstrapFormMixin, AuthenticationForm):
 
 class EmailVerificationResendForm(BootstrapFormMixin, forms.Form):
     email = forms.EmailField(label="Email", max_length=254)
+
+    def clean_email(self):
+        # Same form as sign-up stores, so the account lookup always matches.
+        return self.cleaned_data["email"].strip().lower()
 
 
 class ProfileForm(BootstrapFormMixin, forms.ModelForm):

@@ -20,7 +20,7 @@ class UserManager(BaseUserManager):
     def _create_user(self, email, password, **extra_fields):
         if not email:
             raise ValueError("An email address is required.")
-        email = self.normalize_email(email).lower()
+        email = self.normalize_email(email.strip()).lower()  # "  Pat@X.com " -> "pat@x.com"
         user = self.model(email=email, **extra_fields)
         user.set_password(password)  # hashes the password; never stored as plain text
         user.save(using=self._db)
@@ -86,7 +86,7 @@ class User(AbstractUser):
 
     def save(self, *args, **kwargs):
         if self.email:
-            self.email = self.email.lower()
+            self.email = self.email.strip().lower()
         super().save(*args, **kwargs)
 
     # Used by templates and the permission helpers in accounts/permissions.py.

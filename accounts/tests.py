@@ -81,6 +81,20 @@ class RegistrationTests(TestCase):
         self.assertEqual(mail.outbox[0].to, ["rider@example.com"])
         self.assertIn("/accounts/verify-email/", mail.outbox[0].body)
 
+    # The next two tests come from Cross's feature/email-validation-verification branch.
+    def test_invalid_email_syntax_is_rejected(self):
+        for email in ("not-an-email", "missing-domain@", "@example.com"):
+            with self.subTest(email=email):
+                response = self.client.post(self.url, self.form_data(email=email))
+                self.assertEqual(response.status_code, 200)
+                self.assertFalse(User.objects.exists())
+
+    def test_email_is_trimmed_and_case_normalized(self):
+        self.client.post(self.url, self.form_data(email="  Rider@Example.COM  "))
+        self.assertTrue(User.objects.filter(email="rider@example.com").exists())
+        self.assertEqual(User.objects.create_user(email="  Bo@Example.com ", password=PASSWORD,
+                                                  full_name="Bo").email, "bo@example.com")
+
     def test_cannot_register_as_admin_by_tampering(self):
         self.client.post(self.url, self.form_data(role="ADMIN", is_staff="on", is_superuser="on"))
         user = User.objects.get(email="rider@example.com")

@@ -86,7 +86,7 @@ def verify_email(request, token):
 def resend_verification(request):
     form = EmailVerificationResendForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        email = form.cleaned_data["email"].lower()
+        email = form.cleaned_data["email"]  # trimmed and lowercased by the form
         # Same answer whether or not the account exists (like password reset), and
         # at most one email per address and IP address per minute.
         throttle_key = f"email-verification:{request.META.get('REMOTE_ADDR', '')}:{email}"
