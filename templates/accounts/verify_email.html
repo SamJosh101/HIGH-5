@@ -1,0 +1,16 @@
+{% extends "accounts/auth_base.html" %}
+{% block title %}Verify your email{% endblock %}
+{% block auth_tagline %}One quick step<br><em>to get on board.</em>{% endblock %}
+{% block auth_card %}
+<h1>Verify your email</h1>
+<p class="h5-auth-note">Enter the 6-digit code we emailed you. It expires after 10 minutes.</p>
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% include "partials/form_fields.html" %}
+  <button type="submit" class="btn btn-primary">Verify email</button>
+</form>
+<div class="h5-auth-links">
+  <a href="{% url 'accounts:resend_verification' %}">Didn’t get it? Send a new code</a>
+  <a href="{% url 'accounts:login' %}">Back to log in</a>
+</div>
+{% endblock %}

@@ -1,3 +1,12 @@
+"""
+Custom user model for HIGH 5.
+
+Why a custom model?  Django's default User logs in with a *username* and has
+no role or phone field. HIGH 5 logs users in with their *email* and needs a
+role (ADMIN / PASSENGER). Django only lets you swap the user model safely
+BEFORE the first migration, so it is defined here from day one.
+"""
+
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.validators import RegexValidator
 from django.db import models
@@ -11,9 +20,9 @@ class UserManager(BaseUserManager):
     def _create_user(self, email, password, **extra_fields):
         if not email:
             raise ValueError("An email address is required.")
-        email = self.normalize_email(email).lower()
+        email = self.normalize_email(email.strip()).lower()  # "  Pat@X.com " -> "pat@x.com"
         user = self.model(email=email, **extra_fields)
-        user.set_password(password)
+        user.set_password(password)  # hashes the password; never stored as plain text
         user.save(using=self._db)
         return user
 
@@ -28,7 +37,7 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("role", User.Role.ADMIN)
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-        extra_fields.setdefault("email_verified", True)
+        extra_fields.setdefault("email_verified", True)  # created on the command line by the site owner
         if extra_fields.get("is_staff") is not True or extra_fields.get("is_superuser") is not True:
             raise ValueError("Superuser must have is_staff=True and is_superuser=True.")
         return self._create_user(email, password, **extra_fields)
@@ -47,6 +56,7 @@ class User(AbstractUser):
         ADMIN = "ADMIN", "Administrator"
         PASSENGER = "PASSENGER", "Passenger"
 
+    # Remove AbstractUser fields we don't use.
     username = None
     first_name = None
     last_name = None
@@ -54,11 +64,15 @@ class User(AbstractUser):
     email = models.EmailField("email address", unique=True)
     full_name = models.CharField(max_length=150)
     phone = models.CharField(max_length=16, blank=True, validators=[phone_validator])
-    role = models.CharField(max_length=10, choices=Role.choices, default=User.Role.PASSENGER, db_index=True)
+    role = models.CharField(max_length=10, choices=Role.choices, default=Role.PASSENGER, db_index=True)
+    # True once the user has typed the 6-digit code from their verification
+    # email (accounts/email_verification.py). Unverified users cannot log in.
     email_verified = models.BooleanField(default=False, db_index=True)
+    # Inherited from AbstractUser: password (hashed), is_active, is_staff,
+    # is_superuser, date_joined, last_login, groups, user_permissions.
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["full_name"]
+    REQUIRED_FIELDS = ["full_name"]  # asked for by `createsuperuser`
 
     objects = UserManager()
 
@@ -72,9 +86,10 @@ class User(AbstractUser):
 
     def save(self, *args, **kwargs):
         if self.email:
-            self.email = self.email.lower()
+            self.email = self.email.strip().lower()
         super().save(*args, **kwargs)
 
+    # Used by templates and the permission helpers in accounts/permissions.py.
     @property
     def is_admin_role(self):
         return self.is_active and (self.role == self.Role.ADMIN or self.is_superuser)
@@ -88,3 +103,21 @@ class User(AbstractUser):
 
     def get_short_name(self):
         return self.full_name.split(" ")[0] if self.full_name else self.email
+
+
+class EmailVerificationCode(models.Model):
+    """The 6-digit code emailed to a new passenger (one live code per user).
+
+    Only a hash of the code is stored, like a password, so reading the database
+    does not reveal it. The code expires after a few minutes and allows a few
+    wrong tries; see accounts/email_verification.py.
+    """
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="verification_code")
+    code_hash = models.CharField(max_length=128)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)  # wrong tries so far
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Verification code for {self.user.email}"

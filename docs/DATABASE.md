@@ -1,8 +1,8 @@
 # HIGH 5 – Shared Database Contract
 
-> **Status:** `accounts.User` is implemented and migrated.
-> `transport` and `bookings` models below are a **PROPOSED CONTRACT** – the
-> team must agree on it before anyone writes these models. The open questions
+> **Status (23 Nov 2026):** all models below are **implemented** on the
+> `integration` branch (accounts 0001–0004, transport 0001–0002, bookings 0001).
+> Fields added during implementation are marked *(added)*. The open questions
 > have been checked against the **SRS v1.0 (17 Nov 2026)** – see §5; FR/NFR
 > numbers below refer to that document. Changes to this file go through a Pull
 > Request reviewed by Sam (database architect).
@@ -45,20 +45,33 @@ Golden rules:
 | phone | CharField(16) | optional, validated `+` and 7–15 digits |
 | password | (inherited) | hashed with PBKDF2 by Django |
 | role | CharField(10) | `ADMIN` / `PASSENGER`, default `PASSENGER`, indexed |
+| email_verified | BooleanField | *(added)* default False, indexed. Must be True to log in (docs/EMAIL_VERIFICATION.md). Superusers and accounts that existed before migration 0003 are verified |
 | is_active | (inherited) | inactive users cannot log in |
 | date_joined | (inherited) | |
 | is_staff / is_superuser | (inherited) | only control access to `/django-admin/` |
 
 Helpers: `user.is_admin_role`, `user.is_passenger_role`.
+
+### `accounts.EmailVerificationCode` *(added, migration 0004)*
+The 6-digit sign-up code (one live code per user; see docs/EMAIL_VERIFICATION.md).
+
+| Field | Type | Notes |
+|---|---|---|
+| user | OneToOne → User | `on_delete=CASCADE`, `related_name="verification_code"` |
+| code_hash | CharField(128) | hash of the code (never the code itself) |
+| expires_at | DateTimeField | 10 minutes after it was sent |
+| attempts | PositiveSmallIntegerField | wrong tries so far; the code stops working at 5 |
+| created_at | DateTimeField | `auto_now_add=True` |
 Permission helpers: `accounts.permissions` → `admin_required`, `passenger_required`, `AdminRequiredMixin`, `PassengerRequiredMixin`.
 
-## 2. `transport` models (proposed – owner: Daniel)
+## 2. `transport` models (implemented – owner: Daniel)
 
 ### Route
 | Field | Type | Constraints |
 |---|---|---|
 | origin | CharField(100) | indexed |
 | destination | CharField(100) | indexed; must differ from origin (CheckConstraint) |
+| distance_km | PositiveIntegerField | *(added)* at least 1 |
 | duration_estimate | DurationField | e.g. `timedelta(hours=5)` |
 | description | TextField | blank allowed |
 | is_active | BooleanField | default True |
@@ -74,6 +87,7 @@ A route has **no intermediate stops** in the SRS (FR-08, §5.1). Pages show depa
 | name_or_plate | CharField(50) | **unique** |
 | bus_type | CharField(20) + choices | `STANDARD` / `LUXURY` / `SLEEPER` (the SRS examples, FR-12) |
 | total_seats | PositiveSmallIntegerField | `MinValueValidator(1)`, CheckConstraint `> 0` |
+| status | CharField(20) + choices | *(added)* `AVAILABLE` / `ASSIGNED` / `MAINTENANCE` / `UNAVAILABLE`, default `AVAILABLE`. Set by the schedule admin pages; buses in maintenance cannot be scheduled |
 | is_active | BooleanField | default True |
 
 ### Schedule
@@ -89,10 +103,12 @@ A route has **no intermediate stops** in the SRS (FR-08, §5.1). Pages show depa
 * `UniqueConstraint(fields=["bus", "departure_date", "departure_time"])` – a bus cannot be scheduled twice at the same moment.
 * `Index(fields=["departure_date", "status"])` for search.
 * Property `departure_datetime` → timezone-aware datetime (used for the cancellation cut-off).
+* Properties `arrival_datetime` / `arrival_time` = departure + `route.duration_estimate`. There is deliberately **no stored arrival field**, so a schedule can never disagree with its route.
+* `clean()` also refuses past departures, inactive routes or buses, and a bus that is already on an overlapping trip.
 
 **Why PROTECT?** Deleting a route or bus must never silently delete schedules and the bookings (financial records) attached to them. Admins *deactivate* (`is_active=False`) instead of deleting.
 
-## 3. `bookings` models (proposed – owner: Raheem)
+## 3. `bookings` models (implemented – owner: Raheem)
 
 ### Booking
 | Field | Type | Constraints |

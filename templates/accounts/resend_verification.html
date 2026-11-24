@@ -1,11 +1,15 @@
 {% extends "accounts/auth_base.html" %}
-{% block title %}Resend verification email{% endblock %}
+{% block title %}Send a new code{% endblock %}
 {% block auth_card %}
-<h1>Resend verification email</h1>
-<p>Enter the email address used to create your account. If it needs verification, we’ll send a new link.</p>
+<h1>Send a new code</h1>
+<p class="h5-auth-note">Enter the email address you signed up with. If it still needs verifying, we’ll email a new 6-digit code.</p>
 <form method="post" novalidate>
   {% csrf_token %}
   {% include "partials/form_fields.html" %}
-  <button type="submit" class="btn btn-primary">Send verification link</button>
+  <button type="submit" class="btn btn-primary">Send code</button>
 </form>
+<div class="h5-auth-links">
+  <a href="{% url 'accounts:verify_email' %}">I already have a code</a>
+  <a href="{% url 'accounts:login' %}">Back to log in</a>
+</div>
 {% endblock %}

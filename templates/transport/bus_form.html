@@ -1,0 +1,10 @@
+{% extends "admin_base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block admin_eyebrow %}<p><a class="h5-muted text-decoration-none" href="{% url 'transport:bus_list' %}">← Buses</a></p>{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block admin_content %}
+<form class="h5-admin-form" method="post">{% csrf_token %}
+  {% include "partials/form_fields.html" %}
+  <div class="h5-form-actions"><button class="btn btn-primary" type="submit">Save bus</button><a class="btn btn-outline-light" href="{% url 'transport:bus_list' %}">Cancel</a></div>
+</form>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% comment %}
+  Admin sidebar, drawn as a bus route: each page is a stop on the line and
+  the current page is the lit stop. Used by templates/admin_base.html.
+{% endcomment %}
+{% with vn=request.resolver_match.view_name %}
+<aside class="h5-admin-sidebar" aria-label="Admin navigation">
+  <nav>
+    <small>Admin</small>
+    <ul class="h5-stops">
+      <li><a href="{% url 'dashboard:home' %}"{% if vn == 'dashboard:home' %} class="active" aria-current="page"{% endif %}>Dashboard</a></li>
+      <li><a href="{% url 'dashboard:bookings' %}"{% if vn == 'dashboard:bookings' or vn == 'dashboard:booking_detail' %} class="active" aria-current="page"{% endif %}>Bookings</a></li>
+      <li><a href="{% url 'dashboard:reports' %}"{% if vn == 'dashboard:reports' %} class="active" aria-current="page"{% endif %}>Reports</a></li>
+    </ul>
+    <small>Transport</small>
+    <ul class="h5-stops">
+      <li><a href="{% url 'transport:manage' %}"{% if vn == 'transport:manage' %} class="active" aria-current="page"{% endif %}>Overview</a></li>
+      <li><a href="{% url 'transport:route_list' %}"{% if 'transport:route' in vn %} class="active" aria-current="page"{% endif %}>Routes</a></li>
+      <li><a href="{% url 'transport:bus_list' %}"{% if 'transport:bus' in vn %} class="active" aria-current="page"{% endif %}>Buses</a></li>
+      <li><a href="{% url 'transport:schedule_list' %}"{% if 'transport:schedule' in vn %} class="active" aria-current="page"{% endif %}>Schedules</a></li>
+    </ul>
+  </nav>
+</aside>
+{% endwith %}

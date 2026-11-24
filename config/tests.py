@@ -1,7 +1,10 @@
 """Project-wide configuration and database tests."""
 
+import re
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.db import connection
 from django.test import TestCase
 from django.urls import reverse
@@ -10,9 +13,26 @@ from django.utils.http import urlencode
 PASSWORD = "Str0ng-pass-123"
 
 
+def add_trip(origin, destination, fare="5000.00", hours=2, at=(8, 0), days=1, status="SCHEDULED"):
+    """One schedule (and its route and bus, if new) `days` from today."""
+    from datetime import time, timedelta
+
+    from django.utils import timezone
+
+    from transport.models import Bus, Route, Schedule
+
+    route, _ = Route.objects.get_or_create(
+        origin=origin, destination=destination, defaults={"distance_km": 100, "duration_estimate": timedelta(hours=hours)}
+    )
+    bus, _ = Bus.objects.get_or_create(name_or_plate=f"T-{route.pk}", defaults={"bus_type": "STANDARD", "total_seats": 44})
+    return Schedule.objects.create(route=route, bus=bus, departure_date=timezone.localdate() + timedelta(days=days),
+                                   departure_time=time(*at), fare=fare, status=status)
+
+
 def make_user(role):
     return get_user_model().objects.create_user(
-        email=f"{role.lower()}@example.com", password=PASSWORD, full_name=f"Pat {role.title()}", role=role
+        email=f"{role.lower()}@example.com", password=PASSWORD, full_name=f"Pat {role.title()}", role=role,
+        email_verified=True,
     )
 
 
@@ -157,9 +177,14 @@ class PopularRouteAccessTests(TestCase):
         return f'{reverse("bookings:search")}?{urlencode({"origin": origin, "destination": destination})}'
 
     def test_routes_are_visible_and_link_to_the_trip_search_when_logged_out(self):
+        for origin, destination in (("Lagos", "Abuja"), ("Lagos", "Ibadan"), ("Abuja", "Kaduna"),
+                                    ("Port Harcourt", "Enugu"), ("Lagos", "Benin City")):
+            add_trip(origin, destination)
         response = self.client.get(reverse("home"))
         self.assertContains(response, 'id="routes"')
-        self.assertContains(response, f'href="{reverse("bookings:search")}?origin=', count=4)
+        self.assertContains(response, f'href="{reverse("bookings:search")}?origin=', count=4)  # top 4 only
+        self.assertContains(response, 'href="/bookings/search/?origin=Abuja&amp;destination=Kaduna"')
+        self.assertNotContains(response, "Port Harcourt")  # 5th route (same score, sorted by name)
 
     def test_logged_out_route_click_redirects_to_login_with_the_route_kept(self):
         response = self.client.get(self.route_url())
@@ -176,17 +201,26 @@ class PopularRouteAccessTests(TestCase):
         self.assertContains(response, 'value="Eastgate"')
         self.assertContains(response, 'value="Riverside"')
 
-    def test_after_sign_up_the_user_lands_on_the_prefilled_search(self):
+    def sign_up(self, next_url):
         data = {"full_name": "New Rider", "email": "rider@example.com", "phone": "+2348000000000",
-                "password1": PASSWORD, "password2": PASSWORD, "next": self.route_url()}
+                "password1": PASSWORD, "password2": PASSWORD, "next": next_url}
         response = self.client.post(reverse("accounts:register"), data)
-        self.assertRedirects(response, self.route_url())
+        self.assertRedirects(response, reverse("accounts:verify_email"))
+        code = re.search(r"\b(\d{6})\b", mail.outbox[-1].body).group(1)
+        return lambda: self.client.post(reverse("accounts:verify_email"), {"email": "rider@example.com", "code": code})
+
+    def test_after_sign_up_the_user_lands_on_the_prefilled_search(self):
+        # sign up -> enter the emailed code -> log in -> back on the route the visitor clicked
+        enter_code = self.sign_up(self.route_url())
+        login_url = f'{reverse("accounts:login")}?{urlencode({"next": self.route_url()})}'
+        self.assertRedirects(enter_code(), login_url)
+        response = self.client.post(login_url, {"username": "rider@example.com", "password": PASSWORD}, follow=True)
+        self.assertEqual(response.redirect_chain[-1][0], self.route_url())
+        self.assertContains(response, 'value="Eastgate"')
 
     def test_sign_up_ignores_next_urls_on_other_sites(self):
-        data = {"full_name": "New Rider", "email": "rider@example.com", "phone": "+2348000000000",
-                "password1": PASSWORD, "password2": PASSWORD, "next": "https://evil.example.com/"}
-        response = self.client.post(reverse("accounts:register"), data)
-        self.assertRedirects(response, reverse("accounts:after_login"), fetch_redirect_response=False)
+        enter_code = self.sign_up("https://evil.example.com/")
+        self.assertRedirects(enter_code(), reverse("accounts:login"))
 
     def test_logged_in_route_click_opens_book_a_trip_prefilled(self):
         self.client.force_login(make_user("PASSENGER"))
@@ -205,59 +239,109 @@ class PopularRouteAccessTests(TestCase):
                 self.assertTrue(response["Location"].startswith(reverse("accounts:login")))
 
 
+class PopularRoutesDataTests(TestCase):
+    """Homepage cards come from real routes that can be booked this week, most booked first."""
+
+    def cards(self):
+        return self.client.get(reverse("home")).context["popular_routes"]
+
+    def test_card_shows_the_route_facts(self):
+        add_trip("Lagos", "Abuja", fare="25000.00", hours=10)
+        add_trip("Lagos", "Abuja", fare="21000.00", hours=10, at=(15, 0))
+        card = self.cards()[0]
+        self.assertEqual((card["origin"], card["destination"], card["duration"]), ("Lagos", "Abuja", "10 h"))
+        self.assertEqual((card["departures"], str(card["fare_from"])), (2, "21000.00"))
+        self.assertContains(self.client.get(reverse("home")), "₦21,000")
+
+    def test_most_booked_route_comes_first(self):
+        from bookings.models import Booking
+
+        add_trip("Lagos", "Ibadan", at=(7, 0))
+        add_trip("Lagos", "Ibadan", at=(12, 0))  # more departures, but no bookings
+        busy = add_trip("Abuja", "Kaduna")
+        Booking.objects.create(passenger=make_user("PASSENGER"), schedule=busy, seats_booked=1, total_amount="1.00")
+        self.assertEqual([c["origin"] for c in self.cards()], ["Abuja", "Lagos"])
+        self.assertContains(self.client.get(reverse("home")), "Most booked")
+
+    def test_only_bookable_routes_are_shown(self):
+        from transport.models import Schedule
+
+        add_trip("Lagos", "Abuja", status=Schedule.Status.CANCELLED)
+        add_trip("Lagos", "Ibadan", days=30)  # not this week
+        add_trip("Abuja", "Kaduna").route.__class__.objects.filter(origin="Abuja").update(is_active=False)
+        self.assertEqual(self.cards(), [])
+
+    def test_no_routes_shows_a_friendly_note(self):
+        response = self.client.get(reverse("home"))
+        self.assertContains(response, "New routes are being added")
+        self.assertNotContains(response, "Most booked")
+
+
 class BookTripPageTests(TestCase):
-    """Book a Trip page: trip band + "Your trip", seat map and booking summary (sample data for now)."""
+    """Book a Trip page with real transport data: search results, then the chosen trip's panels."""
 
     def setUp(self):
+        from datetime import time, timedelta
+
+        from django.utils import timezone
+
+        from transport.models import Bus, Route, Schedule
+
         self.client.force_login(make_user("PASSENGER"))
+        self.today = timezone.localdate()
+        self.day = self.today + timedelta(days=3)
+        route = Route.objects.create(origin="Lagos", destination="Abuja", distance_km=760,
+                                     duration_estimate=timedelta(hours=6, minutes=15))
+        bus = Bus.objects.create(name_or_plate="H5-007", bus_type=Bus.BusType.LUXURY, total_seats=44)
+        self.schedule = Schedule.objects.create(route=route, bus=bus, departure_date=self.day,
+                                                departure_time=time(7, 30), fare="24000.00")
 
     def search(self, **params):
-        query = {"origin": "Eastgate", "destination": "Riverside", **params}
+        query = {"origin": "Lagos", "destination": "Abuja", "date": self.day.isoformat(), **params}
         return self.client.get(f'{reverse("bookings:search")}?{urlencode(query)}')
-
-    def test_searching_a_route_shows_the_three_panels(self):
-        response = self.search()
-        for marker in ('class="h5-trip-band"', ">Your trip<", ">Choose your seats<", ">Booking summary<",
-                       ">Confirm booking<", 'name="seats"', 'name="passengers"', "Sample trip", "css/booking.css",
-                       "js/booking.js"):
-            self.assertContains(response, marker)
-        self.assertNotContains(response, "Payment status")
 
     def test_page_without_a_route_shows_the_empty_state_only(self):
         response = self.client.get(reverse("bookings:search"))
         self.assertContains(response, "Search to see trips")
         self.assertNotContains(response, 'id="h5Book"')
 
+    def test_search_lists_matching_trips(self):
+        response = self.search()
+        self.assertContains(response, "Available trips")
+        self.assertContains(response, "Luxury coach")
+        self.assertContains(response, "6 h 15 min")
+        self.assertEqual([t["schedule_id"] for t in response.context["trips"]], [self.schedule.pk])
+        self.assertContains(response, "Select this trip")
+        self.assertNotContains(response, 'id="h5Book"')  # nothing chosen yet
+
+    def test_unknown_route_shows_no_trips_found(self):
+        self.assertContains(self.search(origin="Kano"), "No trips found")
+
     def test_same_origin_and_destination_shows_no_trip(self):
-        response = self.search(destination="eastgate")
+        response = self.search(destination="lagos")
+        self.assertEqual(response.context["trips"], [])
         self.assertNotContains(response, 'id="h5Book"')
 
-    def test_trip_details_follow_the_route(self):
-        trip = self.search(origin="Millbrook", destination="Harbour City").context["trip"]
-        self.assertEqual(str(trip["fare"]), "15.00")
-        self.assertEqual(trip["bus_type"], "Standard")
-        self.assertEqual(trip["arrival"].strftime("%H:%M"), "11:10")  # 07:30 + 3 h 40 m
-
-    def test_seat_map_counts_and_taken_seats(self):
-        response = self.search()
+    def test_choosing_a_trip_shows_its_booking_panels(self):
+        response = self.search(schedule_id=self.schedule.pk)
         trip = response.context["trip"]
-        self.assertEqual((trip["total_seats"], trip["seats_left"]), (44, 18))
-        self.assertContains(response, 'aria-label="Seat 1A, taken"')
-        self.assertContains(response, 'data-seat="7A"')
-        self.assertContains(response, "18 of 44")
+        self.assertEqual(str(trip["fare"]), "24000.00")
+        self.assertEqual(trip["bus_type"], "Luxury")
+        self.assertEqual(trip["arrival"].strftime("%H:%M"), "13:45")  # 07:30 + 6 h 15 min
+        self.assertEqual((trip["total_seats"], trip["seats_left"]), (44, 44))
+        for marker in ('class="h5-trip-band"', 'id="h5Book"', 'name="passengers"', "js/booking.js"):
+            self.assertContains(response, marker)
 
-    def test_passenger_count_is_kept_within_limits(self):
-        for raw, expected in (("2", 2), ("0", 1), ("abc", 1), ("50", 10)):
+    def test_passenger_count_is_cleaned(self):
+        for raw, expected in (("2", 2), ("0", 1), ("abc", 1)):
             with self.subTest(passengers=raw):
-                self.assertEqual(self.search(passengers=raw).context["trip"]["passengers"], expected)
+                self.assertEqual(self.search(passengers=raw).context["passenger_count"], expected)
+        self.assertEqual(self.search(passengers="50").context["trips"], [])  # more than the 44 seats
 
     def test_missing_past_or_invalid_dates_fall_back_to_today(self):
-        from django.utils import timezone
-
-        today = timezone.localdate()
         for raw in ("", "2000-01-01", "2026-02-30", "not-a-date"):
             with self.subTest(date=raw):
-                self.assertEqual(self.search(date=raw).context["trip"]["date"], today)
+                self.assertEqual(self.search(date=raw).context["travel_date"], self.today)
 
 
 class DatabaseTests(TestCase):

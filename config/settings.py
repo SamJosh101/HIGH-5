@@ -57,6 +57,8 @@ INSTALLED_APPS = [
     "transport.apps.TransportConfig",
     "bookings.apps.BookingsConfig",
     "dashboard.apps.DashboardConfig",
+    # Third-party apps
+    "rest_framework",  # Django REST Framework: booking API (bookings/views.py)
 ]
 
 MIDDLEWARE = [
@@ -82,6 +84,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "config.context_processors.asset_version",
+                "config.context_processors.currency",
             ],
         },
     },

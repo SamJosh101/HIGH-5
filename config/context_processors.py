@@ -22,3 +22,8 @@ def asset_version(request):
     production set ASSET_VERSION in .env (e.g. the release number)."""
     version = getattr(settings, "ASSET_VERSION", "") or (_latest_static_change() if settings.DEBUG else "1")
     return {"ASSET_VERSION": version}
+
+
+def currency(request):
+    """`{{ CURRENCY }}` – the money symbol from .env (CURRENCY_SYMBOL, default ₦), for any template."""
+    return {"CURRENCY": settings.CURRENCY_SYMBOL}

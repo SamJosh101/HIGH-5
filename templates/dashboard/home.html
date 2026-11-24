@@ -1,12 +1,122 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 {% block title %}Dashboard{% endblock %}
-{% block content %}
-{% comment %} Daniel: bookings, revenue and report widgets go here. {% endcomment %}
-<div class="h5-page-head"><h1>Dashboard</h1></div>
-<div class="h5-panel">
-  <div class="h5-empty">
-    <div class="h5-empty-ico"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
-    <h3>Reports coming soon</h3>
+{% block admin_eyebrow %}<p>{{ today|date:"l, j F" }}</p>{% endblock %}
+{% block heading %}{{ greeting }}, {{ user.get_short_name }}{% endblock %}
+{% block admin_actions %}<a class="h5-btn-white" href="{% url 'transport:schedule_create' %}">+ New schedule</a>{% endblock %}
+
+{% block admin_content %}
+<div class="h5-kpis">
+  <div class="h5-kpi">
+    <span>Revenue this month</span><strong>{{ CURRENCY }}{{ month_revenue|floatformat:"-2g" }}</strong>
+    {% if revenue_change is None %}<em>paid bookings only</em>{% else %}<em{% if revenue_change >= 0 %} class="up"{% endif %}>{% if revenue_change >= 0 %}+{% endif %}{{ revenue_change }}% on last month</em>{% endif %}
+  </div>
+  <div class="h5-kpi">
+    <span>Bookings this month</span><strong>{{ month_bookings }}</strong>
+    {% if bookings_change is None %}<em>not counting cancelled</em>{% else %}<em{% if bookings_change >= 0 %} class="up"{% endif %}>{% if bookings_change >= 0 %}+{% endif %}{{ bookings_change }}% on last month</em>{% endif %}
+  </div>
+  <div class="h5-kpi">
+    <span>Departures today</span><strong>{{ today_departures_count }}</strong>
+    {% if almost_full_today %}<em class="warn">{{ almost_full_today }} almost full</em>{% else %}<em>none almost full</em>{% endif %}
+  </div>
+  <div class="h5-kpi">
+    <a href="{% url 'dashboard:bookings' %}?status=PENDING"><span>Awaiting payment</span><strong>{{ pending_bookings }}</strong>
+    {% if pending_bookings %}<em class="warn">bookings not paid yet</em>{% else %}<em>all paid</em>{% endif %}</a>
   </div>
 </div>
+
+<section class="h5-sec" aria-labelledby="chartTitle">
+  <div class="h5-sec-head">
+    <h2 id="chartTitle">Revenue</h2>
+    <div class="h5-tabs" role="group" aria-label="Chart">
+      <button type="button" class="active" data-chart="daily" aria-pressed="true">Daily</button>
+      <button type="button" data-chart="monthly" aria-pressed="false">Monthly</button>
+      <button type="button" data-chart="bookings" aria-pressed="false">Bookings</button>
+    </div>
+  </div>
+  <div class="h5-chart"><div class="h5-chart-box"><canvas id="adminChart" data-currency="{{ CURRENCY }}" role="img" aria-label="Chart of revenue and bookings"></canvas><p class="h5-chart-empty" id="adminChartEmpty" hidden></p></div></div>
+</section>
+
+<div class="h5-sec-split">
+  <section class="h5-sec">
+    <div class="h5-sec-head"><h2>Next departures</h2><a href="{% url 'transport:schedule_list' %}">All schedules →</a></div>
+    <ul class="h5-rows h5-board">
+      {% for s in upcoming_departures %}
+        <li>
+          <span class="h5-time">{{ s.departure_time|time:"H:i" }}{% if s.departure_date != today %}<small class="d-block">{{ s.departure_date|date:"D j M" }}</small>{% endif %}</span>
+          <span><b class="fw-medium">{{ s.route.origin }}</b><span class="h5-arrow">→</span><b class="fw-medium">{{ s.route.destination }}</b>
+            <small>{{ s.bus.name_or_plate }} · {{ s.bus.get_bus_type_display }} · arrives {{ s.arrival_time|time:"H:i" }}</small></span>
+          <span class="h5-seats">{{ s.seats_taken }} / {{ s.bus.total_seats }} seats<span class="h5-fill"><i{% if s.almost_full %} class="full"{% endif %} style="width: {{ s.fill }}%"></i></span></span>
+        </li>
+      {% empty %}
+        <li><span class="h5-empty">No upcoming departures. <a class="text-decoration-underline" href="{% url 'transport:schedule_create' %}">Create a schedule</a></span></li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="h5-sec">
+    <div class="h5-sec-head"><h2>Recent bookings</h2><a href="{% url 'dashboard:bookings' %}">All bookings →</a></div>
+    <ul class="h5-rows">
+      {% for b in recent_bookings %}
+        <li>
+          <a href="{% url 'dashboard:booking_detail' b.pk %}"><span class="h5-ref">{{ b.booking_ref }}</span>
+            <small>{{ b.schedule.route.origin }} → {{ b.schedule.route.destination }} · {{ b.seats_booked }} seat{{ b.seats_booked|pluralize }}</small></a>
+          {% include "dashboard/_booking_status.html" with booking=b %}
+        </li>
+      {% empty %}
+        <li><span class="h5-empty">No bookings yet.</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{{ chart_data|json_script:"adminChartData" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+(() => {
+  const canvas = document.getElementById("adminChart");
+  if (!window.Chart || !canvas) return;
+  const data = JSON.parse(document.getElementById("adminChartData").textContent);
+  const currency = canvas.dataset.currency || "";
+  const titles = { daily: "Revenue", monthly: "Revenue", bookings: "Bookings" };
+  const ctx = canvas.getContext("2d");
+  const fill = ctx.createLinearGradient(0, 0, 0, 240);
+  fill.addColorStop(0, "rgba(47,107,255,.35)");
+  fill.addColorStop(1, "rgba(47,107,255,0)");
+  let chart;
+  const draw = (key) => {
+    const set = data[key], bar = key === "monthly";
+    chart && chart.destroy();
+    chart = new Chart(canvas, {
+      type: bar ? "bar" : "line",
+      data: { labels: set.labels, datasets: [{
+        data: set.values, borderColor: "#3b77ff", backgroundColor: bar ? "rgba(47,107,255,.55)" : fill,
+        fill: !bar, tension: .4, borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 5, borderRadius: 8, maxBarThickness: 46,
+      }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+        plugins: { legend: { display: false }, tooltip: { callbacks: {
+          label: (c) => set.money ? currency + c.parsed.y.toLocaleString() : c.parsed.y + " booking" + (c.parsed.y === 1 ? "" : "s"),
+        } } },
+        scales: {
+          x: { grid: { display: false }, border: { display: false }, ticks: { color: "#8b93a3", maxTicksLimit: 7 } },
+          y: { beginAtZero: true, suggestedMax: set.money ? 50000 : 5, grid: { color: "rgba(255,255,255,.06)" }, border: { display: false },
+               ticks: { color: "#8b93a3", maxTicksLimit: 4, precision: 0, callback: (v) => set.money ? currency + Number(v).toLocaleString() : v } },
+        },
+      },
+    });
+    document.getElementById("chartTitle").textContent = titles[key];
+    const empty = document.getElementById("adminChartEmpty");
+    empty.hidden = set.values.some((v) => v > 0);
+    empty.textContent = set.money ? "No paid bookings in this period yet." : "No bookings in this period yet.";
+    document.querySelectorAll("[data-chart]").forEach((b) => {
+      b.classList.toggle("active", b.dataset.chart === key);
+      b.setAttribute("aria-pressed", b.dataset.chart === key);
+    });
+  };
+  document.querySelectorAll("[data-chart]").forEach((b) => b.addEventListener("click", () => draw(b.dataset.chart)));
+  draw("daily");
+})();
+</script>
 {% endblock %}

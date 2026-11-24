@@ -1,10 +1,12 @@
 <!doctype html>
 <html lang="en">
-  <body>
+  <body style="font-family: Arial, sans-serif; color: #1b1f27;">
     <p>Hello {{ user.full_name }},</p>
-    <p>Verify your email address to activate your HIGH 5 account:</p>
-    <p><a href="{{ verification_url }}">Verify email address</a></p>
-    <p>This link expires in 24 hours. If you did not create this account, you can ignore this message.</p>
+    <p>Your HIGH 5 verification code is:</p>
+    <p style="font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 18px 0;">{{ code }}</p>
+    <p>Enter it on the “Verify your email” page to activate your account.
+       The code expires in {{ minutes }} minutes. Never share it with anyone: HIGH 5 staff will never ask for it.</p>
+    <p>If you did not create this account, you can ignore this message.</p>
     <p>– The HIGH 5 team</p>
   </body>
 </html>

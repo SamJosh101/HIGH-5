@@ -1,14 +1,12 @@
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
-from django.urls import reverse
 
-from .email_verification import make_email_verification_token
+from .email_verification import CODE_VALID_MINUTES, issue_code
 
 
-def send_email_verification(request, user):
-    token = make_email_verification_token(user)
-    verification_path = reverse("accounts:verify_email", kwargs={"token": token})
-    context = {"user": user, "verification_url": request.build_absolute_uri(verification_path)}
+def send_email_verification(user):
+    """Email the user a new 6-digit verification code (replacing any older one)."""
+    context = {"user": user, "code": issue_code(user), "minutes": CODE_VALID_MINUTES}
     subject = render_to_string("accounts/emails/email_verification_subject.txt").strip()
     text_body = render_to_string("accounts/emails/email_verification_email.txt", context)
     html_body = render_to_string("accounts/emails/email_verification_email.html", context)

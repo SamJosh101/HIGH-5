@@ -1,0 +1,36 @@
+{% extends "admin_base.html" %}
+{% block title %}Reports{% endblock %}
+{% block admin_eyebrow %}<p>Paid bookings and revenue</p>{% endblock %}
+{% block heading %}Reports{% endblock %}
+{% block admin_actions %}{% if booking_model_available %}<a class="h5-btn-outline" href="?start={{ start }}&amp;end={{ end }}&amp;export=csv">Export CSV</a>{% endif %}{% endblock %}
+
+{% block admin_content %}
+<form class="h5-filters" method="get">
+  <label class="h5-muted small" for="rStart">From</label><input id="rStart" class="form-control" type="date" name="start" value="{{ start }}">
+  <label class="h5-muted small" for="rEnd">to</label><input id="rEnd" class="form-control" type="date" name="end" value="{{ end }}">
+  <button class="btn btn-outline-light" type="submit">Show</button>
+  {% if start or end %}<a class="h5-chip" href="{% url 'dashboard:reports' %}">All time</a>{% endif %}
+</form>
+
+<div class="h5-kpis two">
+  <div class="h5-kpi"><span>Paid revenue</span><strong>{{ CURRENCY }}{{ total_revenue|floatformat:"-2g" }}</strong></div>
+  <div class="h5-kpi"><span>Paid bookings</span><strong>{{ total_bookings }}</strong></div>
+</div>
+
+<div class="h5-sec-split">
+  <section class="h5-sec">
+    <div class="h5-sec-head"><h2>By day</h2></div>
+    <ul class="h5-rows">
+      {% for row in daily %}<li><span>{{ row.day|date:"D j M Y" }}</span><span>{{ CURRENCY }}{{ row.revenue|floatformat:"-2g" }}</span></li>
+      {% empty %}<li><span class="h5-empty">No paid bookings in this period.</span></li>{% endfor %}
+    </ul>
+  </section>
+  <section class="h5-sec">
+    <div class="h5-sec-head"><h2>By month</h2></div>
+    <ul class="h5-rows">
+      {% for row in monthly %}<li><span>{{ row.month|date:"F Y" }}</span><span>{{ CURRENCY }}{{ row.revenue|floatformat:"-2g" }}</span></li>
+      {% empty %}<li><span class="h5-empty">No paid bookings in this period.</span></li>{% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

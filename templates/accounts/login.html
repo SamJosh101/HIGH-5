@@ -12,7 +12,7 @@
 </form>
 <div class="h5-auth-links">
   <a href="{% url 'accounts:password_reset' %}">Forgot password?</a>
-  <a href="{% url 'accounts:resend_verification' %}">Resend verification email</a>
+  <a href="{% url 'accounts:verify_email' %}">Verify your email</a>
   <span>New here? <a href="{% url 'accounts:register' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Sign up</a></span>
 </div>
 {% endblock %}

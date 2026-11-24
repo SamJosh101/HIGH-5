@@ -1,12 +1,20 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 {% block title %}Transport{% endblock %}
-{% block content %}
-{% comment %} Daniel: routes, buses, schedules and fares management goes here. {% endcomment %}
-<div class="h5-page-head"><h1>Transport</h1></div>
-<div class="h5-panel">
-  <div class="h5-empty">
-    <div class="h5-empty-ico"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 21v-3M16 21v-3"/><circle cx="8" cy="14.5" r=".8"/><circle cx="16" cy="14.5" r=".8"/></svg></div>
-    <h3>Routes, buses and schedules coming soon</h3>
-  </div>
+{% block admin_eyebrow %}<p>Routes, buses and schedules</p>{% endblock %}
+{% block heading %}Transport{% endblock %}
+{% block admin_actions %}<a class="h5-btn-white" href="{% url 'transport:schedule_create' %}">+ New schedule</a>{% endblock %}
+
+{% block admin_content %}
+<div class="h5-kpis">
+  <div class="h5-kpi"><a href="{% url 'transport:route_list' %}"><span>Routes</span><strong>{{ route_count }}</strong><em>manage routes →</em></a></div>
+  <div class="h5-kpi"><a href="{% url 'transport:bus_list' %}"><span>Buses</span><strong>{{ bus_count }}</strong><em>{{ available_buses }} available</em></a></div>
+  <div class="h5-kpi"><a href="{% url 'transport:schedule_list' %}"><span>Schedules</span><strong>{{ schedule_count }}</strong><em>manage schedules →</em></a></div>
+  <div class="h5-kpi"><span>Departures today</span><strong>{{ today_departures }}</strong><em>not counting cancelled</em></div>
 </div>
+
+<ul class="h5-rows">
+  <li><a href="{% url 'transport:route_list' %}"><b class="fw-medium">Routes</b><small>Cities served, distance and journey time</small></a><a class="h5-muted" href="{% url 'transport:route_create' %}">+ Add route</a></li>
+  <li><a href="{% url 'transport:bus_list' %}"><b class="fw-medium">Buses</b><small>Registration, bus type, seats and status</small></a><a class="h5-muted" href="{% url 'transport:bus_create' %}">+ Register bus</a></li>
+  <li><a href="{% url 'transport:schedule_list' %}"><b class="fw-medium">Schedules</b><small>Which bus runs which route, when, and the fare</small></a><a class="h5-muted" href="{% url 'transport:schedule_create' %}">+ New schedule</a></li>
+</ul>
 {% endblock %}
