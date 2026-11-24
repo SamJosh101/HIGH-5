@@ -57,7 +57,6 @@ Open `.env` and set:
 * `DJANGO_SECRET_KEY` – generate one with
   `python -c "from django.core.management.utils import get_random_secret_key as g; print(g())"`
 * `DB_PASSWORD` – the password you chose in step 4.
-* `DEMO_ADMIN_PASSWORD` and `DEMO_PASSENGER_PASSWORD` – passwords of your choice for the test accounts (step 7).
 
 `.env` is git-ignored. **Never commit it.**
 
@@ -66,22 +65,13 @@ Open `.env` and set:
 python manage.py migrate
 ```
 
-### 7. Create the test accounts and sample trips
+### 7. Create the administrator (superuser)
 ```powershell
-python manage.py seed_demo
+python manage.py createsuperuser
 ```
-This creates two test accounts and a week of trips on five Nigerian routes (Lagos → Abuja, Lagos → Ibadan, Lagos → Benin City, Abuja → Kaduna, Port Harcourt → Enugu), so the homepage, Book a Trip and the admin pages have data straight away. It is safe to run again (for example the next week, to add new trips).
+Enter an email, full name and password when asked. Nothing is hard-coded: each person creates their own administrator in the terminal, and the password is stored hashed in the database. A superuser automatically gets the `ADMIN` role and a verified email, so it can log in straight away and use HIGH 5's admin pages (`/dashboard/`, `/transport/manage/`) and Django's admin site (`/django-admin/`).
 
-**Default test logins**
-
-| Role | Email | Password |
-|---|---|---|
-| Administrator (superuser) | `admin@high5.test` | the value of `DEMO_ADMIN_PASSWORD` in your `.env` |
-| Passenger | `passenger@high5.test` | the value of `DEMO_PASSENGER_PASSWORD` in your `.env` |
-
-The passwords are deliberately not written in the code or this README (no hard-coded passwords); each person sets them in their own `.env`. `seed_demo` only runs when `DJANGO_DEBUG=True`.
-
-The default administrator is a **superuser**, the same kind of account `python manage.py createsuperuser` makes: it can use HIGH 5's admin pages (`/dashboard/`, `/transport/manage/`) and Django's own admin site (`/django-admin/`). To create a superuser with your own email instead, run `python manage.py createsuperuser` (superusers get the `ADMIN` role and a verified email automatically).
+**Default login for testing:** log in at `/accounts/login/` with the email and password you chose above. To add trips, log in as that administrator and add a route, a bus and a schedule under `/transport/manage/`. For a passenger login, sign up at `/accounts/register/`.
 
 New passengers who sign up must click the link in their verification email before they can log in. In development that email is printed in the `runserver` terminal.
 
@@ -129,5 +119,5 @@ docs/          architecture, database contract, MySQL setup script
 
 ## Project status
 **Phase 1 – Foundation:** done (project setup, custom user, authentication, role permissions, base templates, docs, tests).
-**Phase 2 – Core features:** transport management (Daniel), booking and cancellation (Raheem), email verification (Cross), real Popular Routes and test data (Sam).
+**Phase 2 – Core features:** transport management (Daniel), booking and cancellation (Raheem), email verification (Cross), real Popular Routes (Sam).
 **Still to do:** admin "mark as paid", trips becoming Completed after departure, editing past schedules, optional seat selection.
