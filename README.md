@@ -76,12 +76,12 @@ This creates two test accounts and a week of trips on five Nigerian routes (Lago
 
 | Role | Email | Password |
 |---|---|---|
-| Administrator | `admin@high5.test` | the value of `DEMO_ADMIN_PASSWORD` in your `.env` |
+| Administrator (superuser) | `admin@high5.test` | the value of `DEMO_ADMIN_PASSWORD` in your `.env` |
 | Passenger | `passenger@high5.test` | the value of `DEMO_PASSENGER_PASSWORD` in your `.env` |
 
 The passwords are deliberately not written in the code or this README (no hard-coded passwords); each person sets them in their own `.env`. `seed_demo` only runs when `DJANGO_DEBUG=True`.
 
-To create your own administrator instead, run `python manage.py createsuperuser` (superusers get the `ADMIN` role and a verified email automatically).
+The default administrator is a **superuser**, the same kind of account `python manage.py createsuperuser` makes: it can use HIGH 5's admin pages (`/dashboard/`, `/transport/manage/`) and Django's own admin site (`/django-admin/`). To create a superuser with your own email instead, run `python manage.py createsuperuser` (superusers get the `ADMIN` role and a verified email automatically).
 
 New passengers who sign up must click the link in their verification email before they can log in. In development that email is printed in the `runserver` terminal.
 

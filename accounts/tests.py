@@ -306,8 +306,12 @@ class SeedDemoTests(TestCase):
         self.run_seed(DEMO_ADMIN_PASSWORD="Admin-Test-Pass-1", DEMO_PASSENGER_PASSWORD="Rider-Test-Pass-1")
         admin = User.objects.get(email="admin@high5.test")
         self.assertTrue(admin.is_admin_role and admin.email_verified and admin.check_password("Admin-Test-Pass-1"))
+        self.assertTrue(admin.is_superuser and admin.is_staff)  # the default admin is a superuser (SRS 6.1)
+        self.client.force_login(admin)
+        self.assertEqual(self.client.get("/django-admin/").status_code, 200)
         rider = User.objects.get(email="passenger@high5.test")
         self.assertTrue(rider.is_passenger_role and rider.check_password("Rider-Test-Pass-1"))
+        self.assertFalse(rider.is_superuser or rider.is_staff)
         self.assertEqual(Route.objects.count(), 5)
         self.assertEqual(Schedule.objects.count(), 9 * 7)  # 9 departures a day for 7 days
         self.run_seed(DEMO_ADMIN_PASSWORD="Admin-Test-Pass-1", DEMO_PASSENGER_PASSWORD="Rider-Test-Pass-1")

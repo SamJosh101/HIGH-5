@@ -3,8 +3,8 @@
 Creates (or updates) two test accounts and a week of trips on real Nigerian routes,
 so the site can be tried straight after `migrate`:
 
-    admin@high5.test       ADMIN      password = DEMO_ADMIN_PASSWORD in .env
-    passenger@high5.test   PASSENGER  password = DEMO_PASSENGER_PASSWORD in .env
+    admin@high5.test       ADMIN (superuser)  password = DEMO_ADMIN_PASSWORD in .env
+    passenger@high5.test   PASSENGER          password = DEMO_PASSENGER_PASSWORD in .env
 
 The passwords are never written in the code (project rule): each person sets
 their own in .env. Running the command again is safe – it only adds what is
@@ -85,6 +85,9 @@ class Command(BaseCommand):
             user, _ = User.objects.get_or_create(email=email, defaults={"full_name": name, "role": role})
             user.full_name, user.role = name, role
             user.is_active = user.email_verified = True
+            # The default admin is a superuser, like one made with `createsuperuser`
+            # (SRS 6.1): HIGH 5's admin pages AND Django's /django-admin/ site.
+            user.is_staff = user.is_superuser = role == "ADMIN"
             user.set_password(passwords[email])  # hashed, never stored as plain text
             user.save()
 
