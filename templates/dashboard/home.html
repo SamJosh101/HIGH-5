@@ -1,46 +1,122 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 {% block title %}Dashboard{% endblock %}
-{% block content %}
-<div class="h5-admin-layout">
-  {% include "partials/admin_sidebar.html" %}
-  <section class="h5-admin-main">
-    <div class="h5-page-head"><h1>Dashboard</h1></div>
-    <div class="row g-3">
-      <div class="col-6 col-lg-3"><div class="h5-stat"><span>Total buses</span><strong>{{ total_buses }}</strong></div></div>
-      <div class="col-6 col-lg-3"><div class="h5-stat"><span>Total routes</span><strong>{{ total_routes }}</strong></div></div>
-      <div class="col-6 col-lg-3"><div class="h5-stat"><span>Total schedules</span><strong>{{ total_schedules }}</strong></div></div>
-      <div class="col-6 col-lg-3"><div class="h5-stat"><span>Total bookings</span><strong>{{ total_bookings }}</strong></div></div>
-      <div class="col-6 col-lg-3"><div class="h5-stat"><span>Total revenue</span><strong>₦{{ total_revenue }}</strong></div></div>
-      <div class="col-6 col-lg-3"><div class="h5-stat"><span>Today's departures</span><strong>{{ today_departures_count }}</strong></div></div>
-      <div class="col-6 col-lg-3"><div class="h5-stat"><span>Available buses</span><strong>{{ available_buses }}</strong></div></div>
-      <div class="col-6 col-lg-3"><div class="h5-stat"><span>Pending bookings</span><strong>{{ pending_bookings }}</strong></div></div>
+{% block admin_eyebrow %}<p>{{ today|date:"l, j F" }}</p>{% endblock %}
+{% block heading %}{{ greeting }}, {{ user.get_short_name }}{% endblock %}
+{% block admin_actions %}<a class="h5-btn-white" href="{% url 'transport:schedule_create' %}">+ New schedule</a>{% endblock %}
+
+{% block admin_content %}
+<div class="h5-kpis">
+  <div class="h5-kpi">
+    <span>Revenue this month</span><strong>{{ CURRENCY }}{{ month_revenue|floatformat:"-2g" }}</strong>
+    {% if revenue_change is None %}<em>paid bookings only</em>{% else %}<em{% if revenue_change >= 0 %} class="up"{% endif %}>{% if revenue_change >= 0 %}+{% endif %}{{ revenue_change }}% on last month</em>{% endif %}
+  </div>
+  <div class="h5-kpi">
+    <span>Bookings this month</span><strong>{{ month_bookings }}</strong>
+    {% if bookings_change is None %}<em>not counting cancelled</em>{% else %}<em{% if bookings_change >= 0 %} class="up"{% endif %}>{% if bookings_change >= 0 %}+{% endif %}{{ bookings_change }}% on last month</em>{% endif %}
+  </div>
+  <div class="h5-kpi">
+    <span>Departures today</span><strong>{{ today_departures_count }}</strong>
+    {% if almost_full_today %}<em class="warn">{{ almost_full_today }} almost full</em>{% else %}<em>none almost full</em>{% endif %}
+  </div>
+  <div class="h5-kpi">
+    <a href="{% url 'dashboard:bookings' %}?status=PENDING"><span>Awaiting payment</span><strong>{{ pending_bookings }}</strong>
+    {% if pending_bookings %}<em class="warn">bookings not paid yet</em>{% else %}<em>all paid</em>{% endif %}</a>
+  </div>
+</div>
+
+<section class="h5-sec" aria-labelledby="chartTitle">
+  <div class="h5-sec-head">
+    <h2 id="chartTitle">Revenue</h2>
+    <div class="h5-tabs" role="group" aria-label="Chart">
+      <button type="button" class="active" data-chart="daily" aria-pressed="true">Daily</button>
+      <button type="button" data-chart="monthly" aria-pressed="false">Monthly</button>
+      <button type="button" data-chart="bookings" aria-pressed="false">Bookings</button>
     </div>
-    <div class="row g-3 mt-1">
-      <div class="col-lg-6"><div class="h5-panel"><h2>Daily revenue</h2><canvas id="dailyRevenueChart"></canvas></div></div>
-      <div class="col-lg-6"><div class="h5-panel"><h2>Monthly revenue</h2><canvas id="monthlyRevenueChart"></canvas></div></div>
-      <div class="col-lg-6"><div class="h5-panel"><h2>Booking trends</h2><canvas id="bookingTrendsChart"></canvas></div></div>
-      <div class="col-lg-6"><div class="h5-panel"><h2>Route popularity</h2><canvas id="routePopularityChart"></canvas></div></div>
-    </div>
-    <div class="row g-3 mt-1">
-      <div class="col-lg-6"><div class="h5-panel"><h2>Recent bookings</h2>{% if recent_bookings %}<div class="table-responsive"><table class="table"><tbody>{% for booking in recent_bookings %}<tr><td>{{ booking.booking_ref }}</td><td>{{ booking.schedule.route }}</td><td>{{ booking.booked_at|date:"Y-m-d H:i" }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="h5-muted">No booking records.</p>{% endif %}</div></div>
-      <div class="col-lg-6"><div class="h5-panel"><h2>Upcoming departures</h2>{% if upcoming_departures %}<div class="table-responsive"><table class="table"><tbody>{% for schedule in upcoming_departures %}<tr><td>{{ schedule.route }}</td><td>{{ schedule.departure_date }} {{ schedule.departure_time }}</td><td>{{ schedule.bus.name_or_plate }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="h5-muted">No upcoming departures.</p>{% endif %}</div></div>
-    </div>
+  </div>
+  <div class="h5-chart"><div class="h5-chart-box"><canvas id="adminChart" data-currency="{{ CURRENCY }}" role="img" aria-label="Chart of revenue and bookings"></canvas><p class="h5-chart-empty" id="adminChartEmpty" hidden></p></div></div>
+</section>
+
+<div class="h5-sec-split">
+  <section class="h5-sec">
+    <div class="h5-sec-head"><h2>Next departures</h2><a href="{% url 'transport:schedule_list' %}">All schedules →</a></div>
+    <ul class="h5-rows h5-board">
+      {% for s in upcoming_departures %}
+        <li>
+          <span class="h5-time">{{ s.departure_time|time:"H:i" }}{% if s.departure_date != today %}<small class="d-block">{{ s.departure_date|date:"D j M" }}</small>{% endif %}</span>
+          <span><b class="fw-medium">{{ s.route.origin }}</b><span class="h5-arrow">→</span><b class="fw-medium">{{ s.route.destination }}</b>
+            <small>{{ s.bus.name_or_plate }} · {{ s.bus.get_bus_type_display }} · arrives {{ s.arrival_time|time:"H:i" }}</small></span>
+          <span class="h5-seats">{{ s.seats_taken }} / {{ s.bus.total_seats }} seats<span class="h5-fill"><i{% if s.almost_full %} class="full"{% endif %} style="width: {{ s.fill }}%"></i></span></span>
+        </li>
+      {% empty %}
+        <li><span class="h5-empty">No upcoming departures. <a class="text-decoration-underline" href="{% url 'transport:schedule_create' %}">Create a schedule</a></span></li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="h5-sec">
+    <div class="h5-sec-head"><h2>Recent bookings</h2><a href="{% url 'dashboard:bookings' %}">All bookings →</a></div>
+    <ul class="h5-rows">
+      {% for b in recent_bookings %}
+        <li>
+          <a href="{% url 'dashboard:booking_detail' b.pk %}"><span class="h5-ref">{{ b.booking_ref }}</span>
+            <small>{{ b.schedule.route.origin }} → {{ b.schedule.route.destination }} · {{ b.seats_booked }} seat{{ b.seats_booked|pluralize }}</small></a>
+          {% include "dashboard/_booking_status.html" with booking=b %}
+        </li>
+      {% empty %}
+        <li><span class="h5-empty">No bookings yet.</span></li>
+      {% endfor %}
+    </ul>
   </section>
 </div>
-{{ daily_revenue_json|json_script:"dailyRevenueData" }}
-{{ monthly_revenue_json|json_script:"monthlyRevenueData" }}
-{{ booking_trends_json|json_script:"bookingTrendsData" }}
-{{ route_popularity_json|json_script:"routePopularityData" }}
+{{ chart_data|json_script:"adminChartData" }}
 {% endblock %}
+
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
-const readData=(id)=>JSON.parse(document.getElementById(id).textContent);
-const base={responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8b93a3'}},y:{ticks:{color:'#8b93a3'}}}};
-const chart=(id,type,labels,values)=>new Chart(document.getElementById(id),{type,data:{labels,datasets:[{data:values,backgroundColor:'#2f6bff',borderColor:'#3b77ff',tension:.3}]},options:base});
-chart('dailyRevenueChart','line',readData('dailyRevenueData').map(x=>x.day),readData('dailyRevenueData').map(x=>x.revenue));
-chart('monthlyRevenueChart','bar',readData('monthlyRevenueData').map(x=>x.month),readData('monthlyRevenueData').map(x=>x.revenue));
-chart('bookingTrendsChart','line',readData('bookingTrendsData').map(x=>x.day),readData('bookingTrendsData').map(x=>x.count));
-chart('routePopularityChart','bar',readData('routePopularityData').map(x=>x.route),readData('routePopularityData').map(x=>x.count));
+(() => {
+  const canvas = document.getElementById("adminChart");
+  if (!window.Chart || !canvas) return;
+  const data = JSON.parse(document.getElementById("adminChartData").textContent);
+  const currency = canvas.dataset.currency || "";
+  const titles = { daily: "Revenue", monthly: "Revenue", bookings: "Bookings" };
+  const ctx = canvas.getContext("2d");
+  const fill = ctx.createLinearGradient(0, 0, 0, 240);
+  fill.addColorStop(0, "rgba(47,107,255,.35)");
+  fill.addColorStop(1, "rgba(47,107,255,0)");
+  let chart;
+  const draw = (key) => {
+    const set = data[key], bar = key === "monthly";
+    chart && chart.destroy();
+    chart = new Chart(canvas, {
+      type: bar ? "bar" : "line",
+      data: { labels: set.labels, datasets: [{
+        data: set.values, borderColor: "#3b77ff", backgroundColor: bar ? "rgba(47,107,255,.55)" : fill,
+        fill: !bar, tension: .4, borderWidth: 2.5, pointRadius: 0, pointHoverRadius: 5, borderRadius: 8, maxBarThickness: 46,
+      }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+        plugins: { legend: { display: false }, tooltip: { callbacks: {
+          label: (c) => set.money ? currency + c.parsed.y.toLocaleString() : c.parsed.y + " booking" + (c.parsed.y === 1 ? "" : "s"),
+        } } },
+        scales: {
+          x: { grid: { display: false }, border: { display: false }, ticks: { color: "#8b93a3", maxTicksLimit: 7 } },
+          y: { beginAtZero: true, suggestedMax: set.money ? 50000 : 5, grid: { color: "rgba(255,255,255,.06)" }, border: { display: false },
+               ticks: { color: "#8b93a3", maxTicksLimit: 4, precision: 0, callback: (v) => set.money ? currency + Number(v).toLocaleString() : v } },
+        },
+      },
+    });
+    document.getElementById("chartTitle").textContent = titles[key];
+    const empty = document.getElementById("adminChartEmpty");
+    empty.hidden = set.values.some((v) => v > 0);
+    empty.textContent = set.money ? "No paid bookings in this period yet." : "No bookings in this period yet.";
+    document.querySelectorAll("[data-chart]").forEach((b) => {
+      b.classList.toggle("active", b.dataset.chart === key);
+      b.setAttribute("aria-pressed", b.dataset.chart === key);
+    });
+  };
+  document.querySelectorAll("[data-chart]").forEach((b) => b.addEventListener("click", () => draw(b.dataset.chart)));
+  draw("daily");
+})();
 </script>
 {% endblock %}

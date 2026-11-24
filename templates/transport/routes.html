@@ -1,39 +1,37 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
+{% load transport_tags %}
 {% block title %}Routes{% endblock %}
-{% block content %}
-<div class="h5-admin-layout">
-  {% include "partials/admin_sidebar.html" %}
-  <section class="h5-admin-main">
-    <div class="h5-page-head"><h1>Routes</h1><a class="btn btn-primary" href="{% url 'transport:route_create' %}">Add route</a></div>
-    <div class="h5-panel">
-      <form class="h5-filter-row" method="get">
-        <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Search origin or destination">
-        <select class="form-select" name="active">
-          <option value="">All statuses</option>
-          <option value="active"{% if active == 'active' %} selected{% endif %}>Active</option>
-          <option value="inactive"{% if active == 'inactive' %} selected{% endif %}>Inactive</option>
-        </select>
-        <button class="btn btn-outline-light" type="submit">Filter</button>
-      </form>
-      <div class="table-responsive">
-        <table class="table align-middle">
-          <thead><tr><th>Origin</th><th>Destination</th><th>Distance</th><th>Duration</th><th>Status</th><th></th></tr></thead>
-          <tbody>
-          {% for route in routes %}
-            <tr>
-              <td>{{ route.origin }}</td><td>{{ route.destination }}</td><td>{{ route.distance_km }} km</td><td>{{ route.duration_estimate }}</td>
-              <td>{% if route.is_active %}<span class="h5-status success">Active</span>{% else %}<span class="h5-status">Inactive</span>{% endif %}</td>
-              <td class="text-end">
-                <a class="btn btn-sm btn-outline-light" href="{% url 'transport:route_edit' route.pk %}">Edit</a>
-                <form class="d-inline" method="post" action="{% url 'transport:route_delete' route.pk %}" onsubmit="return confirm('Delete this route?')">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button></form>
-              </td>
-            </tr>
-          {% empty %}<tr><td colspan="6" class="h5-empty">No routes found.</td></tr>{% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% include "partials/pagination.html" with page=routes %}
-    </div>
-  </section>
-</div>
+{% block admin_eyebrow %}<p>Where the buses go</p>{% endblock %}
+{% block heading %}Routes{% endblock %}
+{% block admin_actions %}<a class="h5-btn-white" href="{% url 'transport:route_create' %}">+ Add route</a>{% endblock %}
+
+{% block admin_content %}
+<form class="h5-filters" method="get" role="search">
+  <input class="form-control h5-search-input" type="search" name="q" value="{{ q }}" placeholder="Search a city" aria-label="Search a city">
+  {% if active %}<input type="hidden" name="active" value="{{ active }}">{% endif %}
+  <a class="h5-chip{% if not active %} active{% endif %}" href="?q={{ q|urlencode }}">All</a>
+  <a class="h5-chip{% if active == 'active' %} active{% endif %}" href="?q={{ q|urlencode }}&amp;active=active">Active</a>
+  <a class="h5-chip{% if active == 'inactive' %} active{% endif %}" href="?q={{ q|urlencode }}&amp;active=inactive">Inactive</a>
+</form>
+
+<table class="h5-table">
+  <thead><tr><th>Route</th><th>Distance</th><th>Journey time</th><th>Status</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+  <tbody>
+  {% for route in routes %}
+    <tr>
+      <td>{{ route.origin }}<span class="h5-arrow">→</span>{{ route.destination }}{% if route.description %}<small>{{ route.description|truncatechars:60 }}</small>{% endif %}</td>
+      <td data-label="Distance">{{ route.distance_km }} km</td>
+      <td data-label="Journey time">{{ route.duration_estimate|duration }}</td>
+      <td>{% if route.is_active %}<span class="h5-status success">Active</span>{% else %}<span class="h5-status">Inactive</span>{% endif %}</td>
+      <td class="h5-actions">
+        <a href="{% url 'transport:route_edit' route.pk %}">Edit</a>
+        <form method="post" action="{% url 'transport:route_delete' route.pk %}" onsubmit="return confirm('Delete this route?')">{% csrf_token %}<button class="danger" type="submit">Delete</button></form>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="5" class="h5-empty">No routes found.{% if not q and not active %} <a href="{% url 'transport:route_create' %}">Add the first route</a>{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% include "partials/pagination.html" with page=routes %}
 {% endblock %}

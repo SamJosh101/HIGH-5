@@ -1,21 +1,20 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 {% block title %}Transport{% endblock %}
-{% block content %}
-<div class="h5-admin-layout">
-  {% include "partials/admin_sidebar.html" %}
-  <section class="h5-admin-main">
-    <div class="h5-page-head"><h1>Transport</h1></div>
-    <div class="row g-3">
-      <div class="col-sm-6 col-lg-3"><div class="h5-stat"><span>Routes</span><strong>{{ route_count }}</strong></div></div>
-      <div class="col-sm-6 col-lg-3"><div class="h5-stat"><span>Buses</span><strong>{{ bus_count }}</strong></div></div>
-      <div class="col-sm-6 col-lg-3"><div class="h5-stat"><span>Schedules</span><strong>{{ schedule_count }}</strong></div></div>
-      <div class="col-sm-6 col-lg-3"><div class="h5-stat"><span>Today's departures</span><strong>{{ today_departures }}</strong></div></div>
-    </div>
-    <div class="h5-admin-actions">
-      <a class="btn btn-primary" href="{% url 'transport:route_list' %}">Manage routes</a>
-      <a class="btn btn-outline-light" href="{% url 'transport:bus_list' %}">Manage buses</a>
-      <a class="btn btn-outline-light" href="{% url 'transport:schedule_list' %}">Manage schedules</a>
-    </div>
-  </section>
+{% block admin_eyebrow %}<p>Routes, buses and schedules</p>{% endblock %}
+{% block heading %}Transport{% endblock %}
+{% block admin_actions %}<a class="h5-btn-white" href="{% url 'transport:schedule_create' %}">+ New schedule</a>{% endblock %}
+
+{% block admin_content %}
+<div class="h5-kpis">
+  <div class="h5-kpi"><a href="{% url 'transport:route_list' %}"><span>Routes</span><strong>{{ route_count }}</strong><em>manage routes →</em></a></div>
+  <div class="h5-kpi"><a href="{% url 'transport:bus_list' %}"><span>Buses</span><strong>{{ bus_count }}</strong><em>{{ available_buses }} available</em></a></div>
+  <div class="h5-kpi"><a href="{% url 'transport:schedule_list' %}"><span>Schedules</span><strong>{{ schedule_count }}</strong><em>manage schedules →</em></a></div>
+  <div class="h5-kpi"><span>Departures today</span><strong>{{ today_departures }}</strong><em>not counting cancelled</em></div>
 </div>
+
+<ul class="h5-rows">
+  <li><a href="{% url 'transport:route_list' %}"><b class="fw-medium">Routes</b><small>Cities served, distance and journey time</small></a><a class="h5-muted" href="{% url 'transport:route_create' %}">+ Add route</a></li>
+  <li><a href="{% url 'transport:bus_list' %}"><b class="fw-medium">Buses</b><small>Registration, bus type, seats and status</small></a><a class="h5-muted" href="{% url 'transport:bus_create' %}">+ Register bus</a></li>
+  <li><a href="{% url 'transport:schedule_list' %}"><b class="fw-medium">Schedules</b><small>Which bus runs which route, when, and the fare</small></a><a class="h5-muted" href="{% url 'transport:schedule_create' %}">+ New schedule</a></li>
+</ul>
 {% endblock %}

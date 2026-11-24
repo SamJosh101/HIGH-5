@@ -1,25 +1,37 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 {% block title %}Buses{% endblock %}
-{% block content %}
-<div class="h5-admin-layout">
-  {% include "partials/admin_sidebar.html" %}
-  <section class="h5-admin-main">
-    <div class="h5-page-head"><h1>Buses</h1><a class="btn btn-primary" href="{% url 'transport:bus_create' %}">Register bus</a></div>
-    <div class="h5-panel">
-      <form class="h5-filter-row" method="get">
-        <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Registration number">
-        <select class="form-select" name="status"><option value="">All statuses</option>{% for value, label in statuses %}<option value="{{ value }}"{% if status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
-        <button class="btn btn-outline-light" type="submit">Filter</button>
-      </form>
-      <div class="table-responsive">
-        <table class="table align-middle"><thead><tr><th>Registration</th><th>Type</th><th>Seats</th><th>Status</th><th>Active</th><th></th></tr></thead><tbody>
-        {% for bus in buses %}
-          <tr><td>{{ bus.name_or_plate }}</td><td>{{ bus.get_bus_type_display }}</td><td>{{ bus.total_seats }}</td><td>{{ bus.get_status_display }}</td><td>{% if bus.is_active %}Yes{% else %}No{% endif %}</td><td class="text-end"><a class="btn btn-sm btn-outline-light" href="{% url 'transport:bus_edit' bus.pk %}">Edit</a><form class="d-inline" method="post" action="{% url 'transport:bus_delete' bus.pk %}" onsubmit="return confirm('Delete this bus?')">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button></form></td></tr>
-        {% empty %}<tr><td colspan="6" class="h5-empty">No buses found.</td></tr>{% endfor %}
-        </tbody></table>
-      </div>
-      {% include "partials/pagination.html" with page=buses %}
-    </div>
-  </section>
-</div>
+{% block admin_eyebrow %}<p>The fleet</p>{% endblock %}
+{% block heading %}Buses{% endblock %}
+{% block admin_actions %}<a class="h5-btn-white" href="{% url 'transport:bus_create' %}">+ Register bus</a>{% endblock %}
+
+{% block admin_content %}
+<form class="h5-filters" method="get" role="search">
+  <input class="form-control h5-search-input" type="search" name="q" value="{{ q }}" placeholder="Registration number" aria-label="Registration number">
+  {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+  <a class="h5-chip{% if not status %} active{% endif %}" href="?q={{ q|urlencode }}">All</a>
+  {% for value, label in statuses %}
+    <a class="h5-chip{% if status == value %} active{% endif %}" href="?q={{ q|urlencode }}&amp;status={{ value }}">{{ label }}</a>
+  {% endfor %}
+</form>
+
+<table class="h5-table">
+  <thead><tr><th>Bus</th><th>Seats</th><th>Status</th><th>In service</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+  <tbody>
+  {% for bus in buses %}
+    <tr>
+      <td><span class="h5-ref">{{ bus.name_or_plate }}</span><small>{{ bus.get_bus_type_display }}</small></td>
+      <td data-label="Seats">{{ bus.total_seats }}</td>
+      <td><span class="h5-status{% if bus.status == 'AVAILABLE' %} success{% elif bus.status == 'ASSIGNED' %} info{% elif bus.status == 'MAINTENANCE' %} warn{% endif %}">{{ bus.get_status_display }}</span></td>
+      <td data-label="In service">{% if bus.is_active %}Yes{% else %}<span class="h5-muted">No</span>{% endif %}</td>
+      <td class="h5-actions">
+        <a href="{% url 'transport:bus_edit' bus.pk %}">Edit</a>
+        <form method="post" action="{% url 'transport:bus_delete' bus.pk %}" onsubmit="return confirm('Delete this bus?')">{% csrf_token %}<button class="danger" type="submit">Delete</button></form>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="5" class="h5-empty">No buses found.{% if not q and not status %} <a href="{% url 'transport:bus_create' %}">Register the first bus</a>{% endif %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% include "partials/pagination.html" with page=buses %}
 {% endblock %}

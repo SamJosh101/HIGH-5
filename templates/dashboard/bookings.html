@@ -1,15 +1,46 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 {% block title %}Bookings{% endblock %}
-{% block content %}
-<div class="h5-admin-layout">{% include "partials/admin_sidebar.html" %}<section class="h5-admin-main"><div class="h5-page-head"><h1>Bookings</h1></div><div class="h5-panel">
-{% if not booking_model_available %}<div class="h5-empty"><h3>Booking records are not available yet</h3></div>{% else %}
-<form class="h5-filter-row" method="get">
-<input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Booking reference">
-<input class="form-control" type="date" name="date" value="{{ date }}">
-<select class="form-select" name="route"><option value="">All routes</option>{% for route in routes %}<option value="{{ route.pk }}"{% if route_id == route.pk|stringformat:'s' %} selected{% endif %}>{{ route }}</option>{% endfor %}</select>
-<select class="form-select" name="status"><option value="">All statuses</option><option value="PENDING"{% if status == 'PENDING' %} selected{% endif %}>Pending</option><option value="CONFIRMED"{% if status == 'CONFIRMED' %} selected{% endif %}>Confirmed</option><option value="CANCELLED"{% if status == 'CANCELLED' %} selected{% endif %}>Cancelled</option><option value="PAID"{% if status == 'PAID' %} selected{% endif %}>Paid</option><option value="REFUNDED"{% if status == 'REFUNDED' %} selected{% endif %}>Refunded</option></select>
-<button class="btn btn-outline-light" type="submit">Filter</button></form>
-<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Reference</th><th>Passenger</th><th>Route</th><th>Departure</th><th>Status</th><th>Payment</th><th></th></tr></thead><tbody>{% for booking in bookings %}<tr><td>{{ booking.booking_ref }}</td><td>{{ booking.passenger.email }}</td><td>{{ booking.schedule.route }}</td><td>{{ booking.schedule.departure_date }} {{ booking.schedule.departure_time }}</td><td>{{ booking.status }}</td><td>{{ booking.payment_status }}</td><td><a class="btn btn-sm btn-outline-light" href="{% url 'dashboard:booking_detail' booking.pk %}">Details</a></td></tr>{% empty %}<tr><td colspan="7" class="h5-empty">No bookings found.</td></tr>{% endfor %}</tbody></table></div>{% include "partials/pagination.html" with page=bookings %}
+{% block admin_eyebrow %}<p>Every seat passengers have booked</p>{% endblock %}
+{% block heading %}Bookings{% endblock %}
+
+{% block admin_content %}
+{% if not booking_model_available %}
+  <p class="h5-muted">Booking records are not available yet.</p>
+{% else %}
+<form class="h5-filters" method="get" role="search">
+  <input class="form-control h5-search-input" type="search" name="q" value="{{ q }}" placeholder="Booking reference" aria-label="Booking reference">
+  <input class="form-control" type="date" name="date" value="{{ date }}" aria-label="Booked on">
+  <select class="form-select" name="route" aria-label="Route">
+    <option value="">All routes</option>
+    {% for route in routes %}<option value="{{ route.pk }}"{% if route_id == route.pk|stringformat:'s' %} selected{% endif %}>{{ route }}</option>{% endfor %}
+  </select>
+  <select class="form-select" name="status" aria-label="Payment">
+    <option value="">Any payment</option>
+    <option value="PENDING"{% if status == 'PENDING' %} selected{% endif %}>Pending</option>
+    <option value="PAID"{% if status == 'PAID' %} selected{% endif %}>Paid</option>
+    <option value="REFUNDED"{% if status == 'REFUNDED' %} selected{% endif %}>Refunded</option>
+  </select>
+  <button class="btn btn-outline-light" type="submit">Filter</button>
+  {% if q or date or route_id or status %}<a class="h5-chip" href="{% url 'dashboard:bookings' %}">Clear</a>{% endif %}
+</form>
+
+<table class="h5-table">
+  <thead><tr><th>Reference</th><th>Passenger</th><th>Trip</th><th>Amount</th><th>Status</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+  <tbody>
+  {% for booking in bookings %}
+    <tr>
+      <td><span class="h5-ref">{{ booking.booking_ref }}</span><small>booked {{ booking.booked_at|date:"j M, H:i" }}</small></td>
+      <td data-label="Passenger">{{ booking.passenger.full_name }}<small>{{ booking.passenger.email }}</small></td>
+      <td data-label="Trip">{{ booking.schedule.route.origin }}<span class="h5-arrow">→</span>{{ booking.schedule.route.destination }}<small>{{ booking.schedule.departure_date|date:"D j M" }} · {{ booking.schedule.departure_time|time:"H:i" }} · {{ booking.seats_booked }} seat{{ booking.seats_booked|pluralize }}</small></td>
+      <td data-label="Amount">{{ CURRENCY }}{{ booking.total_amount|floatformat:"-2g" }}</td>
+      <td>{% include "dashboard/_booking_status.html" %}</td>
+      <td class="h5-actions"><a href="{% url 'dashboard:booking_detail' booking.pk %}">Details</a></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="h5-empty">No bookings found.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% include "partials/pagination.html" with page=bookings %}
 {% endif %}
-</div></section></div>
 {% endblock %}
