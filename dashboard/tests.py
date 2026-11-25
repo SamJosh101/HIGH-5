@@ -92,6 +92,55 @@ class DashboardDataTests(TestCase):
     def test_booking_detail_unknown_id_is_404(self):
         self.assertEqual(self.client.get(reverse("dashboard:booking_detail", args=[999999])).status_code, 404)
 
+
+    def test_admin_can_mark_pending_booking_as_paid(self):
+        booking = self.book(1)
+
+        response = self.client.post(
+            reverse("dashboard:mark_paid", args=[booking.pk])
+        )
+
+        booking.refresh_from_db()
+        self.assertEqual(booking.payment_status, Booking.PaymentStatus.PAID)
+        self.assertRedirects(
+            response,
+            reverse("dashboard:booking_detail", args=[booking.pk])
+        )
+
+    def test_already_paid_booking_remains_paid(self):
+        booking = self.book(1, payment=Booking.PaymentStatus.PAID)
+
+        self.client.post(
+            reverse("dashboard:mark_paid", args=[booking.pk])
+        )
+
+        booking.refresh_from_db()
+        self.assertEqual(booking.payment_status, Booking.PaymentStatus.PAID)
+
+    def test_cancelled_booking_cannot_be_marked_paid(self):
+        booking = self.book(1, status=Booking.Status.CANCELLED)
+
+        self.client.post(
+            reverse("dashboard:mark_paid", args=[booking.pk])
+        )
+
+        booking.refresh_from_db()
+        self.assertEqual(booking.payment_status, Booking.PaymentStatus.PENDING)
+
+    def test_passenger_cannot_mark_booking_as_paid(self):
+        booking = self.book(1)
+        self.client.force_login(self.rider)
+
+        response = self.client.post(
+            reverse("dashboard:mark_paid", args=[booking.pk])
+        )
+
+        booking.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(booking.payment_status, Booking.PaymentStatus.PENDING)
+
+
+
     def test_admin_pages_render_with_the_current_stop_lit(self):
         for name in ["dashboard:home", "dashboard:bookings", "dashboard:reports", "transport:manage",
                      "transport:route_list", "transport:bus_list", "transport:schedule_list",

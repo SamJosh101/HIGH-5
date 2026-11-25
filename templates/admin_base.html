@@ -9,6 +9,15 @@
 <div class="h5-admin-layout">
   {% include "partials/admin_sidebar.html" %}
   <section class="h5-admin-main">
+        {% if messages %}
+      <div class="h5-admin-messages">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}" role="alert">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
     <div class="h5-page-head">
       <div>{% block admin_eyebrow %}{% endblock %}<h1>{% block heading %}{% endblock %}</h1></div>
       {% block admin_actions %}{% endblock %}

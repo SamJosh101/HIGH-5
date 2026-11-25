@@ -15,6 +15,17 @@
   <dt>Amount</dt><dd>{{ CURRENCY }}{{ booking.total_amount|floatformat:"-2g" }}</dd>
   <dt>Booking status</dt><dd>{{ booking.get_status_display }}</dd>
   <dt>Payment</dt><dd>{{ booking.get_payment_status_display }}</dd>
+  {% if booking.payment_status == "PENDING" and booking.status != "CANCELLED" %}
+  <dt>Payment action</dt>
+  <dd>
+    <form method="POST" action="{% url 'dashboard:mark_paid' booking.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-success">
+        Mark as Paid
+      </button>
+    </form>
+  </dd>
+{% endif %}
   <dt>Booked</dt><dd>{{ booking.booked_at|date:"j F Y, H:i" }}</dd>
   {% if booking.cancelled_at %}<dt>Cancelled</dt><dd>{{ booking.cancelled_at|date:"j F Y, H:i" }}</dd>{% endif %}
 </dl>
