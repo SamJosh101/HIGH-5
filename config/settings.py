@@ -172,10 +172,22 @@ if not DEBUG:
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "")
 
 # ------------------------------------------------------------------
-# Email (password reset). Console backend prints emails in the terminal.
+# Email – SMTP is the default backend for verification and password resets.
+# Supply provider-specific connection details through environment variables;
+# do not put SMTP credentials in source control.
 # ------------------------------------------------------------------
-EMAIL_BACKEND = env("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "HIGH 5 <no-reply@high5.local>")
+EMAIL_BACKEND = env("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = env("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(env("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
+EMAIL_TIMEOUT = int(env("EMAIL_TIMEOUT", "10"))
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "HIGH 5 <no-reply@example.com>")
+
+if EMAIL_USE_TLS and EMAIL_USE_SSL:
+    raise ImproperlyConfigured("EMAIL_USE_TLS and EMAIL_USE_SSL cannot both be enabled.")
 
 # ------------------------------------------------------------------
 # Internationalisation
