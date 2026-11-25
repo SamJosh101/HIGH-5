@@ -2,6 +2,7 @@
 from datetime import time, timedelta
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -9,6 +10,8 @@ from django.utils import timezone
 from transport.models import Bus, Route, Schedule
 
 from .models import Booking
+from io import StringIO
+from decimal import Decimal
 from .services import get_available_seats
 
 User = get_user_model()
@@ -81,3 +84,102 @@ class BookingApiTests(TestCase):
                                     content_type="application/json")
         self.assertIn(response.status_code, (401, 403))
         self.assertFalse(Booking.objects.exists())
+
+
+class AutomaticBookingCompletionTests(TestCase):
+    def setUp(self):
+        route = Route.objects.create(
+            origin="Lagos",
+            destination="Ibadan",
+            distance_km=130,
+            duration_estimate=timedelta(hours=2),
+        )
+
+        bus = Bus.objects.create(
+            name_or_plate="H5-AUTO-01",
+            bus_type=Bus.BusType.STANDARD,
+            total_seats=4,
+        )
+
+        self.schedule = Schedule.objects.create(
+            route=route,
+            bus=bus,
+            departure_date=timezone.localdate() - timedelta(days=1),
+            departure_time=time(7, 0),
+            fare="10000.00",
+        )
+
+        self.passenger = User.objects.create_user(
+            email="auto@example.com",
+            password=PASSWORD,
+            full_name="Auto Passenger",
+            email_verified=True,
+        )
+
+    def create_booking(self, status, payment_status):
+        return Booking.objects.create(
+            passenger=self.passenger,
+            schedule=self.schedule,
+            seats_booked=1,
+            total_amount=Decimal("10000.00"),
+            status=status,
+            payment_status=payment_status,
+        )
+
+    def run_completion_command(self):
+        output = StringIO()
+        call_command("complete_bookings", stdout=output)
+        return output.getvalue()
+
+    def test_past_trip_booking_is_completed(self):
+        booking = self.create_booking(
+            Booking.Status.CONFIRMED,
+            Booking.PaymentStatus.PENDING,
+        )
+
+        self.run_completion_command()
+
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, Booking.Status.COMPLETED)
+        self.assertEqual(booking.payment_status, Booking.PaymentStatus.PENDING)
+
+    def test_cancelled_booking_is_not_changed(self):
+        booking = self.create_booking(
+            Booking.Status.CANCELLED,
+            Booking.PaymentStatus.REFUNDED,
+        )
+
+        self.run_completion_command()
+
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, Booking.Status.CANCELLED)
+        self.assertEqual(booking.payment_status, Booking.PaymentStatus.REFUNDED)
+
+    def test_future_trip_booking_is_not_completed(self):
+        self.schedule.departure_date = timezone.localdate() + timedelta(days=2)
+        self.schedule.save()
+
+        booking = self.create_booking(
+            Booking.Status.CONFIRMED,
+            Booking.PaymentStatus.PAID,
+        )
+
+        self.run_completion_command()
+
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, Booking.Status.CONFIRMED)
+        self.assertEqual(booking.payment_status, Booking.PaymentStatus.PAID)
+
+    def test_cancelled_schedule_booking_is_not_completed(self):
+        self.schedule.status = Schedule.Status.CANCELLED
+        self.schedule.save()
+
+        booking = self.create_booking(
+            Booking.Status.CONFIRMED,
+            Booking.PaymentStatus.PAID,
+        )
+
+        self.run_completion_command()
+
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, Booking.Status.CONFIRMED)
