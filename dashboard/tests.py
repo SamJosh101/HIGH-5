@@ -107,6 +107,11 @@ class DashboardDataTests(TestCase):
             reverse("dashboard:booking_detail", args=[booking.pk])
         )
 
+    def test_mark_paid_message_is_shown_once(self):
+        booking = self.book(1)
+        response = self.client.post(reverse("dashboard:mark_paid", args=[booking.pk]), follow=True)
+        self.assertContains(response, "has been marked as paid", count=1)
+
     def test_already_paid_booking_remains_paid(self):
         booking = self.book(1, payment=Booking.PaymentStatus.PAID)
 

@@ -1,5 +1,7 @@
 import re
+import smtplib
 from datetime import timedelta
+from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.core import mail
@@ -285,6 +287,26 @@ class EmailVerificationTests(TestCase):
     def test_superuser_is_verified_automatically(self):
         admin = User.objects.create_superuser(email="root@example.com", password=PASSWORD, full_name="Root")
         self.assertTrue(admin.email_verified)
+
+    def test_sign_up_survives_a_mail_server_failure(self):
+        # e.g. wrong Gmail app password or no internet: no 500 page, account kept.
+        with mock.patch("django.core.mail.EmailMultiAlternatives.send", side_effect=smtplib.SMTPException("down")), \
+                self.assertLogs("accounts.services", level="ERROR"):
+            response = self.client.post(reverse("accounts:register"), {
+                "full_name": "New Rider", "email": "rider@example.com", "phone": "+2348000000000",
+                "password1": PASSWORD, "password2": PASSWORD,
+            }, follow=True)
+        self.assertRedirects(response, reverse("accounts:verify_email"))
+        self.assertContains(response, "could not send the code email")
+        self.assertFalse(User.objects.get(email="rider@example.com").email_verified)
+
+    def test_resend_survives_a_mail_server_failure(self):
+        self.register()
+        cache.clear()
+        with mock.patch("django.core.mail.EmailMultiAlternatives.send", side_effect=OSError("no network")), \
+                self.assertLogs("accounts.services", level="ERROR"):
+            response = self.client.post(reverse("accounts:resend_verification"), {"email": "rider@example.com"})
+        self.assertRedirects(response, reverse("accounts:verify_email"))
 
 
 class PasswordResetTests(TestCase):

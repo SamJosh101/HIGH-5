@@ -64,9 +64,13 @@ def register(request):
         # Not logged in yet: the user must first prove they own the email address
         # by typing the code we send. `next` is kept in the session, so after
         # verifying and logging in they land on the page they started from.
-        send_email_verification(user)
+        sent = send_email_verification(user)
         _remember_for_verification(request, user.email, next_url)
-        messages.success(request, f"Account created. We sent a 6-digit code to {user.email}.")
+        if sent:
+            messages.success(request, f"Account created. We sent a 6-digit code to {user.email}.")
+        else:
+            messages.warning(request, "Account created, but we could not send the code email right now. "
+                                      "Please use \"Send a new code\" in a minute.")
         return redirect("accounts:verify_email")
     return render(request, "accounts/register.html", {"form": form, "next": next_url})
 

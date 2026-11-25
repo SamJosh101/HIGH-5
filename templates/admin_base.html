@@ -5,19 +5,13 @@
           heading, admin_actions (buttons on the right), admin_content.
   Styles: "ADMIN PAGES" section of static/css/high5.css.
 {% endcomment %}
+{# Messages are shown inside the admin column (below), not at the top of base.html. #}
+{% block messages %}{% endblock %}
 {% block content %}
 <div class="h5-admin-layout">
   {% include "partials/admin_sidebar.html" %}
   <section class="h5-admin-main">
-        {% if messages %}
-      <div class="h5-admin-messages">
-        {% for message in messages %}
-          <div class="alert alert-{{ message.tags }}" role="alert">
-            {{ message }}
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
+    {% if messages %}<div class="h5-admin-messages">{% include "partials/messages.html" %}</div>{% endif %}
     <div class="h5-page-head">
       <div>{% block admin_eyebrow %}{% endblock %}<h1>{% block heading %}{% endblock %}</h1></div>
       {% block admin_actions %}{% endblock %}

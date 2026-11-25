@@ -67,7 +67,7 @@ class PassengerRegistrationForm(BootstrapFormMixin, UserCreationForm):
         user.role = User.Role.PASSENGER
         user.is_staff = False
         user.is_superuser = False
-        user.email_verified = False  # becomes True when the emailed link is confirmed
+        user.email_verified = False  # becomes True when the emailed code is entered
         if commit:
             user.save()
         return user

@@ -40,12 +40,44 @@ Unsafe `next` values (other websites) are dropped by `accounts.views._safe_next`
 
 ## Where the email goes
 
-In development, `EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend` (in `.env`) prints the
-email, including the code, in the `runserver` terminal. Nothing reaches a real inbox.
+`config/settings.py` reads all email settings from `.env` (SMTP settings added by Cross).
+Tests always use Django's in-memory mail box, so they never send real email.
 
-Sending real email (for example through Gmail) is **not set up yet**: `config/settings.py` would also
-need to read `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` and `EMAIL_USE_TLS`
-from `.env`. Keep those credentials in `.env` only, never in the code.
+### Development: console (default in `.env.example`)
+
+`EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend` prints the email, including the
+code, in the `runserver` terminal. Nothing reaches a real inbox.
+
+### Real inboxes: Gmail SMTP
+
+1. Use a Gmail account for the project and turn on **2-Step Verification**
+   (Google Account → Security).
+2. Create an **App Password** (Google Account → Security → App passwords). Google shows a
+   16-letter password once. Gmail refuses the normal account password for SMTP.
+3. Put these in your own `.env` (never in the code, never committed):
+
+   ```
+   EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+   EMAIL_HOST=smtp.gmail.com
+   EMAIL_PORT=587
+   EMAIL_USE_TLS=True
+   EMAIL_USE_SSL=False
+   EMAIL_HOST_USER=<the Gmail address>
+   EMAIL_HOST_PASSWORD=<the 16-letter app password>
+   DEFAULT_FROM_EMAIL=HIGH 5 <the Gmail address>
+   ```
+
+4. Restart `runserver`, sign up with an address you can open, and check the inbox (and Spam).
+
+`EMAIL_USE_TLS` and `EMAIL_USE_SSL` cannot both be `True` (settings refuse to start). Port 587
+uses TLS; port 465 uses SSL.
+
+### If sending fails
+
+`accounts.services.send_email_verification` catches the error and logs it (user id only, never
+the code or the password) instead of showing a server error. The account is still created, the
+user is sent to the code page with a warning, and can use "Send a new code" a minute later.
+Password-reset emails behave the same way (Django logs the failure).
 
 ## Accounts created before verification existed
 
