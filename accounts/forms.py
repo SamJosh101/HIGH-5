@@ -8,6 +8,7 @@ from django.contrib.auth.forms import (
 )
 from django.core.exceptions import ValidationError
 
+from .email_verification import CODE_LENGTH
 from .models import User
 
 
@@ -88,29 +89,24 @@ class EmailAuthenticationForm(BootstrapFormMixin, AuthenticationForm):
             )
 
 
-class EmailVerificationResendForm(BootstrapFormMixin, forms.Form):
-    email = forms.EmailField(label="Email", max_length=254)
-
-    def clean_email(self):
-        # Same form as sign-up stores, so the account lookup always matches.
-        return self.cleaned_data["email"].strip().lower()
-
-
-class VerifyEmailCodeForm(EmailVerificationResendForm):
-    """Email address + the 6-digit code from the verification email."""
+class VerifyEmailCodeForm(BootstrapFormMixin, forms.Form):
+    """Only the 6-digit code. The email address comes from the session
+    (set at sign-up, or at log in with the right password), never from the user."""
 
     code = forms.CharField(
-        label="Verification code", min_length=6, max_length=7,
+        label="Verification code", max_length=CODE_LENGTH,
         widget=forms.TextInput(attrs={
-            "inputmode": "numeric", "autocomplete": "one-time-code", "placeholder": "123456",
+            "inputmode": "numeric", "autocomplete": "one-time-code", "placeholder": "000000",
+            "maxlength": CODE_LENGTH, "pattern": f"[0-9]{{{CODE_LENGTH}}}", "autofocus": True,
             "class": "h5-code-input",
         }),
+        error_messages={"max_length": f"The code has exactly {CODE_LENGTH} digits."},
     )
 
     def clean_code(self):
-        code = self.cleaned_data["code"].replace(" ", "")  # allow "123 456"
-        if not (code.isdigit() and len(code) == 6):
-            raise ValidationError("Enter the 6 digits from the email.")
+        code = self.cleaned_data["code"].strip()
+        if not (code.isdigit() and len(code) == CODE_LENGTH):
+            raise ValidationError(f"Enter the {CODE_LENGTH} digits from the email.")
         return code
 
 

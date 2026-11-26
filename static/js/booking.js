@@ -23,7 +23,13 @@
 
   let picked = [];
 
-  const money = (n) => `${currency}${n.toFixed(2)}`;
+  // Same format as the server pages: ₦10,000 or ₦10,000.50 (display only).
+  const money = (n) => {
+    const kobo = Math.round(n * 100);
+    return `${currency}${(kobo / 100).toLocaleString("en-US", {
+      minimumFractionDigits: kobo % 100 ? 2 : 0, maximumFractionDigits: 2,
+    })}`;
+  };
   const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
   // order seats the way people read them: 7A, 7B, 12C …
   const bySeat = (a, b) => parseInt(a, 10) - parseInt(b, 10) || a.slice(-1).localeCompare(b.slice(-1));
@@ -47,8 +53,14 @@
       const passengerCard = document.createElement("div");
       passengerCard.className = "h5-passenger-card";
 
+      const seat = picked[i - 1];
+      const seatChip = seats.length === 0
+        ? ""
+        : seat
+          ? `<span class="h5-pax-seat">Seat ${seat}</span>`
+          : `<span class="h5-pax-seat is-missing">Pick a seat</span>`;
       passengerCard.innerHTML = `
-        <h3>Passenger ${i}</h3>
+        <h3>Passenger ${i}${seatChip}</h3>
 
         <div class="h5-form-group">
           <label for="passenger-name-${i}">Full name</label>
@@ -171,11 +183,17 @@
       passengerFields.querySelectorAll(".h5-passenger-card")
     );
 
-    const passengers = passengerCards.map((card) => ({
+    const passengers = passengerCards.map((card, index) => ({
       full_name: card.querySelector("[name='passenger_name']").value.trim(),
       phone: card.querySelector("[name='passenger_phone']").value.trim(),
-      email: card.querySelector("[name='passenger_email']").value.trim()
+      email: card.querySelector("[name='passenger_email']").value.trim(),
+      seat: picked[index] || ""
     }));
+
+    if (seats.length > 0 && picked.length !== passengers.length) {
+      showMessage("Pick a seat for every passenger on the seat map.", true);
+      return;
+    }
 
     // Confirm that every passenger has the required details.
     if (
@@ -221,7 +239,8 @@
       const data = await response.json();
 
       if (!response.ok) {
-        const errorMessage = formatApiError(data);
+        markSeatsTaken(data && data.taken_seats);
+        const errorMessage = formatApiError(data && data.booking ? { booking: data.booking } : data);
         throw new Error(errorMessage);
       }
 
@@ -240,6 +259,20 @@
       goBtn.textContent = originalButtonText;
     }
   });
+
+  function markSeatsTaken(codes) {
+    if (!Array.isArray(codes) || !codes.length) return;
+    codes.forEach((code) => {
+      const seat = seats.find((s) => s.dataset.seat === code);
+      if (!seat) return;
+      seat.classList.add("is-taken");
+      seat.disabled = true;
+      seat.setAttribute("aria-label", `Seat ${code}, booked`);
+      seat.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>';
+    });
+    picked = picked.filter((code) => !codes.includes(code));
+    render();
+  }
 
   function showMessage(message, isError) {
     let messageBox = document.querySelector("#bookingMessage");
@@ -317,7 +350,7 @@
     amount.append(
       amountLabel,
       document.createTextNode(
-        `${currency}${Number(booking.total_amount || 0).toFixed(2)}`
+        money(Number(booking.total_amount || 0))
       )
     );
 
@@ -331,7 +364,7 @@
 
     (booking.passengers || []).forEach((passenger) => {
       const item = document.createElement("li");
-      item.textContent = `${passenger.full_name} — ${passenger.phone}`;
+      item.textContent = `${passenger.full_name} — ${passenger.phone}${passenger.seat_number ? ` — Seat ${passenger.seat_number}` : ""}`;
       passengerList.appendChild(item);
     });
 

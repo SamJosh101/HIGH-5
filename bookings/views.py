@@ -232,9 +232,10 @@ class BookingCreateAPIView(generics.CreateAPIView):
             booking = serializer.save()
 
         except BookingError as error:
-            raise ValidationError({
-                "booking": str(error)
-            })
+            detail = {"booking": str(error)}
+            if error.taken_seats:
+                detail["taken_seats"] = error.taken_seats
+            raise ValidationError(detail)
 
         # Return the actual saved booking, not the input data.
         response_serializer = BookingSerializer(

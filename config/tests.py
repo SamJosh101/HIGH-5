@@ -207,7 +207,7 @@ class PopularRouteAccessTests(TestCase):
         response = self.client.post(reverse("accounts:register"), data)
         self.assertRedirects(response, reverse("accounts:verify_email"))
         code = re.search(r"\b(\d{6})\b", mail.outbox[-1].body).group(1)
-        return lambda: self.client.post(reverse("accounts:verify_email"), {"email": "rider@example.com", "code": code})
+        return lambda: self.client.post(reverse("accounts:verify_email"), {"code": code})
 
     def test_after_sign_up_the_user_lands_on_the_prefilled_search(self):
         # sign up -> enter the emailed code -> log in -> back on the route the visitor clicked

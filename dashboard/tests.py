@@ -81,6 +81,26 @@ class DashboardDataTests(TestCase):
         later = self.client.get(reverse("dashboard:reports"), {"start": (today + timedelta(days=1)).isoformat()})
         self.assertEqual(later.context["total_bookings"], 0)
 
+    def test_reports_leave_out_cancelled_bookings_like_the_dashboard(self):
+        self.book(2, payment=Booking.PaymentStatus.PAID)
+        self.book(1, payment=Booking.PaymentStatus.PAID, status=Booking.Status.CANCELLED)
+        report = self.client.get(reverse("dashboard:reports")).context
+        home = self.client.get(reverse("dashboard:home")).context
+        self.assertEqual(report["total_revenue"], Decimal("20000.00"))
+        self.assertEqual(report["total_bookings"], 1)
+        self.assertEqual(home["month_revenue"], report["total_revenue"])
+
+    def test_revenue_is_counted_on_the_payment_day(self):
+        booking = self.book(1)  # pending
+        last_month = timezone.now() - timedelta(days=40)
+        Booking.objects.filter(pk=booking.pk).update(booked_at=last_month)
+        self.client.post(reverse("dashboard:mark_paid", args=[booking.pk]))  # paid today
+        today = timezone.localdate()
+        home = self.client.get(reverse("dashboard:home")).context
+        self.assertEqual(home["month_revenue"], Decimal("10000.00"))
+        report = self.client.get(reverse("dashboard:reports"), {"start": today.isoformat()}).context
+        self.assertEqual(report["daily"], [{"day": today, "revenue": Decimal("10000.00")}])
+
     def test_bookings_list_date_filter(self):
         booking = self.book(1)
         today = timezone.localdate()

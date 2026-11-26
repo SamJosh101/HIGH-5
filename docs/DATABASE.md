@@ -119,7 +119,8 @@ A route has **no intermediate stops** in the SRS (FR-08, §5.1). Pages show depa
 | seats_booked | PositiveSmallIntegerField | ≥ 1 |
 | total_amount | DecimalField(10,2) | = fare × seats, **calculated on the server** |
 | status | CharField + choices | `CONFIRMED` / `CANCELLED` / `COMPLETED` (FR-29) |
-| payment_status | CharField + choices | `PENDING` / `PAID` (FR-32) – simulated; an admin marks it paid. `REFUNDED` is an optional extra of ours for cancelled paid bookings |
+| payment_status | CharField + choices | `PENDING` / `PAID` (FR-32) – simulated; an admin marks it paid. A paid booking that the passenger cancels (only allowed before the cutoff) becomes `REFUNDED` and stops counting as revenue |
+| paid_at | DateTimeField | null; set automatically the first time `payment_status` becomes `PAID`. Revenue (dashboard, Reports, CSV) is counted on this date. Migration 0002 filled it with `booked_at` for bookings that were already paid |
 | booked_at | DateTimeField | `auto_now_add=True` |
 | cancelled_at | DateTimeField | null |
 

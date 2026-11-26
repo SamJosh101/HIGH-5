@@ -18,9 +18,9 @@
       </dd>
     </div>
     <div><dt>Seats</dt><dd data-seats-summary>Pick {{ trip.passengers }} seat{{ trip.passengers|pluralize }}</dd></div>
-    <div><dt>Fare</dt><dd data-fare-line>{{ trip.currency }}{{ trip.fare }} &times; {{ trip.passengers }}</dd></div>
+    <div><dt>Fare</dt><dd data-fare-line>{{ trip.currency }}{{ trip.fare|floatformat:"-2g" }} &times; {{ trip.passengers }}</dd></div>
   </dl>
-  <div class="h5-sum-total"><span>Total</span><b data-total>{{ trip.currency }}{{ trip.fare }}</b></div>
+  <div class="h5-sum-total"><span>Total</span><b data-total>{{ trip.currency }}{{ trip.fare|floatformat:"-2g" }}</b></div>
   <input type="hidden" name="passengers" id="b-pax" value="{{ trip.passengers }}">
   <input type="hidden" name="seats" id="b-seats" value="">
   <button type="submit" class="h5-sum-go" id="b-go" disabled><span>Confirm booking</span><span aria-hidden="true">&rarr;</span></button>

@@ -9,6 +9,7 @@
   <input class="form-control h5-search-input" type="search" name="q" value="{{ q }}" placeholder="Route or bus" aria-label="Route or bus">
   <input type="hidden" name="period" value="{{ period }}">
   <a class="h5-chip{% if period == 'upcoming' %} active{% endif %}" href="?q={{ q|urlencode }}&amp;period=upcoming">Upcoming</a>
+  <a class="h5-chip{% if period == 'departed' %} active{% endif %}" href="?q={{ q|urlencode }}&amp;period=departed">Departed</a>
   <a class="h5-chip{% if period == 'completed' %} active{% endif %}" href="?q={{ q|urlencode }}&amp;period=completed">Completed</a>
   <a class="h5-chip{% if period == 'cancelled' %} active{% endif %}" href="?q={{ q|urlencode }}&amp;period=cancelled">Cancelled</a>
 </form>
@@ -25,7 +26,7 @@
       <td><span class="h5-status{% if schedule.status == 'SCHEDULED' %} success{% elif schedule.status == 'COMPLETED' %} info{% endif %}">{{ schedule.get_status_display }}</span></td>
       <td class="h5-actions">
         <a href="{% url 'transport:schedule_edit' schedule.pk %}">Edit</a>
-        {% if schedule.status == 'SCHEDULED' %}<form method="post" action="{% url 'transport:schedule_cancel' schedule.pk %}" onsubmit="return confirm('Cancel this schedule?')">{% csrf_token %}<button class="danger" type="submit">Cancel trip</button></form>{% endif %}
+        {% if schedule.status == 'SCHEDULED' %}<form method="post" action="{% url 'transport:schedule_cancel' schedule.pk %}" onsubmit="return confirm('Cancel this trip? Every booking on it will be cancelled, and paid ones marked refunded.')">{% csrf_token %}<button class="danger" type="submit">Cancel trip</button></form>{% endif %}
       </td>
     </tr>
   {% empty %}

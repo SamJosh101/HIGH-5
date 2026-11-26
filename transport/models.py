@@ -143,18 +143,31 @@ class Schedule(models.Model):
         """Estimated arrival time of day (shown in lists and the admin)."""
         return self.arrival_datetime.time()
 
+    def _departure_changed(self):
+        """True for a new schedule, or when the date or time differs from the saved one."""
+        if self._state.adding or not self.pk:
+            return True
+        saved = Schedule.objects.filter(pk=self.pk).values("departure_date", "departure_time").first()
+        return saved is None or (saved["departure_date"], saved["departure_time"]) != (
+            self.departure_date, self.departure_time)
+
     def clean(self):
         super().clean()
         if not self.route_id:
             raise ValidationError({"route": "Select a route."})
         if not self.bus_id:
             raise ValidationError({"bus": "Select a bus."})
+        # A new trip, or a trip moved to another time, may not start in the past.
+        # A trip that has already left can still be edited (for example marked
+        # Completed or given a corrected fare) as long as its time is unchanged.
+        if self._departure_changed() and self.departure_datetime < timezone.now():
+            raise ValidationError({"departure_date": "Departure cannot be in the past."})
+        if self.status != Schedule.Status.SCHEDULED or self.departure_datetime < timezone.now():
+            return  # cancelled, completed or already-departed trips need no bus checks
         if not self.route.is_active:
             raise ValidationError({"route": "Route must be active."})
         if not self.bus.is_active:
             raise ValidationError({"bus": "Bus must be active."})
-        if self.departure_datetime < timezone.now():
-            raise ValidationError({"departure_date": "Departure cannot be in the past."})
 
         departure = self.departure_datetime
         arrival = self.arrival_datetime

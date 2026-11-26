@@ -95,12 +95,16 @@ def admin_home(request):
     live = Booking.objects.exclude(status=Booking.Status.CANCELLED)
     paid = live.filter(payment_status=Booking.PaymentStatus.PAID)
 
-    def in_range(queryset, start, end):
-        return queryset.filter(booked_at__gte=_day_start(start), booked_at__lt=_day_start(end))
+    def in_range(queryset, start, end, field="booked_at"):
+        return queryset.filter(**{f"{field}__gte": _day_start(start), f"{field}__lt": _day_start(end)})
+
+    def paid_in(start, end):
+        # Revenue is counted on the day the payment was confirmed (paid_at).
+        return in_range(paid, start, end, "paid_at")
 
     tomorrow = today + timedelta(days=1)
-    month_revenue = in_range(paid, month_start, tomorrow).aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
-    last_revenue = in_range(paid, last_month_start, last_month_end).aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
+    month_revenue = paid_in(month_start, tomorrow).aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
+    last_revenue = paid_in(last_month_start, last_month_end).aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
     month_bookings = in_range(live, month_start, tomorrow).count()
     last_bookings = in_range(live, last_month_start, last_month_end).count()
 
@@ -127,11 +131,10 @@ def admin_home(request):
     days = [chart_start + timedelta(days=i) for i in range(CHART_DAYS)]
     daily_revenue = dict.fromkeys(days, Decimal("0"))
     daily_bookings = dict.fromkeys(days, 0)
-    for booked_at, amount, payment in in_range(live, chart_start, tomorrow).values_list("booked_at", "total_amount", "payment_status"):
-        day = _local_day(booked_at)
-        daily_bookings[day] += 1
-        if payment == Booking.PaymentStatus.PAID:
-            daily_revenue[day] += amount
+    for booked_at in in_range(live, chart_start, tomorrow).values_list("booked_at", flat=True):
+        daily_bookings[_local_day(booked_at)] += 1
+    for paid_at, amount in paid_in(chart_start, tomorrow).values_list("paid_at", "total_amount"):
+        daily_revenue[_local_day(paid_at)] += amount
 
     months = []
     first = month_start
@@ -139,8 +142,8 @@ def admin_home(request):
         months.insert(0, first)
         first = (first - timedelta(days=1)).replace(day=1)
     monthly_revenue = dict.fromkeys(months, Decimal("0"))
-    for booked_at, amount in in_range(paid, months[0], tomorrow).values_list("booked_at", "total_amount"):
-        monthly_revenue[_local_day(booked_at).replace(day=1)] += amount
+    for paid_at, amount in paid_in(months[0], tomorrow).values_list("paid_at", "total_amount"):
+        monthly_revenue[_local_day(paid_at).replace(day=1)] += amount
 
     chart = {
         "daily": {"labels": [d.strftime("%d %b") for d in days], "values": [float(v) for v in daily_revenue.values()], "money": True},
@@ -267,20 +270,21 @@ def reports(request):
     start = request.GET.get("start", "")
     end = request.GET.get("end", "")
     Booking = get_booking_model()
-    booking_queryset = Booking.objects.all() if Booking else None
+    # Cancelled bookings are not revenue (the dashboard leaves them out too).
+    booking_queryset = Booking.objects.exclude(status=Booking.Status.CANCELLED) if Booking else None
     paid = paid_bookings(booking_queryset) if booking_queryset is not None else booking_queryset
     start_day, end_day = _parse_date(start), _parse_date(end)
     if paid is not None and start_day:
-        paid = paid.filter(booked_at__gte=_day_start(start_day))
+        paid = paid.filter(paid_at__gte=_day_start(start_day))
     if paid is not None and end_day:
-        paid = paid.filter(booked_at__lt=_day_start(end_day + timedelta(days=1)))
+        paid = paid.filter(paid_at__lt=_day_start(end_day + timedelta(days=1)))
 
     if paid is not None:
         total_revenue = paid.aggregate(total=Sum("total_amount"))["total"] or Decimal("0.00")
         total_bookings = paid.count()
         by_day, by_month = defaultdict(Decimal), defaultdict(Decimal)
-        for booked_at, amount in paid.values_list("booked_at", "total_amount"):
-            day = _local_day(booked_at)
+        for paid_at, amount in paid.values_list("paid_at", "total_amount"):
+            day = _local_day(paid_at)
             by_day[day] += amount
             by_month[day.replace(day=1)] += amount
         daily = [{"day": d, "revenue": by_day[d]} for d in sorted(by_day)]
@@ -295,8 +299,8 @@ def reports(request):
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="high5-booking-report.csv"'
         writer = csv.writer(response)
-        writer.writerow(["Booking reference", "Passenger", "Route", "Departure", "Seats", "Amount", "Payment status", "Status"])
-        for booking in paid.select_related("passenger", "schedule", "schedule__route").order_by("-booked_at"):
+        writer.writerow(["Booking reference", "Passenger", "Route", "Departure", "Seats", "Amount", "Paid on", "Payment status", "Status"])
+        for booking in paid.select_related("passenger", "schedule", "schedule__route").order_by("-paid_at"):
             writer.writerow([
                 getattr(booking, "booking_ref", ""),
                 getattr(getattr(booking, "passenger", None), "email", ""),
@@ -304,6 +308,7 @@ def reports(request):
                 getattr(getattr(booking, "schedule", None), "departure_datetime", ""),
                 getattr(booking, "seats_booked", ""),
                 getattr(booking, "total_amount", ""),
+                timezone.localtime(booking.paid_at).strftime("%Y-%m-%d %H:%M") if booking.paid_at else "",
                 getattr(booking, "payment_status", ""),
                 getattr(booking, "status", ""),
             ])

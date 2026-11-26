@@ -121,10 +121,21 @@
 .h5-seat-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .h5-seat-avail { font-size: 14px; color: #b4bccb; }
 .h5-seat-avail b { color: #fff; }
-.h5-seat-bar { width: 230px; height: 5px; border-radius: 3px; background: #1d2330; margin-top: 10px; overflow: hidden; }
+.h5-seat-bar { width: 230px; max-width: 100%; height: 5px; border-radius: 3px; background: #1d2330; margin-top: 10px; overflow: hidden; }
 .h5-seat-bar i { display: block; height: 100%; background: var(--hx-blue-2); }
 .h5-seat-selected { font-size: 14px; color: var(--hx-muted); }
 .h5-seat-selected b { color: #fff; }
+/* real trips: seat numbers on the seats, gaps, sleeper berths, passenger seat chips */
+.h5-seat-help { margin: 6px 0 0; font-size: 13px; color: var(--hx-muted); }
+.h5-seat { width: var(--seat-w, var(--seat)); }
+.h5-seat-nums span { width: var(--seat-w, var(--seat)); }
+.h5-seat > span { font-size: 11px; font-weight: 600; color: #39414f; font-variant-numeric: tabular-nums; }
+.h5-seat.is-mine > span { color: #fff; }
+.h5-seat.is-gap { visibility: hidden; pointer-events: none; }
+.h5-coach.is-berths { --seat-w: 58px; }
+.h5-passenger-card h3 { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.h5-pax-seat { padding: 4px 10px; border-radius: 9px; font-size: 13px; font-weight: 600; background: rgba(47, 107, 255, .16); color: #9fb8ff; }
+.h5-pax-seat.is-missing { background: rgba(245, 165, 36, .12); color: var(--hx-amber); font-weight: 500; }
 
 /* 3. booking summary (FR-23) */
 .h5-sum-rows { margin-top: 20px !important; }

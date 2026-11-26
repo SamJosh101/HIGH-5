@@ -1,6 +1,9 @@
 
 from django.conf import settings
 
+from math import ceil
+
+from .seats import layout_label, letters_for, seat_grid
 from .services import get_available_seats
 
 
@@ -65,9 +68,12 @@ def schedule_to_trip(schedule, passengers=1):
 
         "max_passengers": max_passengers,
 
-        # Real seat allocation has not been implemented yet.
-        "seat_rows": [],
-        "seat_map_available": False,
+        # Seat map: one row per letter across the bus (bookings/seats.py).
+        "seat_rows": seat_grid(schedule),
+        "seat_numbers": list(range(1, ceil(total_seats / len(letters_for(schedule.bus))) + 1)),
+        "seat_layout": layout_label(schedule.bus),
+        "seat_berths": schedule.bus.bus_type == "SLEEPER",
+        "seat_map_available": True,
 
         "cancel_cutoff_hours": (
             settings.BOOKING_CANCELLATION_CUTOFF_HOURS

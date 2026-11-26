@@ -73,7 +73,7 @@ Enter an email, full name and password when asked. Nothing is hard-coded: each p
 
 **Default login for testing:** log in at `/accounts/login/` with the email and password you chose above. To add trips, log in as that administrator and add a route, a bus and a schedule under `/transport/manage/`. For a passenger login, sign up at `/accounts/register/`.
 
-New passengers who sign up get a 6-digit code by email and must enter it at `/accounts/verify-email/` before they can log in (see [docs/EMAIL_VERIFICATION.md](docs/EMAIL_VERIFICATION.md)). In development the email, with the code, is printed in the `runserver` terminal.
+New passengers who sign up get a 6-digit code by email and must enter it at `/accounts/verify-email/` before they can log in (see [docs/EMAIL_VERIFICATION.md](docs/EMAIL_VERIFICATION.md)). In development the email, with the code, is printed in the `runserver` terminal. To send codes to real inboxes through Gmail, follow "Real inboxes: Gmail SMTP" in that file.
 
 ### 8. Run the development server
 ```powershell
@@ -86,6 +86,18 @@ Open http://127.0.0.1:8000/
 python manage.py test
 ```
 Tests use a separate database (`test_high5_db`) that Django creates and deletes automatically.
+
+### Closing finished trips
+```powershell
+python manage.py complete_bookings
+```
+Marks every trip whose arrival time has passed as **Completed**, along with its confirmed bookings, and frees the bus if it has no other upcoming trips. Run it any time (it is safe to run repeatedly). To run it automatically every hour on Windows, open PowerShell in the project folder and run:
+```powershell
+$action  = New-ScheduledTaskAction -Execute "$PWD\.venv\Scripts\python.exe" -Argument "manage.py complete_bookings" -WorkingDirectory "$PWD"
+$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Hours 1)
+Register-ScheduledTask -TaskName "HIGH5 complete bookings" -Action $action -Trigger $trigger
+```
+Remove it again with `Unregister-ScheduledTask -TaskName "HIGH5 complete bookings" -Confirm:$false`. Admins can also close a trip by hand: **Schedules → Departed → Edit → Status: Completed**.
 
 > **Temporary SQLite mode:** if MySQL is unavailable you can run `$env:DB_ENGINE="sqlite"; python manage.py test` for quick isolated checks. This is **not** the project database and does not meet the MySQL requirement.
 
@@ -119,5 +131,5 @@ docs/          architecture, database contract, MySQL setup script
 
 ## Project status
 **Phase 1 – Foundation:** done (project setup, custom user, authentication, role permissions, base templates, docs, tests).
-**Phase 2 – Core features:** transport management (Daniel), booking and cancellation (Raheem), email verification (Cross), real Popular Routes (Sam).
-**Still to do:** admin "mark as paid", trips becoming Completed after departure, editing past schedules, optional seat selection.
+**Phase 2 – Core features:** done. Transport management (Daniel), booking, cancellation, admin "mark as paid" and automatic trip completion (Raheem), email verification and Gmail SMTP settings (Cross), real Popular Routes, admin redesign and 6-digit email codes (Sam).
+**Still to do (optional):** seat selection / seat map.

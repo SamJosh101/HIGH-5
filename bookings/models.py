@@ -5,6 +5,7 @@ import string
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils import timezone
 
 from accounts.models import phone_validator
 
@@ -74,6 +75,13 @@ class Booking(models.Model):
         blank=True
     )
 
+    # When the payment was confirmed. Revenue is counted on this date, not on
+    # the booking date (a booking made in November can be paid in December).
+    paid_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
     class Meta:
         ordering = ["-booked_at"]
         indexes = [
@@ -91,7 +99,23 @@ class Booking(models.Model):
                     self.booking_ref = reference
                     break
 
+        # Record the payment date the first time a booking becomes Paid,
+        # whichever page or tool set it (dashboard button, Django admin, ...).
+        if self.payment_status == self.PaymentStatus.PAID and self.paid_at is None:
+            self.paid_at = timezone.now()
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                kwargs["update_fields"] = set(update_fields) | {"paid_at"}
+
         super().save(*args, **kwargs)
+
+    @property
+    def seat_list(self):
+        """The booked seats in reading order, e.g. "4A, 4B" ("" if none were assigned)."""
+        from .seats import sort_key
+
+        codes = [p.seat_number for p in self.passengers.all() if p.seat_number]
+        return ", ".join(sorted(codes, key=sort_key))
 
     def __str__(self):
         return self.booking_ref

@@ -22,6 +22,14 @@ class PassengerDetailInputSerializer(serializers.Serializer):
         allow_blank=True
     )
 
+    # Seat code from the seat map, e.g. "4A". Optional: without seats the
+    # server gives out the first free ones (bookings.services._choose_seats).
+    seat = serializers.CharField(
+        max_length=4,
+        required=False,
+        allow_blank=True
+    )
+
 
 class BookingCreateSerializer(serializers.Serializer):
 

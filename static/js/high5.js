@@ -162,4 +162,16 @@
       dot.addEventListener("animationend", () => dot.remove());
     });
   }
+
+  /* ---------- verification code: digits only, never more than 6 ---------- */
+  $$(".h5-code-input").forEach((input) => {
+    const max = Number(input.getAttribute("maxlength")) || 6;
+    // Let a pasted "251 070" or "Code: 251070" through first, then keep only the
+    // first 6 digits (maxlength alone would cut before removing spaces/letters).
+    input.removeAttribute("maxlength");
+    input.addEventListener("input", () => {
+      const digits = input.value.replace(/\D/g, "").slice(0, max);
+      if (input.value !== digits) input.value = digits;
+    });
+  });
 })();

@@ -94,5 +94,6 @@ def sample_trip(origin, destination, travel_date, passengers=1):
         "passengers": max(1, min(passengers, max_passengers)),
         "max_passengers": max_passengers,
         "seat_rows": seat_grid(SAMPLE_TAKEN_SEATS),
+        "seat_numbers": list(range(1, SEAT_COLUMNS + 1)),
         "cancel_cutoff_hours": settings.BOOKING_CANCELLATION_CUTOFF_HOURS,
     }

@@ -9,6 +9,17 @@ from .forms import BusForm, RouteForm, ScheduleForm
 from .models import Bus, Route, Schedule
 
 
+def _cancel_bookings_note(schedule):
+    """Cancel (and refund) every booking on a trip the company cancelled; say what happened."""
+    from bookings.services import cancel_trip_bookings  # bookings depends on transport, not the reverse
+
+    cancelled, refunded = cancel_trip_bookings(schedule)
+    if not cancelled:
+        return "It had no bookings."
+    return (f"{cancelled} booking{'s' if cancelled != 1 else ''} cancelled"
+            f"{f', {refunded} marked refunded' if refunded else ''}.")
+
+
 @admin_required
 def manage_index(request):
     today = timezone.localdate()
@@ -136,6 +147,10 @@ def schedule_list(request):
         schedules = schedules.filter(status=Schedule.Status.COMPLETED)
     elif period == "cancelled":
         schedules = schedules.filter(status=Schedule.Status.CANCELLED)
+    elif period == "departed":
+        # Trips whose day has passed but nobody marked Completed yet: newest first.
+        schedules = schedules.filter(departure_date__lt=today, status=Schedule.Status.SCHEDULED).order_by(
+            "-departure_date", "-departure_time")
     else:
         schedules = schedules.filter(departure_date__gte=today, status=Schedule.Status.SCHEDULED)
     if query:
@@ -174,9 +189,13 @@ def schedule_create(request):
 @admin_required
 def schedule_edit(request, pk):
     schedule = get_object_or_404(Schedule.objects.select_related("route", "bus"), pk=pk)
+    was_status = schedule.status  # the form changes `schedule` in place when it validates
     form = ScheduleForm(request.POST or None, instance=schedule)
-    form.fields["route"].queryset = Route.objects.filter(is_active=True)
-    form.fields["bus"].queryset = Bus.objects.filter(is_active=True).exclude(status=Bus.Status.MAINTENANCE)
+    # Keep the trip's own route and bus in the lists even if they were retired
+    # since, so an old trip can still be edited (for example marked Completed).
+    form.fields["route"].queryset = Route.objects.filter(Q(is_active=True) | Q(pk=schedule.route_id))
+    form.fields["bus"].queryset = Bus.objects.filter(
+        Q(is_active=True) & ~Q(status=Bus.Status.MAINTENANCE) | Q(pk=schedule.bus_id))
     if request.method == "POST" and form.is_valid():
         updated = form.save(commit=False)
         try:
@@ -189,7 +208,10 @@ def schedule_edit(request, pk):
             schedule.bus.save(update_fields=["status"])
             updated.bus.status = Bus.Status.ASSIGNED if updated.status == Schedule.Status.SCHEDULED else Bus.Status.AVAILABLE
             updated.bus.save(update_fields=["status"])
-            messages.success(request, "Schedule updated.")
+            note = ""
+            if was_status != Schedule.Status.CANCELLED and updated.status == Schedule.Status.CANCELLED:
+                note = " " + _cancel_bookings_note(updated)
+            messages.success(request, "Schedule updated." + note)
             return redirect("transport:schedule_list")
     return render(request, "transport/schedule_form.html", {"form": form, "title": "Update schedule", "object": schedule})
 
@@ -203,5 +225,5 @@ def schedule_cancel(request, pk):
         if not schedule.bus.schedules.filter(status=Schedule.Status.SCHEDULED).exists():
             schedule.bus.status = Bus.Status.AVAILABLE
             schedule.bus.save(update_fields=["status"])
-        messages.success(request, "Schedule cancelled.")
+        messages.success(request, "Schedule cancelled. " + _cancel_bookings_note(schedule))
     return redirect("transport:schedule_list")

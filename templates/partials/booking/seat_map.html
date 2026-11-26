@@ -1,70 +1,47 @@
-
 {% comment %}
-  Seat map is available for sample trips only.
-  Real seat allocation will be implemented separately.
+  Seat map (SRS §6.3, FR-21). Expects `trip` with `seat_rows` (one row per letter
+  across the bus, see bookings/seats.seat_grid) and `seat_numbers`.
+  Picking seats here is for convenience only: the server checks every seat again
+  while it holds the trip's lock when the booking is saved (bookings/services.py).
 {% endcomment %}
-
 <section class="h5-book-panel h5-seat-panel" aria-labelledby="h5SeatTitle">
-
   <div class="h5-book-head">
-    <h2 id="h5SeatTitle">Seat availability</h2>
+    <h2 id="h5SeatTitle">Choose your seats</h2>
+    <div class="h5-seat-legend" aria-hidden="true"><span><i class="is-free"></i>Free</span><span><i class="is-taken"></i>Booked</span><span><i class="is-mine"></i>Your seats</span></div>
   </div>
+  <p class="h5-seat-help">Tap one seat for each passenger. Numbers count from the front of the bus{% if trip.seat_layout %} ({{ trip.bus_type }}, {{ trip.seat_layout }}){% endif %}.</p>
 
-  {% if trip.seat_map_available %}
-
-    <div class="h5-coach-scroll">
-      <div class="h5-coach">
-
-        {% for row in trip.seat_rows %}
-          <div class="h5-seat-row">
-            <b>{{ row.letter }}</b>
-
-            {% for seat in row.seats %}
-              {% if seat.taken %}
-                <button type="button" class="h5-seat is-taken" disabled>
-                  ✕
-                </button>
-              {% else %}
-                <button
-                  type="button"
-                  class="h5-seat"
-                  data-seat="{{ seat.code }}"
-                  aria-pressed="false"
-                >
-                  ✓
-                </button>
-              {% endif %}
-            {% endfor %}
-
-          </div>
-        {% endfor %}
-
-      </div>
+  {% if trip.seat_map_available or trip.is_sample %}
+  <div class="h5-coach-scroll">
+    <div class="h5-coach{% if trip.seat_berths %} is-berths{% endif %}" role="group" aria-label="Seat map, front of the bus on the left">
+      <div class="h5-coach-driver" aria-hidden="true"><span></span>DRIVER</div>
+      <div class="h5-coach-door" aria-hidden="true">DOOR</div>
+      {% for row in trip.seat_rows %}
+        <div class="h5-seat-row">
+          <b aria-hidden="true">{{ row.letter }}</b>
+          {% for seat in row.seats %}
+            {% if not seat %}
+              <span class="h5-seat is-gap" aria-hidden="true"></span>
+            {% elif seat.taken %}
+              <button type="button" class="h5-seat is-taken" disabled aria-label="Seat {{ seat.code }}, booked"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>
+            {% else %}
+              <button type="button" class="h5-seat" data-seat="{{ seat.code }}" aria-pressed="false" aria-label="Seat {{ seat.code }}"><span>{{ seat.code }}</span></button>
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% if row.aisle_after %}
+          <div class="h5-seat-row h5-seat-nums" aria-hidden="true"><b></b>{% for number in trip.seat_numbers %}<span>{{ number }}</span>{% endfor %}</div>
+        {% endif %}
+      {% endfor %}
     </div>
-
-  {% else %}
-
-    <div class="h5-empty">
-      <h3>Seat selection coming soon</h3>
-      <p>
-        You can still book your preferred number of seats.
-        Individual seat selection will be available in a future update.
-      </p>
-    </div>
-
+  </div>
   {% endif %}
 
   <div class="h5-seat-foot">
     <div>
-      <div class="h5-seat-avail">
-        <b>{{ trip.seats_left }} of {{ trip.total_seats }}</b>
-        seats available
-      </div>
-
-    <div class="h5-seat-bar">
-        <i data-width="{{ trip.seats_left_percent }}"></i>
+      <div class="h5-seat-avail"><b>{{ trip.seats_left }} of {{ trip.total_seats }}</b> seats available</div>
+      <div class="h5-seat-bar"><i style="width: {{ trip.seats_left_percent }}%"></i></div>
     </div>
-    </div>
+    <div class="h5-seat-selected">Your seats: <b data-selected>–</b></div>
   </div>
-
 </section>

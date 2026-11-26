@@ -6,11 +6,16 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from .models import Booking, PassengerDetail
+from .seats import seat_codes, sort_key, taken_seats
 
 
 class BookingError(Exception):
     """Raised when a booking operation cannot be completed."""
-    pass
+
+    def __init__(self, message, taken_seats=()):
+        super().__init__(message)
+        # Seats someone else booked first, so the page can grey them out.
+        self.taken_seats = list(taken_seats)
 
 
 def get_available_seats(schedule):
@@ -80,6 +85,8 @@ def create_booking(passenger, schedule, passengers):
             f"Only {available_seats} seat(s) are available."
         )
 
+    seats = _choose_seats(schedule, passengers)
+
     # Calculate the total fare on the server.
     total_amount = schedule.fare * seats_requested
 
@@ -92,18 +99,53 @@ def create_booking(passenger, schedule, passengers):
     )
 
     # Save each passenger's details.
-    for passenger_data in passengers:
+    for passenger_data, seat in zip(passengers, seats):
         detail = PassengerDetail(
             booking=booking,
             full_name=passenger_data["full_name"],
             phone=passenger_data["phone"],
-            email=passenger_data.get("email", "")
+            email=passenger_data.get("email", ""),
+            seat_number=seat
         )
 
         detail.full_clean()
         detail.save()
 
     return booking
+
+
+def _choose_seats(schedule, passengers):
+    """One seat code per passenger, checked while the trip row is locked.
+
+    If the passengers chose seats (the seat map), every one must have a seat,
+    each seat must exist on this bus and be free. If nobody chose a seat (an
+    API client), the first free seats from the front are given out."""
+    all_seats = seat_codes(schedule.bus)
+    taken = taken_seats(schedule)
+    chosen = [str(p.get("seat") or "").strip().upper() for p in passengers]
+
+    if not any(chosen):
+        free = [code for code in all_seats if code not in taken]
+        if len(free) < len(passengers):
+            raise BookingError("There are not enough free seats on this trip.")
+        return free[: len(passengers)]
+
+    if not all(chosen):
+        raise BookingError("Choose a seat for every passenger.")
+    if len(set(chosen)) != len(chosen):
+        raise BookingError("Each passenger needs a different seat.")
+    unknown = [code for code in chosen if code not in all_seats]
+    if unknown:
+        raise BookingError(f"Seat {', '.join(unknown)} does not exist on this bus.")
+    clash = sorted((code for code in chosen if code in taken), key=sort_key)
+    if clash:
+        were = "was" if len(clash) == 1 else "were"
+        raise BookingError(
+            f"Seat {', '.join(clash)} {were} just booked by someone else. "
+            "Your other choices are kept; please pick another seat.",
+            taken_seats=clash,
+        )
+    return chosen
 
 
 @transaction.atomic
@@ -156,11 +198,29 @@ def cancel_booking(passenger, booking_id):
     booking.status = Booking.Status.CANCELLED
     booking.cancelled_at = timezone.now()
 
+    # Cancelling is only allowed before the cutoff, so a paid booking is
+    # refunded in full; it then no longer counts as revenue anywhere.
+    if booking.payment_status == Booking.PaymentStatus.PAID:
+        booking.payment_status = Booking.PaymentStatus.REFUNDED
+
     booking.save(
-        update_fields=["status", "cancelled_at"]
+        update_fields=["status", "cancelled_at", "payment_status"]
     )
 
     return booking
+
+
+@transaction.atomic
+def cancel_trip_bookings(schedule):
+    """The company cancelled this trip: cancel every live booking on it and
+    refund the paid ones (no cutoff applies; it is not the passenger's choice).
+    Returns (bookings cancelled, of which refunded)."""
+    now = timezone.now()
+    live = Booking.objects.select_for_update().filter(schedule=schedule, status=Booking.Status.CONFIRMED)
+    refunded = live.filter(payment_status=Booking.PaymentStatus.PAID).update(
+        status=Booking.Status.CANCELLED, cancelled_at=now, payment_status=Booking.PaymentStatus.REFUNDED)
+    unpaid = live.update(status=Booking.Status.CANCELLED, cancelled_at=now)
+    return refunded + unpaid, refunded
 
 
 def get_passenger_bookings(passenger):

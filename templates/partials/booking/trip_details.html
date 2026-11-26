@@ -12,7 +12,7 @@
   <dl class="h5-trip-facts">
     <div><dt>Bus</dt><dd>{{ trip.bus_name }} · {{ trip.bus_type }}</dd></div>
     <div><dt>Seats left</dt><dd>{{ trip.seats_left }} of {{ trip.total_seats }}</dd></div>
-    <div><dt>Fare per passenger</dt><dd>{{ trip.currency }}{{ trip.fare }}</dd></div>
+    <div><dt>Fare per passenger</dt><dd>{{ trip.currency }}{{ trip.fare|floatformat:"-2g" }}</dd></div>
     <div><dt>Free cancellation</dt><dd>Up to {{ trip.cancel_cutoff_hours }} h before</dd></div>
   </dl>
 </section>

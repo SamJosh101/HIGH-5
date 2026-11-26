@@ -189,25 +189,51 @@ class EmailVerificationTests(TestCase):
         self.client.post(reverse("accounts:register"), data)
         return User.objects.get(email="rider@example.com")
 
-    def enter_code(self, code, email="rider@example.com"):
-        return self.client.post(reverse("accounts:verify_email"), {"email": email, "code": code})
+    def enter_code(self, code):
+        return self.client.post(reverse("accounts:verify_email"), {"code": code})
 
     def wrong(self, code):
         """A 6-digit code that is not `code`."""
         return f"{(int(code) + 1) % 1_000_000:06d}"
 
-    def test_unverified_user_cannot_log_in(self):
+    def test_unverified_user_cannot_log_in_and_goes_to_the_code_page(self):
         self.register()
+        self.client.session.flush()  # a later visit, e.g. another day
         response = self.client.post(reverse("accounts:login"), {"username": "rider@example.com", "password": PASSWORD})
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Verify your email address")
+        self.assertRedirects(response, reverse("accounts:verify_email"))
         self.assertNotIn("_auth_user_id", self.client.session)
+        self.assertEqual(len(mail.outbox), 1)  # the first code is still valid: no new email
 
-    def test_code_page_is_prefilled_after_sign_up(self):
+    def test_login_sends_a_new_code_when_the_old_one_expired(self):
+        user = self.register()
+        user.verification_code.expires_at = timezone.now() - timedelta(seconds=1)
+        user.verification_code.save()
+        cache.clear()
+        self.client.post(reverse("accounts:login"), {"username": "rider@example.com", "password": PASSWORD})
+        self.assertEqual(len(mail.outbox), 2)
+
+    def test_wrong_password_does_not_open_the_code_page(self):
+        self.register()
+        self.client.session.flush()
+        response = self.client.post(reverse("accounts:login"), {"username": "rider@example.com", "password": "nope"})
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("verify_email", self.client.session)
+
+    def test_code_page_asks_only_for_the_code(self):
         self.register()
         response = self.client.get(reverse("accounts:verify_email"))
-        self.assertContains(response, 'value="rider@example.com"')
+        self.assertContains(response, "rider@example.com")  # shown as text
+        self.assertNotContains(response, 'name="email"')
         self.assertContains(response, 'autocomplete="one-time-code"')
+        self.assertContains(response, 'maxlength="6"')
+
+    def test_code_page_without_a_pending_sign_up_goes_to_login(self):
+        response = self.client.get(reverse("accounts:verify_email"))
+        self.assertRedirects(response, reverse("accounts:login"))
+
+    def test_login_page_has_no_verify_link(self):
+        response = self.client.get(reverse("accounts:login"))
+        self.assertNotContains(response, reverse("accounts:verify_email"))
 
     def test_correct_code_verifies_and_allows_login(self):
         user = self.register()
@@ -246,20 +272,17 @@ class EmailVerificationTests(TestCase):
         user.verification_code.save()
         self.assertContains(self.enter_code(emailed_code(mail.outbox[0])), "wrong or has expired")
 
-    def test_code_only_works_for_its_own_account(self):
-        self.register()
-        User.objects.create_user(email="other@example.com", password=PASSWORD, full_name="Other")
-        response = self.enter_code(emailed_code(mail.outbox[0]), email="other@example.com")
-        self.assertContains(response, "wrong or has expired")
-
     def test_code_must_be_six_digits(self):
         self.register()
         self.assertContains(self.enter_code("12ab56"), "Enter the 6 digits")
+        self.assertContains(self.enter_code("12345"), "Enter the 6 digits")
+        self.assertContains(self.enter_code("123456789"), "exactly 6 digits")
 
     def test_new_code_replaces_the_old_one(self):
         user = self.register()
         old = emailed_code(mail.outbox[0])
-        self.client.post(reverse("accounts:resend_verification"), {"email": "rider@example.com"})
+        cache.clear()
+        self.client.post(reverse("accounts:resend_verification"))
         new = emailed_code(mail.outbox[-1])
         if new != old:  # 1 in a million they match
             self.assertContains(self.enter_code(old), "wrong or has expired")
@@ -267,22 +290,19 @@ class EmailVerificationTests(TestCase):
         user.refresh_from_db()
         self.assertTrue(user.email_verified)
 
-    def test_resend_gives_the_same_answer_for_unknown_emails(self):
-        self.register()
-        mail.outbox.clear()
-        for email in ("rider@example.com", "nobody@example.com"):
-            with self.subTest(email=email):
-                response = self.client.post(reverse("accounts:resend_verification"), {"email": email})
-                self.assertRedirects(response, reverse("accounts:verify_email"))
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].to, ["rider@example.com"])
+    def test_resend_without_a_pending_sign_up_sends_nothing(self):
+        response = self.client.post(reverse("accounts:resend_verification"))
+        self.assertRedirects(response, reverse("accounts:verify_email"), fetch_redirect_response=False)
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_resend_is_throttled(self):
-        self.register()
+        self.register()  # sign-up itself counts as the first send
+        cache.clear()
         mail.outbox.clear()
         for _ in range(3):
-            self.client.post(reverse("accounts:resend_verification"), {"email": "rider@example.com"})
+            self.client.post(reverse("accounts:resend_verification"))
         self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["rider@example.com"])
 
     def test_superuser_is_verified_automatically(self):
         admin = User.objects.create_superuser(email="root@example.com", password=PASSWORD, full_name="Root")
@@ -305,7 +325,7 @@ class EmailVerificationTests(TestCase):
         cache.clear()
         with mock.patch("django.core.mail.EmailMultiAlternatives.send", side_effect=OSError("no network")), \
                 self.assertLogs("accounts.services", level="ERROR"):
-            response = self.client.post(reverse("accounts:resend_verification"), {"email": "rider@example.com"})
+            response = self.client.post(reverse("accounts:resend_verification"))
         self.assertRedirects(response, reverse("accounts:verify_email"))
 
 

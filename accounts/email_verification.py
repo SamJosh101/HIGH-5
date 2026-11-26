@@ -37,6 +37,12 @@ def issue_code(user):
     return code
 
 
+def has_live_code(user):
+    """True if the user has a code that can still be used (not expired, tries left)."""
+    return EmailVerificationCode.objects.filter(
+        user=user, expires_at__gt=timezone.now(), attempts__lt=MAX_ATTEMPTS).exists()
+
+
 def check_code(user, code):
     """True if `code` is the user's live code. A correct code is used up; a wrong
     one counts as an attempt. Expired or used-up codes never match."""

@@ -7,11 +7,17 @@ The flow was first built by Cross with a signed link; it now uses a one-time
 ## How it works
 
 1. **Sign up** (`/accounts/register/`). The account is saved with `email_verified = False`,
-   the user is *not* logged in, and a code is emailed to them.
-2. **Verify** (`/accounts/verify-email/`). The page asks for the email address
-   (already filled in after sign-up) and the 6-digit code.
+   the user is *not* logged in, a code is emailed to them, and they are sent straight to the code page.
+2. **Verify** (`/accounts/verify-email/`). The page asks **only for the 6-digit code**. The address
+   it belongs to is kept in the session and shown as text ("we sent it to …"). The box accepts
+   digits only and never more than 6 (the browser stops extra typing; the server checks again).
 3. A correct code marks the account verified and sends the user to the login page.
-4. Until then, logging in is refused with "Verify your email address before signing in".
+4. **Logging in before verifying:** if the email and password are right but the email is not
+   verified, the user is taken to the code page instead of being logged in. If their last code
+   has expired or is used up, a new one is sent automatically. A wrong password just shows the
+   normal login error, so this never reveals which addresses have accounts.
+5. Opening the code page with nothing waiting in the session (for example a bookmark) sends the
+   user to log in. The login page has no separate "verify" link.
 
 Code rules (`accounts/email_verification.py`):
 
@@ -21,12 +27,12 @@ Code rules (`accounts/email_verification.py`):
 | Stored as | a hash only (`EmailVerificationCode.code_hash`, like a password) – never the code itself |
 | Expires after | 10 minutes (`CODE_VALID_MINUTES`) |
 | Wrong tries allowed | 5 (`MAX_ATTEMPTS`); after that the code stops working |
-| New code | `/accounts/verify-email/resend/`, at most one per address and IP per minute; it replaces the old code |
+| New code | the "Send a new code" button on the code page (POST to `/accounts/verify-email/resend/`), at most one per address and IP per minute; it replaces the old code |
 | Used code | deleted, so it cannot be used twice |
 
-Every failure (wrong, expired, used-up code, unknown or already-verified address) shows the same
-message, and "send a new code" gives the same answer for every address, so the pages never reveal
-which email addresses have accounts.
+Every wrong, expired or used-up code shows the same message. Nobody can type in someone else's
+address: the code page only works for the address that signed up, or that logged in with the
+right password, in this browser session.
 
 The email address waiting for its code and the page to return to (`next`) are kept in the
 **session**, never in the URL.

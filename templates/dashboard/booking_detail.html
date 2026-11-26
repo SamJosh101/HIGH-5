@@ -11,7 +11,8 @@
   <dt>Route</dt><dd>{{ booking.schedule.route.origin }}<span class="h5-arrow">→</span>{{ booking.schedule.route.destination }}</dd>
   <dt>Departure</dt><dd>{{ booking.schedule.departure_date|date:"l j F Y" }} at {{ booking.schedule.departure_time|time:"H:i" }}</dd>
   <dt>Bus</dt><dd><span class="h5-ref">{{ booking.schedule.bus.name_or_plate }}</span> · {{ booking.schedule.bus.get_bus_type_display }}</dd>
-  <dt>Seats</dt><dd>{{ booking.seats_booked }}</dd>
+  <dt>Seats</dt><dd>{{ booking.seats_booked }}{% if booking.seat_list %} · {{ booking.seat_list }}{% endif %}</dd>
+  {% for p in booking.passengers.all %}<dt>{% if forloop.first %}Travellers{% endif %}</dt><dd>{{ p.full_name }} · {{ p.phone }}{% if p.seat_number %} · Seat <b>{{ p.seat_number }}</b>{% endif %}</dd>{% endfor %}
   <dt>Amount</dt><dd>{{ CURRENCY }}{{ booking.total_amount|floatformat:"-2g" }}</dd>
   <dt>Booking status</dt><dd>{{ booking.get_status_display }}</dd>
   <dt>Payment</dt><dd>{{ booking.get_payment_status_display }}</dd>
@@ -27,6 +28,7 @@
   </dd>
 {% endif %}
   <dt>Booked</dt><dd>{{ booking.booked_at|date:"j F Y, H:i" }}</dd>
+  {% if booking.paid_at %}<dt>Paid on</dt><dd>{{ booking.paid_at|date:"j F Y, H:i" }}</dd>{% endif %}
   {% if booking.cancelled_at %}<dt>Cancelled</dt><dd>{{ booking.cancelled_at|date:"j F Y, H:i" }}</dd>{% endif %}
 </dl>
 {% else %}

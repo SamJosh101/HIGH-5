@@ -63,13 +63,13 @@
 
                     <div>
                         <dt>Passengers</dt>
-                        <dd>{{ booking.seats_booked }}</dd>
+                        <dd>{{ booking.seats_booked }}{% if booking.seat_list %} · Seat{{ booking.seats_booked|pluralize }} {{ booking.seat_list }}{% endif %}</dd>
                     </div>
 
                     <div>
                         <dt>Total fare</dt>
                         <dd>
-                            ₦{{ booking.total_amount|floatformat:2 }}
+                            {{ CURRENCY }}{{ booking.total_amount|floatformat:"-2g" }}
                         </dd>
                     </div>
 
@@ -168,13 +168,13 @@
 
                     <div>
                         <dt>Passengers</dt>
-                        <dd>{{ booking.seats_booked }}</dd>
+                        <dd>{{ booking.seats_booked }}{% if booking.seat_list %} · Seat{{ booking.seats_booked|pluralize }} {{ booking.seat_list }}{% endif %}</dd>
                     </div>
 
                     <div>
                         <dt>Total fare</dt>
                         <dd>
-                            ₦{{ booking.total_amount|floatformat:2 }}
+                            {{ CURRENCY }}{{ booking.total_amount|floatformat:"-2g" }}
                         </dd>
                     </div>
 
