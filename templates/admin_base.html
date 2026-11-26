@@ -7,6 +7,8 @@
 {% endcomment %}
 {# Messages are shown inside the admin column (below), not at the top of base.html. #}
 {% block messages %}{% endblock %}
+{# No site footer on admin pages. #}
+{% block footer %}{% endblock %}
 {% block content %}
 <div class="h5-admin-layout">
   {% include "partials/admin_sidebar.html" %}

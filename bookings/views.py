@@ -5,6 +5,8 @@ Implements booking and passenger functionality against
 docs/DATABASE.md and docs/ARCHITECTURE.md.
 """
 
+from datetime import timedelta
+
 from django.apps import apps
 from django.contrib import messages
 from django.core.cache import cache
@@ -26,7 +28,13 @@ from accounts.permissions import passenger_required
 
 from .emails import send_ticket_email
 from .models import Booking
-from .search_services import search_available_trips
+from .search_services import (
+    LOOKAHEAD_DAYS,
+    all_upcoming_trips,
+    alternative_trips,
+    city_choices,
+    search_available_trips,
+)
 from .tickets import ticket_facts
 from .serializers import BookingCreateSerializer, BookingSerializer
 from .services import (
@@ -68,6 +76,22 @@ def trip_search(request):
         request.GET.get("passengers")
     )
 
+    # "All trips" tab: every trip that can still be booked, with optional filters.
+    if request.GET.get("view") == "all":
+        origins, destinations = city_choices()
+        return render(request, "bookings/search.html", {
+            "all_view": True,
+            "all_trips": all_upcoming_trips(origin, destination, min(passenger_count, 10)),
+            "origin": origin,
+            "destination": destination,
+            "passenger_count": min(passenger_count, 10),
+            "origins": origins,
+            "destinations": destinations,
+            "lookahead_days": LOOKAHEAD_DAYS,
+            "today": timezone.localdate(),
+            "tomorrow": timezone.localdate() + timedelta(days=1),
+        })
+
     context = {
         "origin": origin,
         "destination": destination,
@@ -75,6 +99,7 @@ def trip_search(request):
         "passenger_count": passenger_count,
         "trips": [],
         "trip": None,
+        "lookahead_days": LOOKAHEAD_DAYS,
     }
 
     if (
@@ -119,7 +144,8 @@ def trip_search(request):
 
                 available_seats = get_available_seats(schedule)
 
-                if available_seats >= passenger_count:
+                # a trip that has already left cannot be opened for booking
+                if available_seats >= passenger_count and schedule.departure_datetime > timezone.now():
 
                     context["trip"] = schedule_to_trip(
                         schedule=schedule,
@@ -128,6 +154,10 @@ def trip_search(request):
 
             except (Schedule.DoesNotExist, ValueError, TypeError):
                 context["trip"] = None
+
+        # Nothing on that route that day: suggest what they can book instead.
+        if not context["trips"]:
+            context["alternatives"] = alternative_trips(origin, destination, travel_date, passenger_count)
 
     return render(
         request,

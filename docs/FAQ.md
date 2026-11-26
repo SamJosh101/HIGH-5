@@ -163,7 +163,7 @@ Cancelled bookings are excluded, so cancellation automatically releases their se
 
 ## How are cancellations restricted?
 
-Cancellations must occur before the configured cutoff time. The default is 24 hours before departure and can be changed through `BOOKING_CANCELLATION_CUTOFF_HOURS`.
+Cancellations must occur before the configured cutoff time. The default is 5 hours before departure and can be changed through `BOOKING_CANCELLATION_CUTOFF_HOURS`.
 
 ## How is the application organized?
 

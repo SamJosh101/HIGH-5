@@ -537,3 +537,8 @@ if (cancelButton) {
 
 
 })();
+// "All trips" filters: apply as soon as a choice changes (the Show button is the no-JS fallback).
+document.documentElement.classList.add("js");
+document.querySelectorAll("form[data-autosubmit] select").forEach((select) => {
+    select.addEventListener("change", () => select.form.submit());
+});

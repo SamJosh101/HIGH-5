@@ -172,7 +172,7 @@ MySQL's InnoDB engine supports `SELECT ... FOR UPDATE` row locks, which is what 
 | # | Question | Answer | SRS reference |
 |---|---|---|---|
 | Q1 | Specific seat numbers or just a number of seats? | **Number of seats is required.** Specific seat numbers are allowed when a seat layout is implemented; the interactive seat map is a recommended **bonus** feature | FR-21, §6.3 |
-| Q2 | Cancellation cut-off? | "A configurable number of hours before departure" – no value given, so we keep 24 h in `BOOKING_CANCELLATION_CUTOFF_HOURS` | FR-28 |
+| Q2 | Cancellation cut-off? | "A configurable number of hours before departure" – no value given; the team chose 5 h (was 24 h until Nov 2026), set in `BOOKING_CANCELLATION_CUTOFF_HOURS` | FR-28 |
 | Q3 | Booking statuses? | **Confirmed / Cancelled / Completed** | FR-29, §5.1 |
 | Q4 | Payment statuses? | Simulated payment; an admin marks bookings **Paid / Pending**. The booking is confirmed (seats held) when it is made | FR-32, §2.5 |
 | Q5 | Bus types? | Examples given: **Standard, Luxury, Sleeper** | FR-12 |

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HIGH 5 – See all trips (concept)</title>
+<!-- Mockup only. Example data. Two screens: (1) the new "All trips" list, (2) what an empty search shows. -->
+<link rel="stylesheet" href="mockup-base.css">
+<style>
+  .screen { position: relative; }
+  .label { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--amber); padding: 26px 44px 0; }
+  .phead { display: flex; justify-content: space-between; align-items: end; margin: 18px 0 22px; }
+  .search { display: grid; grid-template-columns: 1fr 40px 1fr 1fr 170px 150px; gap: 0; align-items: center; border: 1px solid var(--line); border-radius: 20px; background: var(--card); padding: 10px 10px 10px 22px; }
+  .search .f span { display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); } .search .f b { font-size: 16px; font-weight: 500; }
+  .search .sw { color: var(--muted); text-align: center; }
+  .tabs { display: flex; gap: 6px; padding: 5px; border: 1px solid var(--line); border-radius: 999px; width: fit-content; }
+  .tabs span { padding: 9px 18px; border-radius: 999px; font-size: 14px; color: #c9ced8; } .tabs .on { background: #1b202b; color: #fff; }
+  .filters { display: flex; gap: 12px; align-items: center; margin: 22px 0 8px; flex-wrap: wrap; }
+  .sel { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; font-size: 14px; background: var(--card); min-width: 190px; display: flex; justify-content: space-between; }
+  .sel i { font-style: normal; color: var(--muted); margin-right: 8px; }
+  .count { margin-left: auto; font-size: 13px; color: var(--muted); }
+  .day { margin-top: 22px; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+  .row { display: grid; grid-template-columns: 90px 1.6fr 1fr 1fr 1fr 150px; gap: 18px; align-items: center; padding: 16px 4px; border-bottom: 1px solid var(--line); }
+  .row .t b { font-size: 22px; font-weight: 500; } .row .t small { display: block; font-size: 12px; color: var(--muted); }
+  .row .r b { font-size: 17px; } .row .r small { display: block; font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+  .row .k span { display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); } .row .k b { font-size: 15px; font-weight: 600; }
+  .row .fare b { font-size: 19px; } .low { color: var(--amber); }
+  .row .btn { padding: 10px 16px; font-size: 14px; }
+  .row.full { opacity: .45; } .row.full .btn { border: 1px solid var(--line); background: none; box-shadow: none; }
+  .empty { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 22px; }
+  .miss { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; padding: 22px 26px; }
+  .miss h2 { font-size: 22px; } .miss p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .alt h3 { margin-bottom: 4px; } .alt .sub { margin-bottom: 8px; }
+  .alt .row { grid-template-columns: 70px 1.4fr 1fr 110px; padding: 13px 0; }
+  .note { position: absolute; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo"><div class="mark">H5</div>HIGH 5</div>
+  <div class="pill"><span class="on">Book a Trip</span><span>My Bookings</span><span>History</span></div>
+  <div class="user"><div class="av">A</div>Ada</div>
+</nav>
+
+<!-- 1. ALL TRIPS -->
+<div class="screen">
+  <div class="label">1 · Book a Trip → “All trips” tab</div>
+  <div class="wrap">
+    <div class="phead"><h1>Book a trip</h1>
+      <div class="tabs"><span>Search</span><span class="on">All trips</span></div>
+    </div>
+
+    <div class="filters">
+      <div class="sel"><span><i>From</i>Any city</span><span>▾</span></div>
+      <div class="sel"><span><i>To</i>Any city</span><span>▾</span></div>
+      <div class="sel"><span><i>Passengers</i>1</span><span>▾</span></div>
+      <span class="count">24 trips in the next 14 days · soonest first</span>
+    </div>
+
+    <div class="day">Today · Thu 26 Nov</div>
+    <div class="row">
+      <div class="t"><b>15:00</b><small>arr. 18:00</small></div>
+      <div class="r"><b>Abuja → Kaduna</b><small>Standard · H5-ABJ-01</small></div>
+      <div class="k"><span>Duration</span><b>3 h</b></div>
+      <div class="k"><span>Seats left</span><b>44</b></div>
+      <div class="fare k"><span>Fare</span><b>₦9,500</b></div>
+      <span class="btn primary">Book →</span>
+    </div>
+    <div class="row">
+      <div class="t"><b>17:00</b><small>arr. 19:00</small></div>
+      <div class="r"><b>Lagos → Ibadan</b><small>Standard · H5-LAG-02</small></div>
+      <div class="k"><span>Duration</span><b>2 h</b></div>
+      <div class="k"><span>Seats left</span><b class="low">3 left</b></div>
+      <div class="fare k"><span>Fare</span><b>₦6,000</b></div>
+      <span class="btn primary">Book →</span>
+    </div>
+
+    <div class="day">Tomorrow · Fri 27 Nov</div>
+    <div class="row">
+      <div class="t"><b>06:00</b><small>arr. 16:00</small></div>
+      <div class="r"><b>Lagos → Abuja</b><small>Luxury · H5-LAG-01</small></div>
+      <div class="k"><span>Duration</span><b>10 h</b></div>
+      <div class="k"><span>Seats left</span><b>16</b></div>
+      <div class="fare k"><span>Fare</span><b>₦25,000</b></div>
+      <span class="btn primary">Book →</span>
+    </div>
+    <div class="row full">
+      <div class="t"><b>07:30</b><small>arr. 13:30</small></div>
+      <div class="r"><b>Lagos → Benin</b><small>Standard · H5-LAG-03</small></div>
+      <div class="k"><span>Duration</span><b>6 h</b></div>
+      <div class="k"><span>Seats left</span><b>Full</b></div>
+      <div class="fare k"><span>Fare</span><b>₦12,000</b></div>
+      <span class="btn">Full</span>
+    </div>
+    <div class="row">
+      <div class="t"><b>14:00</b><small>arr. 18:30</small></div>
+      <div class="r"><b>Port Harcourt → Enugu</b><small>Sleeper · H5-PHC-01</small></div>
+      <div class="k"><span>Duration</span><b>4 h 30 min</b></div>
+      <div class="k"><span>Seats left</span><b>30</b></div>
+      <div class="fare k"><span>Fare</span><b>₦14,000</b></div>
+      <span class="btn primary">Book →</span>
+    </div>
+  </div>
+  <div class="note" style="top:120px; right:400px;">New tab beside the search. Shows every trip you can still book, grouped by day.</div>
+  <div class="note" style="top:250px; right:50px;">Trips that have already left are never shown. Full trips stay greyed out so people know they exist.</div>
+  <div class="note" style="top:470px; left:470px;">“Book →” opens the usual seat map and passenger form for that trip.</div>
+</div>
+
+<!-- 2. EMPTY SEARCH -->
+<div class="screen">
+  <div class="label">2 · Search with no trips (Lagos → Jos, Tue 1 Dec)</div>
+  <div class="wrap">
+    <div class="search" style="margin-top:18px">
+      <div class="f"><span>From</span><b>Lagos</b></div><div class="sw">⇄</div>
+      <div class="f"><span>To</span><b>Jos</b></div>
+      <div class="f"><span>Date</span><b>Tue 1 Dec 2026</b></div>
+      <div class="f"><span>Passengers</span><b>1</b></div>
+      <span class="btn primary">Search →</span>
+    </div>
+
+    <div class="empty">
+      <div class="card miss">
+        <div><h2>No Lagos → Jos trips on Tue 1 Dec</h2><p>We don't run that trip on this day. Here is what you can book instead.</p></div>
+        <span class="btn ghost">See all trips →</span>
+      </div>
+
+      <div class="card alt">
+        <h3>Lagos → Jos on other days</h3><p class="sub">Same trip, next 14 days</p>
+        <div class="row"><div class="t"><b>Thu</b><small>3 Dec</small></div><div class="r"><b>07:00 → 19:00</b><small>Luxury · 12 seats left</small></div><div class="fare k"><span>Fare</span><b>₦28,000</b></div><span class="btn primary">Book →</span></div>
+        <div class="row"><div class="t"><b>Sat</b><small>5 Dec</small></div><div class="r"><b>07:00 → 19:00</b><small>Standard · 30 seats left</small></div><div class="fare k"><span>Fare</span><b>₦22,000</b></div><span class="btn primary">Book →</span></div>
+      </div>
+
+      <div class="card alt">
+        <h3>Other trips from Lagos on Tue 1 Dec</h3><p class="sub">Maybe one goes near Jos</p>
+        <div class="row"><div class="t"><b>06:00</b><small>Tue</small></div><div class="r"><b>Lagos → Abuja</b><small>Luxury · 16 seats left</small></div><div class="fare k"><span>Fare</span><b>₦25,000</b></div><span class="btn primary">Book →</span></div>
+        <div class="row"><div class="t"><b>09:00</b><small>Tue</small></div><div class="r"><b>Lagos → Kaduna</b><small>Standard · 8 seats left</small></div><div class="fare k"><span>Fare</span><b>₦20,000</b></div><span class="btn primary">Book →</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="note" style="top:210px; right:50px;">Replaces the plain “No trips found”.</div>
+  <div class="note" style="bottom:20px; right:50px;">If a box would be empty it is left out. If both are empty, only “See all trips” shows.</div>
+</div>
+</body>
+</html>

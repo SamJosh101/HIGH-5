@@ -427,7 +427,12 @@ h1, h2, h3, h4, h5 { color: var(--hx-text); }
 .h5-admin-layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: clamp(32px, 4vw, 64px); }
 .h5-admin-main { min-width: 0; }
 
-.h5-admin-sidebar { height: fit-content; }
+/* The sidebar stays in place under the fixed navbar while the page scrolls
+   (top matches .h5-main's padding-top). It scrolls on its own only if the window is very short. */
+.h5-admin-sidebar {
+  position: sticky; top: 130px; align-self: start; height: fit-content;
+  max-height: calc(100vh - 150px); overflow-y: auto; scrollbar-width: none;
+}
 .h5-admin-sidebar small { display: block; color: var(--hx-muted); font-size: 11px; letter-spacing: .22em; text-transform: uppercase; margin: 0 0 14px 2px; }
 .h5-stops { position: relative; list-style: none; margin: 0 0 34px; padding: 0; }
 .h5-stops::before {
@@ -537,7 +542,7 @@ h1, h2, h3, h4, h5 { color: var(--hx-text); }
 @media (max-width: 1199.98px) { .h5-sec-split { grid-template-columns: 1fr; } }
 @media (max-width: 991.98px) {
   .h5-admin-layout { grid-template-columns: 1fr; gap: 8px; }
-  .h5-admin-sidebar { display: flex; gap: 32px; flex-wrap: wrap; }
+  .h5-admin-sidebar { display: flex; gap: 32px; flex-wrap: wrap; position: static; max-height: none; overflow: visible; }
   .h5-stops { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-bottom: 20px; }
   .h5-stops::before { display: none; }
   .h5-kpis, .h5-kpis.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }

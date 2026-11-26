@@ -35,6 +35,7 @@
     pill.addEventListener("mouseleave", () => moveTo(active()));
     window.addEventListener("resize", () => moveTo(active()));
     window.addEventListener("load", () => moveTo(active()));
+    window.addEventListener("h5:navchange", () => moveTo(active()));  // a page changed which link is active
     moveTo(active());
   }
 
@@ -60,9 +61,13 @@
     if (!target) return;
     e.preventDefault();
     closeMobileMenu();
+    const changed = location.hash !== a.hash;
+    history.replaceState(null, "", a.hash);
+    // replaceState does not fire "hashchange"; send it so pages that react to the
+    // hash (e.g. My Bookings: History opens the "Past & cancelled" tab) still do.
+    if (changed) window.dispatchEvent(new HashChangeEvent("hashchange"));
     const top = target.getBoundingClientRect().top + window.scrollY - 80;
     window.scrollTo({ top, behavior: reduceMotion ? "auto" : "smooth" });
-    history.replaceState(null, "", a.hash);
   });
 
   /* ---------- auto-close success messages ---------- */

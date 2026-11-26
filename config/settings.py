@@ -211,8 +211,8 @@ MEDIA_ROOT = BASE_DIR / "media"
 # HIGH 5 business configuration
 # ------------------------------------------------------------------
 # Passengers cannot cancel a booking later than this many hours before
-# departure. VALUE TO BE CONFIRMED AGAINST THE SRS (see docs/ARCHITECTURE.md).
-BOOKING_CANCELLATION_CUTOFF_HOURS = int(env("BOOKING_CANCELLATION_CUTOFF_HOURS", "24"))
+# departure. The SRS (FR-28) leaves the number open; the team chose 5 h (docs/DATABASE.md Q2).
+BOOKING_CANCELLATION_CUTOFF_HOURS = int(env("BOOKING_CANCELLATION_CUTOFF_HOURS", "5"))
 CURRENCY_SYMBOL = env("CURRENCY_SYMBOL", "₦")  # Naira (SRS Q7)
 
 # Cache-busting value added to CSS/JS links (see config/context_processors.py).

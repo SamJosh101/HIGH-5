@@ -503,3 +503,131 @@ class PassengerListTests(TestCase):
     def test_passengers_cannot_open_the_list(self):
         self.client.force_login(self.rider)
         self.assertEqual(self.client.get(self.url).status_code, 403)
+
+
+class AllTripsAndSuggestionsTests(TestCase):
+    """The "All trips" tab and the suggestions shown when a search finds nothing."""
+
+    def setUp(self):
+        self.ada = User.objects.create_user(email="ada-all@example.com", password=PASSWORD,
+                                            full_name="Ada Okafor", email_verified=True)
+        self.client.force_login(self.ada)
+        self.today = timezone.localdate()
+        self.lagos_abuja = Route.objects.create(origin="Lagos", destination="Abuja", distance_km=760,
+                                                duration_estimate=timedelta(hours=10))
+        self.lagos_kaduna = Route.objects.create(origin="Lagos", destination="Kaduna", distance_km=800,
+                                                 duration_estimate=timedelta(hours=11))
+        self.ph_enugu = Route.objects.create(origin="Port Harcourt", destination="Enugu", distance_km=250,
+                                             duration_estimate=timedelta(hours=4, minutes=30))
+        self.small_bus = Bus.objects.create(name_or_plate="ALL-001", bus_type=Bus.BusType.STANDARD, total_seats=2)
+        self.buses = iter(Bus.objects.create(name_or_plate=f"ALL-1{i:02d}", bus_type=Bus.BusType.LUXURY, total_seats=30)
+                          for i in range(20))
+
+    def trip(self, route, days, hour=7, bus=None, **extra):
+        return Schedule.objects.create(route=route, bus=bus or next(self.buses), fare="25000.00",
+                                       departure_date=self.today + timedelta(days=days), departure_time=time(hour, 0),
+                                       **extra)
+
+    def all_trips(self, **params):
+        return self.client.get(reverse("bookings:search"), {"view": "all", **params})
+
+    def test_all_trips_lists_bookable_trips_soonest_first_with_fare(self):
+        later = self.trip(self.lagos_abuja, 3)
+        sooner = self.trip(self.ph_enugu, 1, hour=14)
+        self.trip(self.lagos_kaduna, 2, status=Schedule.Status.CANCELLED)
+        self.trip(self.lagos_kaduna, 20)  # beyond the 14 days shown
+        response = self.all_trips()
+        self.assertEqual([t["schedule_id"] for t in response.context["all_trips"]], [sooner.pk, later.pk])
+        self.assertContains(response, "Port Harcourt → Enugu")
+        self.assertContains(response, "₦25,000")
+        self.assertContains(response, f"schedule_id={later.pk}")
+        self.assertContains(response, "Tomorrow ·")
+
+    def test_trips_that_already_left_today_are_hidden_everywhere(self):
+        past = timezone.localtime() - timedelta(hours=1)
+        gone = Schedule.objects.create(route=self.lagos_abuja, bus=next(self.buses), fare="25000.00",
+                                       departure_date=past.date(), departure_time=past.time().replace(microsecond=0))
+        self.assertNotIn(gone.pk, [t["schedule_id"] for t in self.all_trips().context["all_trips"]])
+        search = {"origin": "Lagos", "destination": "Abuja", "date": past.date().isoformat()}
+        self.assertEqual(self.client.get(reverse("bookings:search"), search).context["trips"], [])
+        opened = self.client.get(reverse("bookings:search"), {**search, "schedule_id": gone.pk})
+        self.assertIsNone(opened.context["trip"])
+
+    def test_full_trip_is_shown_greyed_without_a_book_link(self):
+        full = self.trip(self.lagos_abuja, 2, bus=self.small_bus)
+        Booking.objects.create(passenger=self.ada, schedule=full, seats_booked=2, total_amount="50000.00")
+        response = self.all_trips()
+        row = response.context["all_trips"][0]
+        self.assertTrue(row["full"])
+        self.assertContains(response, "is-full")
+        self.assertNotContains(response, f"schedule_id={full.pk}")
+
+    def test_filters_by_city_and_counts_passengers(self):
+        self.trip(self.lagos_abuja, 2)
+        self.trip(self.ph_enugu, 2)
+        small = self.trip(self.lagos_kaduna, 2, bus=self.small_bus)
+        response = self.all_trips(origin="lagos", passengers=3)
+        trips = response.context["all_trips"]
+        self.assertEqual({t["origin"] for t in trips}, {"Lagos"})
+        self.assertTrue(next(t for t in trips if t["schedule_id"] == small.pk)["full"])  # 2 seats < 3 travellers
+        self.assertContains(response, '<option value="Port Harcourt">')
+
+    def test_empty_search_suggests_other_days_and_other_destinations(self):
+        other_day = self.trip(self.lagos_abuja, 4)
+        same_day_elsewhere = self.trip(self.lagos_kaduna, 2)
+        self.trip(self.ph_enugu, 2)  # different city: not suggested
+        response = self.client.get(reverse("bookings:search"), {
+            "origin": "Lagos", "destination": "Abuja", "date": (self.today + timedelta(days=2)).isoformat()})
+        alternatives = response.context["alternatives"]
+        self.assertEqual([t["schedule_id"] for t in alternatives["same_route"]], [other_day.pk])
+        self.assertEqual([t["schedule_id"] for t in alternatives["same_origin"]], [same_day_elsewhere.pk])
+        self.assertContains(response, "No Lagos → Abuja trips on")
+        self.assertContains(response, "See all trips")
+        self.assertContains(response, "Lagos → Kaduna")
+
+    def test_empty_search_with_nothing_nearby_still_offers_all_trips(self):
+        response = self.client.get(reverse("bookings:search"), {
+            "origin": "Kano", "destination": "Jos", "date": (self.today + timedelta(days=2)).isoformat()})
+        self.assertContains(response, "Try another date, or look through every trip we run.")
+        self.assertContains(response, "?view=all")
+
+
+class CancellationCutoffTests(TestCase):
+    """Passengers can cancel until 5 hours before departure (BOOKING_CANCELLATION_CUTOFF_HOURS)."""
+
+    def setUp(self):
+        self.ada = User.objects.create_user(email="ada-cut@example.com", password=PASSWORD,
+                                            full_name="Ada Okafor", email_verified=True)
+        self.client.force_login(self.ada)
+        self.route = Route.objects.create(origin="Lagos", destination="Ibadan", distance_km=130,
+                                          duration_estimate=timedelta(hours=2))
+        self.n = 0
+
+    def booking_leaving_in(self, hours):
+        self.n += 1
+        leaves = timezone.localtime() + timedelta(hours=hours)
+        bus = Bus.objects.create(name_or_plate=f"CUT-{self.n:03d}", bus_type=Bus.BusType.STANDARD, total_seats=10)
+        schedule = Schedule.objects.create(route=self.route, bus=bus, fare="6000.00", departure_date=leaves.date(),
+                                           departure_time=leaves.time().replace(microsecond=0))
+        return Booking.objects.create(passenger=self.ada, schedule=schedule, seats_booked=1, total_amount="6000.00")
+
+    def cancel(self, booking):
+        self.client.post(reverse("bookings:booking-cancel", args=[booking.booking_ref]))
+        booking.refresh_from_db()
+        return booking.status
+
+    def test_can_cancel_six_hours_before_but_not_four(self):
+        with self.settings(BOOKING_CANCELLATION_CUTOFF_HOURS=5):
+            self.assertEqual(self.cancel(self.booking_leaving_in(6)), Booking.Status.CANCELLED)
+            self.assertEqual(self.cancel(self.booking_leaving_in(4)), Booking.Status.CONFIRMED)
+
+    def test_ticket_page_offers_cancel_only_before_the_cutoff(self):
+        with self.settings(BOOKING_CANCELLATION_CUTOFF_HOURS=5):
+            early = self.booking_leaving_in(6)
+            late = self.booking_leaving_in(4)
+            self.assertContains(self.client.get(reverse("bookings:ticket-detail", args=[early.booking_ref])),
+                                "cancelBookingBtn")
+            page = self.client.get(reverse("bookings:ticket-detail", args=[late.booking_ref]))
+            self.assertNotContains(page, "cancelBookingBtn")
+            self.assertContains(page, "Cancellation closed")
+            self.assertContains(page, "up to 5 h before departure")

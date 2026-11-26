@@ -14,7 +14,55 @@
 
 <div class="h5-page-head">
     <h1>Book a trip</h1>
+    <nav class="h5-at-tabs" aria-label="How to find a trip">
+        <a href="{% url 'bookings:search' %}"{% if not all_view %} class="is-on" aria-current="page"{% endif %}>Search</a>
+        <a href="{% url 'bookings:search' %}?view=all"{% if all_view %} class="is-on" aria-current="page"{% endif %}>All trips</a>
+    </nav>
 </div>
+
+{% if all_view %}
+
+    {# ALL TRIPS: every trip that can still be booked in the next few days. #}
+    <form class="h5-at-filters" method="get" action="{% url 'bookings:search' %}" data-autosubmit>
+        <input type="hidden" name="view" value="all">
+        <label class="h5-at-select"><span>From</span>
+            <select name="origin">
+                <option value="">Any city</option>
+                {% for city in origins %}<option value="{{ city }}"{% if city|lower == origin|lower %} selected{% endif %}>{{ city }}</option>{% endfor %}
+            </select>
+        </label>
+        <label class="h5-at-select"><span>To</span>
+            <select name="destination">
+                <option value="">Any city</option>
+                {% for city in destinations %}<option value="{{ city }}"{% if city|lower == destination|lower %} selected{% endif %}>{{ city }}</option>{% endfor %}
+            </select>
+        </label>
+        <label class="h5-at-select"><span>Passengers</span>
+            <select name="passengers">
+                {% for n in "123456789"|make_list %}<option value="{{ n }}"{% if n|add:0 == passenger_count %} selected{% endif %}>{{ n }}</option>{% endfor %}
+                <option value="10"{% if passenger_count == 10 %} selected{% endif %}>10</option>
+            </select>
+        </label>
+        <button type="submit" class="h5-at-show">Show</button>
+        <p class="h5-at-count">{{ all_trips|length }} trip{{ all_trips|length|pluralize }} in the next {{ lookahead_days }} days · soonest first</p>
+    </form>
+
+    {% regroup all_trips by date as days %}
+    {% for day in days %}
+        <section class="h5-at-day" aria-label="{{ day.grouper|date:'l j F' }}">
+            <h2>{% if day.grouper == today %}Today · {% elif day.grouper == tomorrow %}Tomorrow · {% endif %}{{ day.grouper|date:"D j M" }}</h2>
+            {% for t in day.list %}{% include "partials/booking/trip_list_row.html" %}{% endfor %}
+        </section>
+    {% empty %}
+        <div class="h5-panel mt-4">
+            <div class="h5-empty">
+                <h3>No trips to show</h3>
+                <p>{% if origin or destination %}No trips match these filters in the next {{ lookahead_days }} days. Try “Any city”.{% else %}There are no trips scheduled in the next {{ lookahead_days }} days yet.{% endif %}</p>
+            </div>
+        </div>
+    {% endfor %}
+
+{% else %}
 
 {% include "partials/search_bar.html" %}
 
@@ -147,19 +195,33 @@
 
 {% elif request.GET.origin %}
 
-    <div class="h5-panel mt-4">
-        <div class="h5-empty">
-            <div class="h5-empty-ico">
-                <svg viewBox="0 0 24 24">
-                    <circle cx="11" cy="11" r="7"/>
-                    <path d="M20 20l-3.5-3.5"/>
-                </svg>
-            </div>
-
-            <h3>No trips found</h3>
-            <p>Try another route or departure date.</p>
+    {# Nothing on that route that day: say so, and suggest what can be booked instead. #}
+    <div class="h5-at-miss">
+        <div>
+            <h2>No {{ origin }} → {{ destination|default:"…" }} trips on {{ travel_date|date:"D j M" }}</h2>
+            <p>{% if alternatives.same_route or alternatives.same_origin %}We don't run that trip on this day. Here is what you can book instead.{% else %}Try another date, or look through every trip we run.{% endif %}</p>
         </div>
+        <a class="h5-at-all" href="{% url 'bookings:search' %}?view=all&amp;passengers={{ passenger_count }}">See all trips <span aria-hidden="true">→</span></a>
     </div>
+
+    {% if alternatives.same_route or alternatives.same_origin %}
+    <div class="h5-at-alts">
+        {% if alternatives.same_route %}
+        <section class="h5-at-alt">
+            <h3>{{ alternatives.same_route.0.origin }} → {{ alternatives.same_route.0.destination }} on other days</h3>
+            <p>Same trip, next {{ lookahead_days }} days</p>
+            {% for t in alternatives.same_route %}{% include "partials/booking/trip_list_row.html" with compact=True show_day=True %}{% endfor %}
+        </section>
+        {% endif %}
+        {% if alternatives.same_origin %}
+        <section class="h5-at-alt">
+            <h3>Other trips from {{ alternatives.same_origin.0.origin }} on {{ travel_date|date:"D j M" }}</h3>
+            <p>One of these may take you closer to {{ destination }}</p>
+            {% for t in alternatives.same_origin %}{% include "partials/booking/trip_list_row.html" with compact=True %}{% endfor %}
+        </section>
+        {% endif %}
+    </div>
+    {% endif %}
 
 {% else %}
 
@@ -174,11 +236,13 @@
             </div>
 
             <h3>Search to see trips</h3>
-            <p>Choose where you are leaving from, where you are going and the date.</p>
+            <p>Choose where you are leaving from, where you are going and the date, or <a href="{% url 'bookings:search' %}?view=all">see all trips</a>.</p>
         </div>
     </div>
 
 {% endif %}
+
+{% endif %}{# all_view #}
 
 
 {% if trip %}

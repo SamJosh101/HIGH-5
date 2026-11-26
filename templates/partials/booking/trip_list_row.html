@@ -1,0 +1,29 @@
+{% comment %}
+  One trip in a list (All trips tab and the empty-search suggestions).
+  Needs: t (a row from bookings.search_services._trip_row), passenger_count.
+  Optional: compact=True (suggestion boxes: no duration/bus columns),
+            show_day=True (first column shows the day instead of the time).
+  "Book" opens the normal booking page for that trip.
+{% endcomment %}
+<div class="h5-at-row{% if t.full %} is-full{% endif %}{% if compact %} is-compact{% endif %}">
+  <div class="h5-at-when">
+    {% if show_day %}<b>{{ t.date|date:"D" }}</b><small>{{ t.date|date:"j M" }}</small>
+    {% else %}<b>{{ t.departure|time:"H:i" }}</b><small>arr. {{ t.arrival|time:"H:i" }}{% if t.arrives_next_day %} +1 day{% endif %}</small>{% endif %}
+  </div>
+  <div class="h5-at-route">
+    {% if show_day %}<b>{{ t.departure|time:"H:i" }} → {{ t.arrival|time:"H:i" }}{% if t.arrives_next_day %} <small class="h5-at-next">+1</small>{% endif %}</b>
+    {% else %}<b>{{ t.origin }} → {{ t.destination }}</b>{% endif %}
+    <small>{{ t.bus_type }}{% if compact %} · {% if t.few_left %}{{ t.seats_left }} left{% else %}{{ t.seats_left }} seats left{% endif %}{% else %} · {{ t.bus_name }}{% endif %}</small>
+  </div>
+  {% if not compact %}
+  <div class="h5-at-fact"><span>Duration</span><b>{{ t.duration }}</b></div>
+  <div class="h5-at-fact"><span>Seats left</span><b{% if t.few_left %} class="is-low"{% endif %}>{% if t.seats_left == 0 %}Full{% elif t.few_left %}{{ t.seats_left }} left{% else %}{{ t.seats_left }}{% endif %}</b></div>
+  {% endif %}
+  <div class="h5-at-fact h5-at-fare"><span>Fare</span><b>{{ t.currency }}{{ t.fare|floatformat:"-2g" }}</b></div>
+  {% if t.full %}
+    <span class="h5-at-book is-off" aria-disabled="true">{% if t.seats_left == 0 %}Full{% else %}Only {{ t.seats_left }} left{% endif %}</span>
+  {% else %}
+    <a class="h5-at-book" href="{% url 'bookings:search' %}?origin={{ t.origin|urlencode }}&amp;destination={{ t.destination|urlencode }}&amp;date={{ t.date|date:'Y-m-d' }}&amp;passengers={{ passenger_count }}&amp;schedule_id={{ t.schedule_id }}"
+       aria-label="Book {{ t.origin }} to {{ t.destination }}, {{ t.date|date:'D j M' }} {{ t.departure|time:'H:i' }}">Book <span aria-hidden="true">→</span></a>
+  {% endif %}
+</div>

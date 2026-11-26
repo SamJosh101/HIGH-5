@@ -315,7 +315,9 @@ class BookTripPageTests(TestCase):
         self.assertNotContains(response, 'id="h5Book"')  # nothing chosen yet
 
     def test_unknown_route_shows_no_trips_found(self):
-        self.assertContains(self.search(origin="Kano"), "No trips found")
+        response = self.search(origin="Kano")
+        self.assertContains(response, "No Kano → Abuja trips on")
+        self.assertContains(response, "See all trips")
 
     def test_same_origin_and_destination_shows_no_trip(self):
         response = self.search(destination="lagos")
