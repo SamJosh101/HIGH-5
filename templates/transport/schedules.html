@@ -25,8 +25,9 @@
       <td data-label="Fare">{{ CURRENCY }}{{ schedule.fare|floatformat:"-2g" }}</td>
       <td><span class="h5-status{% if schedule.status == 'SCHEDULED' %} success{% elif schedule.status == 'COMPLETED' %} info{% endif %}">{{ schedule.get_status_display }}</span></td>
       <td class="h5-actions">
+        <a href="{% url 'transport:schedule_passengers' schedule.pk %}">Passengers</a>
         <a href="{% url 'transport:schedule_edit' schedule.pk %}">Edit</a>
-        {% if schedule.status == 'SCHEDULED' %}<form method="post" action="{% url 'transport:schedule_cancel' schedule.pk %}" onsubmit="return confirm('Cancel this trip? Every booking on it will be cancelled, and paid ones marked refunded.')">{% csrf_token %}<button class="danger" type="submit">Cancel trip</button></form>{% endif %}
+        {% if schedule.status == 'SCHEDULED' %}<form method="post" action="{% url 'transport:schedule_cancel' schedule.pk %}" onsubmit="return confirm('Cancel this trip? Every booking on it will be cancelled, paid ones marked refunded, and the travellers emailed.')">{% csrf_token %}<button class="danger" type="submit">Cancel trip</button></form>{% endif %}
       </td>
     </tr>
   {% empty %}

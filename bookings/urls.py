@@ -35,4 +35,5 @@ urlpatterns = [
     views.ticket_detail,
     name="ticket-detail",
     ),
+    path("ticket/<str:booking_ref>/email/", views.ticket_email, name="ticket-email"),
 ]

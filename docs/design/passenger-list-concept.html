@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HIGH 5 – admin passenger list per trip (concept)</title>
+<!-- Mockup only. Example data. Uses the admin look (bus-route sidebar). -->
+<link rel="stylesheet" href="mockup-base.css">
+<style>
+  .layout { display: grid; grid-template-columns: 210px 1fr; gap: 56px; padding: 20px 44px 44px; }
+  .side small { display: block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .stops { list-style: none; position: relative; margin-bottom: 30px; }
+  .stops::before { content: ""; position: absolute; left: 6px; top: 14px; bottom: 14px; width: 2px; background: #252b38; }
+  .stops li { display: flex; align-items: center; gap: 16px; padding: 10px 0; color: var(--muted); font-size: 15px; position: relative; }
+  .stops li::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #3a4252; background: var(--bg); z-index: 1; }
+  .stops li.on { color: #fff; } .stops li.on::before { border-color: var(--amber); background: var(--amber); box-shadow: 0 0 14px rgba(245,165,36,.6); }
+  .phead { display: flex; justify-content: space-between; align-items: end; margin-bottom: 26px; }
+  .phead p { color: var(--muted); font-size: 14px; } .phead h1 { font-size: 40px; margin-top: 6px; }
+  .acts { display: flex; gap: 10px; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 26px; }
+  .kpi { border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; background: var(--card); }
+  .kpi span { font-size: 13px; color: var(--muted); } .kpi strong { display: block; font-size: 30px; font-weight: 500; margin-top: 6px; }
+  .kpi em { font-style: normal; font-size: 12.5px; color: var(--muted); }
+  .fill { height: 5px; border-radius: 3px; background: #1d2330; margin-top: 10px; overflow: hidden; } .fill i { display: block; height: 100%; width: 47%; background: var(--blue2); }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  th { text-align: left; font-weight: 500; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 12px 12px; border-bottom: 1px solid var(--line); }
+  td { padding: 13px 12px; border-bottom: 1px solid var(--line); } tr.gap td { color: #4d5566; font-size: 13px; padding: 8px 12px; }
+  .seat { display: inline-block; min-width: 42px; text-align: center; padding: 5px 0; border-radius: 9px; background: rgba(59,119,255,.16); color: #9fb8ff; font-weight: 700; }
+  .ref { font-family: Consolas, monospace; color: #c9ced8; }
+  td small { display: block; color: var(--muted); font-size: 12.5px; }
+  .check { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid #4b5568; display: inline-block; }
+  .note { position: static; display: inline-block; margin-top: 16px; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo"><div class="mark">H5</div>HIGH 5</div>
+  <div class="pill"><span>Dashboard</span><span class="on">Transport</span></div>
+  <div class="user"><div class="av" style="background:#f5a524;color:#111">S</div>Sam</div>
+</nav>
+<div class="layout">
+  <aside class="side">
+    <small>Admin</small>
+    <ul class="stops"><li>Dashboard</li><li>Bookings</li><li>Reports</li></ul>
+    <small>Transport</small>
+    <ul class="stops"><li>Overview</li><li>Routes</li><li>Buses</li><li class="on">Schedules</li></ul>
+  </aside>
+
+  <main>
+    <div class="phead">
+      <div><p>← Schedules · Fri, 27 Nov 2026 · 06:00 → 16:00 · H5-LAG-01 (Luxury, 2 + 1)</p><h1>Lagos → Abuja · passengers</h1></div>
+      <div class="acts"><span class="btn ghost">Print list</span><span class="btn ghost">Edit trip</span><span class="btn danger">Cancel trip</span></div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><span>Seats taken</span><strong>14 / 30</strong><div class="fill"><i></i></div></div>
+      <div class="kpi"><span>Travellers</span><strong>14</strong><em>in 9 bookings</em></div>
+      <div class="kpi"><span>Paid</span><strong>₦250,000</strong><em>10 seats</em></div>
+      <div class="kpi"><span>Not paid yet</span><strong>₦100,000</strong><em>4 seats · 3 bookings</em></div>
+    </div>
+
+    <div class="card" style="padding:22px 22px 10px">
+      <table>
+        <thead><tr><th>Seat</th><th>Traveller</th><th>Phone</th><th>Booking</th><th>Booked by</th><th>Payment</th><th>Boarded</th></tr></thead>
+        <tbody>
+          <tr><td><span class="seat">1A</span></td><td>Chidi Eze</td><td>+234 803 111 2222</td><td class="ref">H5-8HD2KQ1ZT</td><td>Chidi Eze</td><td><span class="chip ok">Paid</span></td><td><span class="check"></span></td></tr>
+          <tr><td><span class="seat">1B</span></td><td>Ngozi Eze</td><td>+234 803 111 3333</td><td class="ref">H5-8HD2KQ1ZT</td><td>Chidi Eze</td><td><span class="chip ok">Paid</span></td><td><span class="check"></span></td></tr>
+          <tr><td><span class="seat">2C</span></td><td>Bola Ade</td><td>+234 705 444 9090</td><td class="ref">H5-P0LK3MN8R</td><td>Bola Ade</td><td><span class="chip wait">Pending</span></td><td><span class="check"></span></td></tr>
+          <tr><td><span class="seat">3A</span></td><td>Ada Okafor</td><td>+234 801 234 5678</td><td class="ref">H5-MDC8KRGYW</td><td>Ada Okafor</td><td><span class="chip wait">Pending</span></td><td><span class="check"></span></td></tr>
+          <tr><td><span class="seat">3B</span></td><td>Tunde Bello</td><td>+234 809 876 5432</td><td class="ref">H5-MDC8KRGYW</td><td>Ada Okafor<small>ada@gmail.com</small></td><td><span class="chip wait">Pending</span></td><td><span class="check"></span></td></tr>
+          <tr class="gap"><td colspan="7">… 9 more travellers, sorted by seat. Cancelled bookings are not listed.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <span class="note">“Boarded” is just a printed tick box for the driver, not saved. Reached from a new “Passengers” link on each row of Schedules, and from the dashboard's “Next departures”.</span>
+  </main>
+</div>
+</body>
+</html>

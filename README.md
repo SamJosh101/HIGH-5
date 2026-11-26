@@ -75,6 +75,8 @@ Enter an email, full name and password when asked. Nothing is hard-coded: each p
 
 New passengers who sign up get a 6-digit code by email and must enter it at `/accounts/verify-email/` before they can log in (see [docs/EMAIL_VERIFICATION.md](docs/EMAIL_VERIFICATION.md)). In development the email, with the code, is printed in the `runserver` terminal. To send codes to real inboxes through Gmail, follow "Real inboxes: Gmail SMTP" in that file.
 
+The same email settings send the booking emails (`bookings/emails.py`): the ticket right after booking, and a notice with the refund line when an admin cancels a trip. Both go to the account that booked and to every traveller who gave an email. If sending fails the booking still goes through and the page says the email could not be sent.
+
 ### 8. Run the development server
 ```powershell
 python manage.py runserver
@@ -112,8 +114,10 @@ Remove it again with `Unregister-ScheduledTask -TaskName "HIGH5 complete booking
 | `/accounts/profile/` | logged-in | Profile, change password |
 | `/accounts/password/reset/` | everyone | Password reset (email printed in terminal in development) |
 | `/bookings/search/` | passengers | Book a Trip: search, choose a trip, book seats; logged-out visitors are sent to login and back |
-| `/bookings/dashboard/` | passengers | My Bookings and ticket pages |
+| `/bookings/dashboard/` | passengers | My Bookings (Upcoming / Past & cancelled) |
+| `/bookings/ticket/<ref>/` | the passenger who booked | The virtual ticket: print, email it again, cancel |
 | `/transport/manage/` | admins | Manage routes, buses and schedules |
+| `/transport/manage/schedules/<id>/passengers/` | admins | Passenger list for one trip (printable) |
 | `/dashboard/` | admins | Admin dashboard, bookings and reports |
 | `/django-admin/` | superusers | Django's built-in admin site |
 
@@ -132,4 +136,4 @@ docs/          architecture, database contract, MySQL setup script
 ## Project status
 **Phase 1 – Foundation:** done (project setup, custom user, authentication, role permissions, base templates, docs, tests).
 **Phase 2 – Core features:** done. Transport management (Daniel), booking, cancellation, admin "mark as paid" and automatic trip completion (Raheem), email verification and Gmail SMTP settings (Cross), real Popular Routes, admin redesign and 6-digit email codes (Sam).
-**Still to do (optional):** seat selection / seat map.
+**Phase 3 – Tickets:** seat selection, the virtual ticket after booking and on the ticket page, ticket emails, trip-cancelled emails, the admin passenger list per trip, and the My Bookings redesign (Sam).

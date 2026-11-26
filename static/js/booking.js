@@ -44,12 +44,13 @@
       name: card.querySelector("[name='passenger_name']")?.value || "",
       phone: card.querySelector("[name='passenger_phone']")?.value || "",
       email: card.querySelector("[name='passenger_email']")?.value || "",
+      me: card.querySelector(".h5-me-toggle")?.getAttribute("aria-pressed") === "true",
     }));
 
     passengerFields.innerHTML = "";
 
     for (let i = 1; i <= passengerCount; i++) {
-      const prev = saved[i - 1] || { name: "", phone: "", email: "" };
+      const prev = saved[i - 1] || { name: "", phone: "", email: "", me: false };
       const passengerCard = document.createElement("div");
       passengerCard.className = "h5-passenger-card";
 
@@ -59,8 +60,16 @@
         : seat
           ? `<span class="h5-pax-seat">Seat ${seat}</span>`
           : `<span class="h5-pax-seat is-missing">Pick a seat</span>`;
+      // Only Passenger 1 offers "I'm travelling": nothing is filled unless the
+      // booker taps it, so booking for other people works as before.
+      const meToggle = i === 1 && me.name
+        ? `<button type="button" class="h5-me-toggle" aria-pressed="false">
+             <i aria-hidden="true">✓</i><span>I'm travelling – use my details</span><em>Clear</em>
+           </button>`
+        : "";
       passengerCard.innerHTML = `
         <h3>Passenger ${i}${seatChip}</h3>
+        ${meToggle}
 
         <div class="h5-form-group">
           <label for="passenger-name-${i}">Full name</label>
@@ -68,32 +77,37 @@
             type="text"
             id="passenger-name-${i}"
             name="passenger_name"
-            placeholder="Enter passenger's full name"
+            placeholder="As on their ID"
             maxlength="150"
+            autocomplete="off"
             required
           >
         </div>
 
-        <div class="h5-form-group">
-          <label for="passenger-phone-${i}">Phone number</label>
-          <input
-            type="tel"
-            id="passenger-phone-${i}"
-            name="passenger_phone"
-            placeholder="Enter passenger's phone number"
-            maxlength="16"
-            required
-          >
-        </div>
+        <div class="h5-form-row">
+          <div class="h5-form-group">
+            <label for="passenger-phone-${i}">Phone number</label>
+            <input
+              type="tel"
+              id="passenger-phone-${i}"
+              name="passenger_phone"
+              placeholder="+234 801 234 5678"
+              maxlength="16"
+              autocomplete="off"
+              required
+            >
+          </div>
 
-        <div class="h5-form-group">
-          <label for="passenger-email-${i}">Email address (optional)</label>
-          <input
-            type="email"
-            id="passenger-email-${i}"
-            name="passenger_email"
-            placeholder="Enter passenger's email"
-          >
+          <div class="h5-form-group">
+            <label for="passenger-email-${i}">Email (optional)</label>
+            <input
+              type="email"
+              id="passenger-email-${i}"
+              name="passenger_email"
+              placeholder="For their own ticket"
+              autocomplete="off"
+            >
+          </div>
         </div>
       `;
 
@@ -102,7 +116,31 @@
       passengerCard.querySelector("[name='passenger_name']").value = prev.name;
       passengerCard.querySelector("[name='passenger_phone']").value = prev.phone;
       passengerCard.querySelector("[name='passenger_email']").value = prev.email;
+
+      const toggle = passengerCard.querySelector(".h5-me-toggle");
+      if (toggle) {
+        toggle.setAttribute("aria-pressed", String(prev.me));
+        toggle.addEventListener("click", () => useMyDetails(passengerCard, toggle));
+      }
     }
+  }
+
+  // The logged-in user's own details (from the page), for "I'm travelling".
+  const me = {
+    name: form.dataset.meName || "",
+    phone: form.dataset.mePhone || "",
+  };
+
+  function useMyDetails(card, toggle) {
+    const on = toggle.getAttribute("aria-pressed") !== "true";
+    const name = card.querySelector("[name='passenger_name']");
+    const phone = card.querySelector("[name='passenger_phone']");
+    toggle.setAttribute("aria-pressed", String(on));
+    name.value = on ? me.name : "";
+    phone.value = on ? me.phone : "";
+    // no phone on the account yet: let them type it
+    if (on && !me.phone) phone.focus();
+    if (!on) name.focus();
   }
 
   function render() {
@@ -244,10 +282,17 @@
         throw new Error(errorMessage);
       }
 
-      renderBookingConfirmation(data);
-
       goBtn.textContent = "Booking confirmed";
       goBtn.disabled = true;
+
+      // Show the virtual ticket ("You're booked"), drawn by the server so it
+      // matches the ticket page and the email. Older responses without a
+      // ticket_url fall back to the short in-page confirmation.
+      if (data.ticket_url) {
+        window.location.assign(`${data.ticket_url}?booked=1`);
+      } else {
+        renderBookingConfirmation(data);
+      }
 
     } catch (error) {
       showMessage(

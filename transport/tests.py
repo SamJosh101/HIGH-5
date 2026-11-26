@@ -194,3 +194,76 @@ class TripCancellationTests(TestCase):
             "route": s.route_id, "bus": s.bus_id, "departure_date": s.departure_date.isoformat(),
             "departure_time": "06:00", "fare": "8000.00", "status": Schedule.Status.CANCELLED}, follow=True)
         self.check_cascade(response)
+
+
+class BusStatusTests(TestCase):
+    """Bus status follows its trips; Maintenance and Unavailable buses get no new trips."""
+
+    def setUp(self):
+        self.admin = User.objects.create_user(email="ops3@example.com", password="Strongpass123",
+                                              full_name="Ops", role=User.Role.ADMIN)
+        self.route = Route.objects.create(origin="Lagos", destination="Ilorin", distance_km=300,
+                                          duration_estimate=timedelta(hours=5))
+        self.bus = Bus.objects.create(name_or_plate="BST-001", bus_type=Bus.BusType.STANDARD, total_seats=40)
+        self.other_bus = Bus.objects.create(name_or_plate="BST-002", bus_type=Bus.BusType.STANDARD, total_seats=40)
+        self.day = timezone.localdate() + timedelta(days=3)
+        self.client.force_login(self.admin)
+
+    def trip(self, hour, bus=None):
+        return Schedule.objects.create(route=self.route, bus=bus or self.bus, fare="9000.00", departure_date=self.day,
+                                       departure_time=datetime.strptime(f"{hour:02d}:00", "%H:%M").time())
+
+    def form_data(self, bus, hour=6, **changes):
+        return {"route": self.route.pk, "bus": bus.pk, "departure_date": self.day.isoformat(),
+                "departure_time": f"{hour:02d}:00", "fare": "9000.00", "status": Schedule.Status.SCHEDULED,
+                **changes}
+
+    def status_of(self, bus):
+        bus.refresh_from_db()
+        return bus.status
+
+    def test_maintenance_and_unavailable_buses_cannot_get_a_new_trip(self):
+        for status in (Bus.Status.MAINTENANCE, Bus.Status.UNAVAILABLE):
+            self.bus.status = status
+            self.bus.save()
+            response = self.client.post(reverse("transport:schedule_create"), self.form_data(self.bus))
+            self.assertEqual(response.status_code, 200)  # form shown again with an error
+            self.assertFalse(Schedule.objects.filter(bus=self.bus).exists())
+            self.assertEqual(self.status_of(self.bus), status)
+            page = self.client.get(reverse("transport:schedule_create"))
+            self.assertNotContains(page, "BST-001")
+            self.assertContains(page, "BST-002")
+
+    def test_new_trip_marks_the_bus_assigned(self):
+        self.client.post(reverse("transport:schedule_create"), self.form_data(self.bus))
+        self.assertEqual(self.status_of(self.bus), Bus.Status.ASSIGNED)
+
+    def test_editing_one_trip_keeps_a_bus_with_other_trips_assigned(self):
+        first = self.trip(6)
+        self.trip(18)
+        Bus.objects.filter(pk=self.bus.pk).update(status=Bus.Status.ASSIGNED)
+        self.client.post(reverse("transport:schedule_edit", args=[first.pk]), self.form_data(self.bus, fare="9500.00"))
+        self.assertEqual(self.status_of(self.bus), Bus.Status.ASSIGNED)
+
+    def test_moving_the_only_trip_to_another_bus_frees_the_first(self):
+        only = self.trip(6)
+        Bus.objects.filter(pk=self.bus.pk).update(status=Bus.Status.ASSIGNED)
+        self.client.post(reverse("transport:schedule_edit", args=[only.pk]), self.form_data(self.other_bus))
+        self.assertEqual(self.status_of(self.bus), Bus.Status.AVAILABLE)
+        self.assertEqual(self.status_of(self.other_bus), Bus.Status.ASSIGNED)
+
+    def test_cancelling_a_trip_in_the_edit_form_keeps_other_trips_assigned(self):
+        first = self.trip(6)
+        self.trip(18)
+        Bus.objects.filter(pk=self.bus.pk).update(status=Bus.Status.ASSIGNED)
+        self.client.post(reverse("transport:schedule_edit", args=[first.pk]),
+                         self.form_data(self.bus, status=Schedule.Status.CANCELLED))
+        self.assertEqual(self.status_of(self.bus), Bus.Status.ASSIGNED)
+
+    def test_editing_a_trip_does_not_overwrite_maintenance(self):
+        trip = self.trip(6)
+        Bus.objects.filter(pk=self.bus.pk).update(status=Bus.Status.MAINTENANCE)
+        response = self.client.post(reverse("transport:schedule_edit", args=[trip.pk]),
+                                    self.form_data(self.bus, fare="9500.00"))
+        self.assertRedirects(response, reverse("transport:schedule_list"))
+        self.assertEqual(self.status_of(self.bus), Bus.Status.MAINTENANCE)

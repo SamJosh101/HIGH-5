@@ -1,0 +1,35 @@
+{% comment %}Sent when HIGH 5 cancels a trip (bookings/emails.py). Inline styles only.{% endcomment %}<!doctype html>
+<html lang="en">
+<body style="margin:0;padding:24px 12px;background:#f3f4f8;font-family:'Segoe UI',Arial,sans-serif;color:#1b2030;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;">
+  <tr><td style="background:#0b0e15;padding:18px 24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td style="color:#ffffff;font-weight:700;letter-spacing:4px;font-size:14px;"><span style="display:inline-block;background:#f5a524;color:#111111;border-radius:7px;padding:4px 7px;letter-spacing:0;font-size:12px;margin-right:8px;">H5</span>HIGH 5</td>
+      <td align="right" style="color:#aab2c2;font-size:12px;letter-spacing:2px;text-transform:uppercase;">Trip update</td>
+    </tr></table>
+  </td></tr>
+  <tr><td style="padding:24px;">
+    <h1 style="margin:0 0 6px;font-size:22px;color:#0b0e15;">Your trip has been cancelled</h1>
+    <p style="margin:0;color:#3b4254;line-height:1.55;">Sorry, {{ first_name }}. HIGH 5 has cancelled this trip, so {% if is_booker %}your booking is{% else %}the booking {{ booker_name }} made for you is{% endif %} cancelled too.</p>
+    <div style="margin-top:14px;background:#fff0f0;color:#a12b2b;border-radius:10px;padding:12px 14px;font-size:14px;">
+      {{ route.origin }} &rarr; {{ route.destination }} · {{ departure|date:"D, j M Y" }} at {{ departure|time:"H:i" }}{% if booking.seat_list %} · Seat{{ booking.seats_booked|pluralize }} {{ booking.seat_list }}{% endif %}
+    </div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;font-size:14.5px;">
+      <tr><td style="padding:9px 0;border-bottom:1px solid #eceef3;color:#6b7385;">Booking reference</td>
+          <td align="right" style="padding:9px 0;border-bottom:1px solid #eceef3;font-weight:700;font-family:Consolas,monospace;letter-spacing:1px;">{{ booking.booking_ref }}</td></tr>
+      {% if is_refunded %}
+      <tr><td style="padding:9px 0;border-bottom:1px solid #eceef3;color:#6b7385;">Amount paid</td>
+          <td align="right" style="padding:9px 0;border-bottom:1px solid #eceef3;font-weight:600;">{{ currency }}{{ booking.total_amount|floatformat:"-2g" }}</td></tr>
+      <tr><td style="padding:9px 0;border-bottom:1px solid #eceef3;color:#6b7385;">Refund</td>
+          <td align="right" style="padding:9px 0;border-bottom:1px solid #eceef3;font-weight:600;color:#127a4b;">{{ currency }}{{ booking.total_amount|floatformat:"-2g" }} – full refund, marked Refunded</td></tr>
+      {% else %}
+      <tr><td style="padding:9px 0;border-bottom:1px solid #eceef3;color:#6b7385;">Payment</td>
+          <td align="right" style="padding:9px 0;border-bottom:1px solid #eceef3;font-weight:600;">Nothing to pay – the booking is simply cancelled</td></tr>
+      {% endif %}
+    </table>
+    <a href="{{ search_url }}" style="display:inline-block;margin-top:20px;background:#2f6bff;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:600;">Find another trip</a>
+    <p style="margin:18px 0 0;font-size:12.5px;color:#7a8294;line-height:1.5;">Sent to the person who booked and to every traveller on the booking who gave an email.</p>
+  </td></tr>
+</table>
+</body>
+</html>

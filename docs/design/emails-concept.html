@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HIGH 5 – ticket email + trip cancelled email (concept)</title>
+<!-- Mockup only. Example data. Real emails also have a plain-text version. -->
+<link rel="stylesheet" href="mockup-base.css">
+<style>
+  body { background: #1c2029; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; padding: 34px 44px 44px; }
+  .label { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #aab2c2; margin-bottom: 12px; }
+  .inbox { font-size: 13.5px; color: #c9ced8; background: #11151d; border-radius: 12px 12px 0 0; padding: 12px 18px; border: 1px solid var(--line); border-bottom: 0; }
+  .inbox b { color: #fff; }
+  .mail { background: #f3f4f8; padding: 26px; border-radius: 0 0 12px 12px; color: #1b2030; font-size: 15px; line-height: 1.55; }
+  .m-card { background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .m-top { background: #0b0e15; color: #fff; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; }
+  .m-top .t-brand { color: #fff; } .m-top small { color: #aab2c2; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+  .m-body { padding: 24px; }
+  .m-body h2 { font-size: 22px; color: #0b0e15; margin-bottom: 6px; }
+  .m-body p { color: #3b4254; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14.5px; }
+  td { padding: 9px 0; border-bottom: 1px solid #eceef3; vertical-align: top; } td:first-child { color: #6b7385; width: 42%; } td:last-child { text-align: right; font-weight: 600; }
+  .route { display: flex; justify-content: space-between; align-items: end; margin-top: 18px; padding: 16px 18px; border-radius: 12px; background: #f6f7fb; }
+  .route b { display: block; font-size: 30px; font-weight: 300; line-height: 1; } .route strong { display: block; margin-top: 4px; }
+  .route small { color: #6b7385; font-size: 12.5px; }
+  .seat { background: #0b0e15; color: #fff; border-radius: 7px; padding: 2px 8px; font-size: 13px; }
+  .cta { display: inline-block; margin-top: 20px; background: #2f6bff; color: #fff; padding: 12px 20px; border-radius: 10px; font-weight: 600; }
+  .fine { margin-top: 18px; font-size: 12.5px; color: #7a8294; line-height: 1.5; }
+  .bad { background: #fff0f0; color: #a12b2b; border-radius: 10px; padding: 12px 14px; margin-top: 14px; font-size: 14px; }
+  .note { position: static; display: inline-block; margin-top: 14px; }
+</style>
+</head>
+<body>
+<div class="pair">
+
+  <section>
+    <p class="label">1 · Sent right after booking – the full ticket</p>
+    <div class="inbox"><b>HIGH 5</b> · Your ticket H5-MDC8KRGYW · Lagos → Abuja, Fri 27 Nov</div>
+    <div class="mail"><div class="m-card">
+      <div class="m-top"><div class="t-brand"><div class="mark">H5</div>HIGH 5</div><small>Bus ticket</small></div>
+      <div class="m-body">
+        <h2>You're booked, Ada</h2>
+        <p>Here is your ticket. Show it, or just the reference, when boarding.</p>
+        <div class="route">
+          <div><b>06:00</b><strong>Lagos</strong><small>Fri, 27 Nov 2026</small></div>
+          <div style="color:#9aa2b2">→</div>
+          <div style="text-align:right"><b>16:00</b><strong>Abuja</strong><small>estimated arrival</small></div>
+        </div>
+        <table>
+          <tr><td>Booking reference</td><td style="font-family:Consolas,monospace;letter-spacing:.04em">H5-MDC8KRGYW</td></tr>
+          <tr><td>Ada Okafor · +234 801 234 5678</td><td>Seat <span class="seat">3A</span></td></tr>
+          <tr><td>Tunde Bello · +234 809 876 5432</td><td>Seat <span class="seat">3B</span></td></tr>
+          <tr><td>Bus</td><td>H5-LAG-01 · Luxury coach</td></tr>
+          <tr><td>Fare</td><td>₦25,000 × 2</td></tr>
+          <tr><td>Total</td><td style="font-size:18px">₦50,000</td></tr>
+          <tr><td>Payment</td><td style="color:#9a6200">Pending</td></tr>
+          <tr><td>Free cancellation</td><td>Until Thu 26 Nov, 06:00</td></tr>
+        </table>
+        <span class="cta">View your ticket</span>
+        <p class="fine">Booked by Ada Okafor (ada@gmail.com). Passengers who gave an email get their own copy. You can cancel from My Bookings until 24 h before departure.</p>
+      </div>
+    </div></div>
+  </section>
+
+  <section>
+    <p class="label">2 · Sent when HIGH 5 cancels the trip</p>
+    <div class="inbox"><b>HIGH 5</b> · Trip cancelled: Lagos → Benin, Sun 14 Dec (H5-Q2W7PXT4D)</div>
+    <div class="mail"><div class="m-card">
+      <div class="m-top"><div class="t-brand"><div class="mark">H5</div>HIGH 5</div><small>Trip update</small></div>
+      <div class="m-body">
+        <h2>Your trip has been cancelled</h2>
+        <p>Sorry, Ada. HIGH 5 has cancelled this trip, so your booking is cancelled too.</p>
+        <div class="bad">Lagos → Benin · Sun, 14 Dec 2026 at 06:00 · Seat 2C</div>
+        <table>
+          <tr><td>Booking reference</td><td style="font-family:Consolas,monospace;letter-spacing:.04em">H5-Q2W7PXT4D</td></tr>
+          <tr><td>Amount paid</td><td>₦8,000</td></tr>
+          <tr><td>Refund</td><td style="color:#127a4b">₦8,000 – full refund, marked Refunded</td></tr>
+        </table>
+        <p class="fine" style="margin-top:12px">If you had not paid yet, this line says “Nothing to pay – the booking is simply cancelled.”</p>
+        <span class="cta">Find another trip</span>
+        <p class="fine">Sent to the person who booked and to every passenger on the booking who gave an email.</p>
+      </div>
+    </div></div>
+  </section>
+
+</div>
+</body>
+</html>

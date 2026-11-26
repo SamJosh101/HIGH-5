@@ -17,5 +17,6 @@ urlpatterns = [
     path("manage/schedules/", views.schedule_list, name="schedule_list"),
     path("manage/schedules/add/", views.schedule_create, name="schedule_create"),
     path("manage/schedules/<int:pk>/edit/", views.schedule_edit, name="schedule_edit"),
+    path("manage/schedules/<int:pk>/passengers/", views.schedule_passengers, name="schedule_passengers"),
     path("manage/schedules/<int:pk>/cancel/", views.schedule_cancel, name="schedule_cancel"),
 ]

@@ -214,13 +214,19 @@ def cancel_booking(passenger, booking_id):
 def cancel_trip_bookings(schedule):
     """The company cancelled this trip: cancel every live booking on it and
     refund the paid ones (no cutoff applies; it is not the passenger's choice).
-    Returns (bookings cancelled, of which refunded)."""
+    Returns (bookings cancelled, of which refunded, their ids) – the ids are
+    for the "trip cancelled" emails, which are sent after this commits."""
     now = timezone.now()
-    live = Booking.objects.select_for_update().filter(schedule=schedule, status=Booking.Status.CONFIRMED)
+    ids = list(
+        Booking.objects.select_for_update()
+        .filter(schedule=schedule, status=Booking.Status.CONFIRMED)
+        .values_list("pk", flat=True)
+    )
+    live = Booking.objects.filter(pk__in=ids)
     refunded = live.filter(payment_status=Booking.PaymentStatus.PAID).update(
         status=Booking.Status.CANCELLED, cancelled_at=now, payment_status=Booking.PaymentStatus.REFUNDED)
-    unpaid = live.update(status=Booking.Status.CANCELLED, cancelled_at=now)
-    return refunded + unpaid, refunded
+    unpaid = live.filter(status=Booking.Status.CONFIRMED).update(status=Booking.Status.CANCELLED, cancelled_at=now)
+    return refunded + unpaid, refunded, ids
 
 
 def get_passenger_bookings(passenger):

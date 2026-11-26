@@ -1,0 +1,24 @@
+{% autoescape off %}{% if is_booker %}You're booked, {{ first_name }}.{% else %}Hello {{ first_name }}, {{ booker_name }} booked this trip for you.{% endif %}
+
+Show this ticket, or just the reference, when boarding.
+
+{{ route.origin }} -> {{ route.destination }}
+Departs:    {{ departure|date:"D, j M Y" }} at {{ departure|time:"H:i" }}
+Arrives:    about {{ arrival|time:"H:i" }}{% if arrives_next_day %} on {{ arrival|date:"D j M" }}{% endif %} (estimated)
+
+Booking reference: {{ booking.booking_ref }}
+{% for traveller in travellers %}
+- {{ traveller.full_name }} ({{ traveller.phone }}): {% if traveller.seat_number %}seat {{ traveller.seat_number }}{% else %}seat given at boarding{% endif %}{% endfor %}
+
+Bus:        {{ bus.name_or_plate }} ({{ bus.get_bus_type_display }})
+Fare:       {{ currency }}{{ fare|floatformat:"-2g" }} x {{ booking.seats_booked }}
+Total:      {{ currency }}{{ booking.total_amount|floatformat:"-2g" }}
+Payment:    {{ booking.get_payment_status_display }}
+Free cancellation until {{ cancel_until|date:"D j M, H:i" }}
+{% if is_booker %}
+View your ticket: {{ ticket_url }}
+You can cancel from My Bookings until {{ cutoff_hours }} h before departure.{% else %}
+To change or cancel this booking, ask {{ booker_name }}.{% endif %}
+
+– The HIGH 5 team
+{% endautoescape %}

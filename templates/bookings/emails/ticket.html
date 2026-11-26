@@ -1,0 +1,55 @@
+{% comment %}The ticket email (bookings/emails.py). Inline styles only: email apps ignore <style> and CSS files.{% endcomment %}<!doctype html>
+<html lang="en">
+<body style="margin:0;padding:24px 12px;background:#f3f4f8;font-family:'Segoe UI',Arial,sans-serif;color:#1b2030;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;">
+  <tr><td style="background:#0b0e15;padding:18px 24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td style="color:#ffffff;font-weight:700;letter-spacing:4px;font-size:14px;"><span style="display:inline-block;background:#f5a524;color:#111111;border-radius:7px;padding:4px 7px;letter-spacing:0;font-size:12px;margin-right:8px;">H5</span>HIGH 5</td>
+      <td align="right" style="color:#aab2c2;font-size:12px;letter-spacing:2px;text-transform:uppercase;">Bus ticket</td>
+    </tr></table>
+  </td></tr>
+  <tr><td style="padding:24px;">
+    <h1 style="margin:0 0 6px;font-size:22px;color:#0b0e15;">{% if is_booker %}You're booked, {{ first_name }}{% else %}Your bus ticket, {{ first_name }}{% endif %}</h1>
+    <p style="margin:0;color:#3b4254;line-height:1.55;">{% if is_booker %}Here is your ticket.{% else %}{{ booker_name }} booked this trip for you.{% endif %} Show it, or just the reference, when boarding.</p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;background:#f6f7fb;border-radius:12px;">
+      <tr>
+        <td style="padding:16px 18px;">
+          <div style="font-size:30px;font-weight:300;line-height:1;">{{ departure|time:"H:i" }}</div>
+          <div style="font-weight:600;margin-top:4px;">{{ route.origin }}</div>
+          <div style="color:#6b7385;font-size:12.5px;">{{ departure|date:"D, j M Y" }}</div>
+        </td>
+        <td align="center" style="color:#9aa2b2;">&rarr;</td>
+        <td align="right" style="padding:16px 18px;">
+          <div style="font-size:30px;font-weight:300;line-height:1;">{{ arrival|time:"H:i" }}</div>
+          <div style="font-weight:600;margin-top:4px;">{{ route.destination }}</div>
+          <div style="color:#6b7385;font-size:12.5px;">estimated arrival{% if arrives_next_day %}, {{ arrival|date:"D j M" }}{% endif %}</div>
+        </td>
+      </tr>
+    </table>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;font-size:14.5px;">
+      <tr><td style="padding:9px 0;border-bottom:1px solid #eceef3;color:#6b7385;">Booking reference</td>
+          <td align="right" style="padding:9px 0;border-bottom:1px solid #eceef3;font-weight:700;font-family:Consolas,monospace;letter-spacing:1px;">{{ booking.booking_ref }}</td></tr>
+      {% for traveller in travellers %}
+      <tr><td style="padding:9px 0;border-bottom:1px solid #eceef3;color:#3b4254;">{{ traveller.full_name }} · {{ traveller.phone }}</td>
+          <td align="right" style="padding:9px 0;border-bottom:1px solid #eceef3;font-weight:600;">{% if traveller.seat_number %}Seat <span style="background:#0b0e15;color:#ffffff;border-radius:6px;padding:2px 8px;font-size:13px;">{{ traveller.seat_number }}</span>{% else %}Seat given at boarding{% endif %}</td></tr>
+      {% endfor %}
+      <tr><td style="padding:9px 0;border-bottom:1px solid #eceef3;color:#6b7385;">Bus</td>
+          <td align="right" style="padding:9px 0;border-bottom:1px solid #eceef3;font-weight:600;">{{ bus.name_or_plate }} · {{ bus.get_bus_type_display }}</td></tr>
+      <tr><td style="padding:9px 0;border-bottom:1px solid #eceef3;color:#6b7385;">Fare</td>
+          <td align="right" style="padding:9px 0;border-bottom:1px solid #eceef3;font-weight:600;">{{ currency }}{{ fare|floatformat:"-2g" }} &times; {{ booking.seats_booked }}</td></tr>
+      <tr><td style="padding:9px 0;border-bottom:1px solid #eceef3;color:#6b7385;">Total</td>
+          <td align="right" style="padding:9px 0;border-bottom:1px solid #eceef3;font-weight:700;font-size:18px;">{{ currency }}{{ booking.total_amount|floatformat:"-2g" }}</td></tr>
+      <tr><td style="padding:9px 0;border-bottom:1px solid #eceef3;color:#6b7385;">Payment</td>
+          <td align="right" style="padding:9px 0;border-bottom:1px solid #eceef3;font-weight:600;color:{% if is_paid %}#127a4b{% else %}#9a6200{% endif %};">{{ booking.get_payment_status_display }}</td></tr>
+      <tr><td style="padding:9px 0;border-bottom:1px solid #eceef3;color:#6b7385;">Free cancellation</td>
+          <td align="right" style="padding:9px 0;border-bottom:1px solid #eceef3;font-weight:600;">Until {{ cancel_until|date:"D j M, H:i" }}</td></tr>
+    </table>
+
+    {% if is_booker %}<a href="{{ ticket_url }}" style="display:inline-block;margin-top:20px;background:#2f6bff;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:600;">View your ticket</a>{% endif %}
+    <p style="margin:18px 0 0;font-size:12.5px;color:#7a8294;line-height:1.5;">Booked by {{ booker_name }}. {% if is_booker %}Travellers who gave an email get their own copy. You can cancel from My Bookings until {{ cutoff_hours }} h before departure.{% else %}To change or cancel this booking, ask {{ booker_name }}.{% endif %}</p>
+  </td></tr>
+</table>
+</body>
+</html>

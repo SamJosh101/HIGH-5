@@ -5,15 +5,16 @@ Implements booking and passenger functionality against
 docs/DATABASE.md and docs/ARCHITECTURE.md.
 """
 
-from datetime import timedelta
-
 from django.apps import apps
-from django.conf import settings
+from django.contrib import messages
+from django.core.cache import cache
 from django.http import Http404
-from django.shortcuts import render
+from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_POST
 
 from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
@@ -23,8 +24,10 @@ from rest_framework.views import APIView
 
 from accounts.permissions import passenger_required
 
+from .emails import send_ticket_email
 from .models import Booking
 from .search_services import search_available_trips
+from .tickets import ticket_facts
 from .serializers import BookingCreateSerializer, BookingSerializer
 from .services import (
     BookingError,
@@ -151,9 +154,13 @@ def passenger_dashboard(request):
         else:
             booking_history.append(booking)
 
+    # Soonest trip first; history stays newest booking first.
+    upcoming_bookings.sort(key=lambda b: b.schedule.departure_datetime)
+
     context = {
         "upcoming_bookings": upcoming_bookings,
         "booking_history": booking_history,
+        "today": timezone.localdate(),
     }
 
     return render(
@@ -176,33 +183,47 @@ def ticket_detail(request, booking_ref):
     except BookingError:
         raise Http404("Booking not found.")
 
-    cutoff_hours = getattr(
-        settings,
-        "BOOKING_CANCELLATION_CUTOFF_HOURS",
-        24,
-    )
-
-    cancellation_cutoff = (
-        booking.schedule.departure_datetime
-        - timedelta(hours=cutoff_hours)
-    )
-
-    can_cancel = (
-        booking.status == Booking.Status.CONFIRMED
-        and timezone.now() < cancellation_cutoff
-    )
-
-    context = {
-        "booking": booking,
-        "can_cancel": can_cancel,
-        "cutoff_hours": cutoff_hours,
-    }
+    context = ticket_facts(booking)
+    # Right after booking, booking.js opens this page with ?booked=1. The
+    # addresses the ticket was emailed to were kept in the session for it
+    # (None = this page was not reached from a new booking).
+    context["just_booked"] = request.GET.get("booked") == "1"
+    context["emailed_to"] = request.session.pop(_emailed_key(booking), None)
 
     return render(
         request,
         "bookings/ticket_detail.html",
         context,
     )
+
+
+def _emailed_key(booking):
+    return f"h5_ticket_emailed_{booking.booking_ref}"
+
+
+TICKET_EMAIL_EVERY_SECONDS = 60
+
+
+@require_POST
+@passenger_required
+def ticket_email(request, booking_ref):
+    """"Email it again": send the ticket to the account's own address
+    (at most once a minute per booking, so the button cannot spam)."""
+    try:
+        booking = get_booking_details(passenger=request.user, booking_ref=booking_ref)
+    except BookingError:
+        raise Http404("Booking not found.")
+
+    if booking.status == Booking.Status.CANCELLED:
+        messages.error(request, "This booking is cancelled, so there is no ticket to send.")
+    elif not cache.add(f"h5-ticket-email-{booking.pk}", True, TICKET_EMAIL_EVERY_SECONDS):
+        messages.info(request, "The ticket was just sent. Please wait a minute before asking again.")
+    elif send_ticket_email(booking, request.build_absolute_uri("/"), only_booker=True):
+        messages.success(request, f"Ticket sent to {request.user.email}.")
+    else:
+        cache.delete(f"h5-ticket-email-{booking.pk}")
+        messages.error(request, "The ticket could not be emailed just now. Please try again later.")
+    return redirect("bookings:ticket-detail", booking_ref=booking.booking_ref)
 
 
 class IsPassenger(BasePermission):
@@ -237,14 +258,24 @@ class BookingCreateAPIView(generics.CreateAPIView):
                 detail["taken_seats"] = error.taken_seats
             raise ValidationError(detail)
 
+        # Email the ticket to the booker and to travellers who gave an email.
+        # The booking is already saved, so a mail failure only means the ticket
+        # page says it could not be sent.
+        booking = get_booking_details(passenger=request.user, booking_ref=booking.booking_ref)
+        emailed_to = send_ticket_email(booking, request.build_absolute_uri("/"))
+        request.session[_emailed_key(booking)] = emailed_to
+
         # Return the actual saved booking, not the input data.
         response_serializer = BookingSerializer(
             booking,
             context=self.get_serializer_context()
         )
+        data = dict(response_serializer.data)
+        data["emailed_to"] = emailed_to
+        data["ticket_url"] = reverse("bookings:ticket-detail", args=[booking.booking_ref])
 
         return Response(
-            response_serializer.data,
+            data,
             status=status.HTTP_201_CREATED
         )
 

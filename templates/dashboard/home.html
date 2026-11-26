@@ -45,7 +45,7 @@
           <span class="h5-time">{{ s.departure_time|time:"H:i" }}{% if s.departure_date != today %}<small class="d-block">{{ s.departure_date|date:"D j M" }}</small>{% endif %}</span>
           <span><b class="fw-medium">{{ s.route.origin }}</b><span class="h5-arrow">→</span><b class="fw-medium">{{ s.route.destination }}</b>
             <small>{{ s.bus.name_or_plate }} · {{ s.bus.get_bus_type_display }} · arrives {{ s.arrival_time|time:"H:i" }}</small></span>
-          <span class="h5-seats">{{ s.seats_taken }} / {{ s.bus.total_seats }} seats<span class="h5-fill"><i{% if s.almost_full %} class="full"{% endif %} style="width: {{ s.fill }}%"></i></span></span>
+          <span class="h5-seats"><a class="h5-seats-link" href="{% url 'transport:schedule_passengers' s.pk %}" title="Passenger list">{{ s.seats_taken }} / {{ s.bus.total_seats }} seats · Passengers →</a><span class="h5-fill"><i{% if s.almost_full %} class="full"{% endif %} style="width: {{ s.fill }}%"></i></span></span>
         </li>
       {% empty %}
         <li><span class="h5-empty">No upcoming departures. <a class="text-decoration-underline" href="{% url 'transport:schedule_create' %}">Create a schedule</a></span></li>

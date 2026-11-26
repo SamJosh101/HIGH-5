@@ -1,0 +1,13 @@
+{% autoescape off %}Sorry, {{ first_name }}. HIGH 5 has cancelled this trip, so {% if is_booker %}your booking is{% else %}the booking {{ booker_name }} made for you is{% endif %} cancelled too.
+
+{{ route.origin }} -> {{ route.destination }}, {{ departure|date:"D, j M Y" }} at {{ departure|time:"H:i" }}{% if booking.seat_list %}, seat{{ booking.seats_booked|pluralize }} {{ booking.seat_list }}{% endif %}
+Booking reference: {{ booking.booking_ref }}
+{% if is_refunded %}
+Amount paid: {{ currency }}{{ booking.total_amount|floatformat:"-2g" }}
+Refund:      {{ currency }}{{ booking.total_amount|floatformat:"-2g" }} (full refund, marked Refunded){% else %}
+Nothing to pay – the booking is simply cancelled.{% endif %}
+
+Find another trip: {{ search_url }}
+
+– The HIGH 5 team
+{% endautoescape %}

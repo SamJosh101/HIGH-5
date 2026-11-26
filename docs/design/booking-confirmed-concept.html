@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HIGH 5 – booking confirmed + passenger details (concept)</title>
+<!-- Mockup only. Names, numbers and the reference are example data. -->
+<link rel="stylesheet" href="mockup-base.css">
+<style>
+  .grid { display: grid; grid-template-columns: 470px 1fr; gap: 24px; align-items: start; }
+  .label { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 6px 0 14px; }
+
+  /* passenger details, styled */
+  .pax-card { border: 1px solid var(--line); border-radius: 16px; background: var(--panel); padding: 18px 18px 6px; margin-top: 16px; }
+  .pax-card h3 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .pax-card h3 .chip { font-size: 12px; }
+  .mine { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px dashed rgba(159,184,255,.45); color: #c9d6ff; font-size: 13.5px; margin-bottom: 14px; }
+  .mine i { width: 18px; height: 18px; border-radius: 6px; background: var(--blue2); display: grid; place-items: center; font-style: normal; font-size: 12px; color: #fff; }
+  .field { margin-bottom: 12px; } .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .field div { height: 44px; border-radius: 11px; background: #0a0d13; border: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; padding: 0 14px; font-size: 15px; }
+  .field div.ph { color: #5d6575; } .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* confirmed */
+  .ok-head { display: flex; align-items: center; gap: 18px; }
+  .tick { width: 54px; height: 54px; border-radius: 50%; background: rgba(60,207,142,.14); display: grid; place-items: center; color: var(--green); font-size: 28px; font-weight: 700; }
+  .ok-head h1 { font-size: 34px; font-weight: 500; letter-spacing: -.5px; }
+  .mail { margin-top: 22px; display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-radius: 14px; background: rgba(59,119,255,.1); border: 1px solid rgba(59,119,255,.25); color: #c9d6ff; font-size: 14px; }
+  .actions { display: flex; gap: 12px; margin-top: 22px; }
+  .next { margin-top: 22px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .next div { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; font-size: 13.5px; color: #c9ced8; line-height: 1.45; }
+  .next b { display: block; color: #fff; margin-bottom: 4px; font-size: 14px; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo"><div class="mark">H5</div>HIGH 5</div>
+  <div class="pill"><span class="on">Book a Trip</span><span>My Bookings</span><span>History</span></div>
+  <div class="user"><div class="av">A</div>Ada</div>
+</nav>
+<div class="wrap">
+<div class="grid">
+
+  <!-- BEFORE: passenger details, styled -->
+  <section>
+    <p class="label">1 · Before confirming: passenger details (fixed)</p>
+    <div class="card">
+      <div class="head"><h2>Passenger details</h2><span class="sub">Who is travelling?</span></div>
+      <div class="pax-card">
+        <h3>Passenger 1 <span class="chip info">Seat 3A</span></h3>
+        <div class="mine"><i>✓</i>I'm travelling – use my details <span class="muted" style="margin-left:auto">Clear</span></div>
+        <div class="field"><label>Full name</label><div>Ada Okafor</div></div>
+        <div class="two">
+          <div class="field"><label>Phone number</label><div>+234 801 234 5678</div></div>
+          <div class="field"><label>Email (optional)</label><div class="ph">for their own ticket</div></div>
+        </div>
+      </div>
+      <div class="pax-card">
+        <h3>Passenger 2 <span class="chip info">Seat 3B</span></h3>
+        <div class="field"><label>Full name</label><div>Tunde Bello</div></div>
+        <div class="two">
+          <div class="field"><label>Phone number</label><div>+234 809 876 5432</div></div>
+          <div class="field"><label>Email (optional)</label><div>tunde@example.com</div></div>
+        </div>
+      </div>
+      <p class="sub" style="margin:14px 2px 2px;line-height:1.5">Only Passenger 1 has “I'm travelling”. Nothing is filled unless you tap it; booking for other people works as today.</p>
+    </div>
+  </section>
+
+  <!-- AFTER: booking confirmed = the virtual ticket -->
+  <section>
+    <p class="label">2 · After confirming: the form is replaced by this</p>
+    <div class="card" style="padding:30px 32px">
+      <div class="ok-head">
+        <div class="tick">✓</div>
+        <div><h1>You're booked, Ada</h1><p class="muted" style="margin-top:4px">Lagos → Abuja · Fri 27 Nov · 2 seats</p></div>
+      </div>
+
+      <div class="ticket" style="margin-top:26px">
+        <div class="t-main">
+          <div class="t-top"><div class="t-brand"><div class="mark">H5</div>HIGH 5</div><span class="t-kind">Bus ticket · Luxury coach</span></div>
+          <div class="t-route">
+            <div><b>06:00</b><strong>Lagos</strong><small>Fri, 27 Nov 2026</small></div>
+            <div class="t-line"></div>
+            <div style="text-align:right"><b>16:00</b><strong>Abuja</strong><small>estimated arrival</small></div>
+          </div>
+          <div class="t-pax">
+            <div><span><b>Ada Okafor</b> <small>· +234 801 234 5678</small></span><small>Passenger 1</small><span class="t-seat">3A</span></div>
+            <div><span><b>Tunde Bello</b> <small>· +234 809 876 5432</small></span><small>Passenger 2</small><span class="t-seat">3B</span></div>
+          </div>
+          <div class="t-facts">
+            <div><span>Bus</span><b>H5-LAG-01</b></div>
+            <div><span>Duration</span><b>About 10 h</b></div>
+            <div><span>Booked</span><b>26 Nov, 03:41</b></div>
+            <div><span>Free cancellation</span><b>Until 26 Nov, 06:00</b></div>
+          </div>
+        </div>
+        <div class="t-stub">
+          <span>Booking reference</span>
+          <div class="t-ref">H5-MDC8KRGYW</div>
+          <dl>
+            <div><dt><span>Seats</span></dt><dd>3A, 3B</dd></div>
+            <div><dt><span>Total</span></dt><dd class="t-total">₦50,000</dd></div>
+            <div><dt><span>Payment</span></dt><dd><span class="t-pchip">Pending</span></dd></div>
+          </dl>
+          <p class="t-foot">Show this ticket or the reference when boarding. Payment shows Pending until HIGH 5 confirms it.</p>
+        </div>
+      </div>
+
+      <div class="mail">✉ &nbsp;We emailed this ticket to <b style="color:#fff">ada@gmail.com</b>, and Tunde's copy to <b style="color:#fff">tunde@example.com</b>.</div>
+      <div class="actions">
+        <span class="btn primary">View ticket →</span><span class="btn ghost">Print ticket</span><span class="btn ghost">Book another trip</span>
+      </div>
+      <div class="next">
+        <div><b>Your ticket</b>It's always in My Bookings, and in your email.</div>
+        <div><b>Change of plans?</b>Cancel free from My Bookings until 24 h before departure.</div>
+        <div><b>If we cancel the trip</b>You'll get an email and a full refund of what you paid.</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</div>
+</body>
+</html>

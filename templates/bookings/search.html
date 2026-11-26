@@ -197,6 +197,9 @@
     data-fare="{{ trip.fare }}"
     data-currency="{{ trip.currency }}"
     data-max-passengers="{{ trip.max_passengers }}"
+    data-me-name="{{ user.full_name }}"
+    data-me-phone="{{ user.phone }}"
+    data-me-email="{{ user.email }}"
 >
 
         {% csrf_token %}

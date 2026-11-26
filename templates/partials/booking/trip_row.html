@@ -1,0 +1,21 @@
+{% comment %}One booking as a row in My Bookings. Expects `booking`; `past` fades it.{% endcomment %}
+{% with s=booking.schedule %}
+<a class="h5-trip-row{% if past %} is-past{% endif %}" href="{% url 'bookings:ticket-detail' booking.booking_ref %}">
+  <div class="h5-trip-date"><small>{{ s.departure_date|date:"M" }}</small><b>{{ s.departure_date|date:"d" }}</b><i>{{ s.departure_date|date:"D" }}</i></div>
+  <div>
+    <h3>{{ s.route.origin }}<em>→</em>{{ s.route.destination }}</h3>
+    <p>{{ s.departure_time|time:"H:i" }}{% if s.departure_date.year != today.year %} {{ s.departure_date|date:"Y" }}{% endif %} ·
+      {% if booking.seat_list %}Seat{{ booking.seats_booked|pluralize }} {{ booking.seat_list }}{% else %}{{ booking.seats_booked }} seat{{ booking.seats_booked|pluralize }}{% endif %} ·
+      <span class="h5-trip-ref">{{ booking.booking_ref }}</span>{% if booking.status == "CANCELLED" and s.status == "CANCELLED" %} · cancelled by HIGH 5{% endif %}</p>
+  </div>
+  <div class="h5-trip-right">
+    <b>{{ CURRENCY }}{{ booking.total_amount|floatformat:"-2g" }}</b>
+    {% if booking.status == "CANCELLED" %}<span class="h5-tchip off">Cancelled{% if booking.payment_status == "REFUNDED" %} · Refunded{% endif %}</span>
+    {% elif booking.status == "COMPLETED" %}<span class="h5-tchip info">Completed</span>
+    {% elif booking.payment_status == "PAID" %}<span class="h5-tchip ok">Paid</span>
+    {% elif past %}<span class="h5-tchip wait">Departed · not paid</span>
+    {% else %}<span class="h5-tchip wait">Payment pending</span>{% endif %}
+    <span>View ticket →</span>
+  </div>
+</a>
+{% endwith %}

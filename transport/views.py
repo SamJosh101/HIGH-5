@@ -9,15 +9,39 @@ from .forms import BusForm, RouteForm, ScheduleForm
 from .models import Bus, Route, Schedule
 
 
-def _cancel_bookings_note(schedule):
-    """Cancel (and refund) every booking on a trip the company cancelled; say what happened."""
-    from bookings.services import cancel_trip_bookings  # bookings depends on transport, not the reverse
+def _cancel_bookings_note(request, schedule):
+    """Cancel (and refund) every booking on a trip the company cancelled, email
+    everyone on those bookings, and say what happened."""
+    # bookings depends on transport, not the reverse, so import here
+    from bookings.emails import send_trip_cancelled_emails
+    from bookings.services import cancel_trip_bookings
 
-    cancelled, refunded = cancel_trip_bookings(schedule)
+    cancelled, refunded, ids = cancel_trip_bookings(schedule)
     if not cancelled:
         return "It had no bookings."
-    return (f"{cancelled} booking{'s' if cancelled != 1 else ''} cancelled"
+    note = (f"{cancelled} booking{'s' if cancelled != 1 else ''} cancelled"
             f"{f', {refunded} marked refunded' if refunded else ''}.")
+    sent = send_trip_cancelled_emails(ids, request.build_absolute_uri("/"))
+    if sent:
+        return note + f" {sent} email{'s' if sent != 1 else ''} sent to the travellers."
+    return note + " The emails to the travellers could not be sent (check the email settings)."
+
+
+# Buses an admin has taken off the road. They can't be given new trips, and the
+# app never changes these two statuses itself: only an admin sets or clears them.
+OFF_ROAD = (Bus.Status.MAINTENANCE, Bus.Status.UNAVAILABLE)
+
+
+def _refresh_bus_status(bus):
+    """Assigned while the bus has any scheduled trip, Available otherwise.
+    A bus in Maintenance or Unavailable keeps that status."""
+    if bus.status in OFF_ROAD:
+        return
+    busy = bus.schedules.filter(status=Schedule.Status.SCHEDULED).exists()
+    status = Bus.Status.ASSIGNED if busy else Bus.Status.AVAILABLE
+    if bus.status != status:
+        bus.status = status
+        bus.save(update_fields=["status"])
 
 
 @admin_required
@@ -170,7 +194,7 @@ def schedule_list(request):
 def schedule_create(request):
     form = ScheduleForm(request.POST or None)
     form.fields["route"].queryset = Route.objects.filter(is_active=True)
-    form.fields["bus"].queryset = Bus.objects.filter(is_active=True).exclude(status=Bus.Status.MAINTENANCE)
+    form.fields["bus"].queryset = Bus.objects.filter(is_active=True).exclude(status__in=OFF_ROAD)
     if request.method == "POST" and form.is_valid():
         schedule = form.save(commit=False)
         try:
@@ -179,8 +203,7 @@ def schedule_create(request):
         except Exception as exc:
             form.add_error(None, exc)
         else:
-            schedule.bus.status = Bus.Status.ASSIGNED
-            schedule.bus.save(update_fields=["status"])
+            _refresh_bus_status(schedule.bus)
             messages.success(request, "Schedule created.")
             return redirect("transport:schedule_list")
     return render(request, "transport/schedule_form.html", {"form": form, "title": "Create schedule"})
@@ -195,7 +218,8 @@ def schedule_edit(request, pk):
     # since, so an old trip can still be edited (for example marked Completed).
     form.fields["route"].queryset = Route.objects.filter(Q(is_active=True) | Q(pk=schedule.route_id))
     form.fields["bus"].queryset = Bus.objects.filter(
-        Q(is_active=True) & ~Q(status=Bus.Status.MAINTENANCE) | Q(pk=schedule.bus_id))
+        Q(is_active=True) & ~Q(status__in=OFF_ROAD) | Q(pk=schedule.bus_id))
+    old_bus = schedule.bus
     if request.method == "POST" and form.is_valid():
         updated = form.save(commit=False)
         try:
@@ -204,16 +228,53 @@ def schedule_edit(request, pk):
         except Exception as exc:
             form.add_error(None, exc)
         else:
-            schedule.bus.status = Bus.Status.AVAILABLE
-            schedule.bus.save(update_fields=["status"])
-            updated.bus.status = Bus.Status.ASSIGNED if updated.status == Schedule.Status.SCHEDULED else Bus.Status.AVAILABLE
-            updated.bus.save(update_fields=["status"])
+            # the trip may have moved to another bus: both buses' statuses can change
+            _refresh_bus_status(old_bus)
+            if updated.bus_id != old_bus.pk:
+                _refresh_bus_status(updated.bus)
             note = ""
             if was_status != Schedule.Status.CANCELLED and updated.status == Schedule.Status.CANCELLED:
-                note = " " + _cancel_bookings_note(updated)
+                note = " " + _cancel_bookings_note(request, updated)
             messages.success(request, "Schedule updated." + note)
             return redirect("transport:schedule_list")
     return render(request, "transport/schedule_form.html", {"form": form, "title": "Update schedule", "object": schedule})
+
+
+@admin_required
+def schedule_passengers(request, pk):
+    """Everyone travelling on one trip, sorted by seat, for the driver's list."""
+    from bookings.models import Booking, PassengerDetail
+    from bookings.seats import sort_key
+
+    schedule = get_object_or_404(Schedule.objects.select_related("route", "bus"), pk=pk)
+    # Live bookings only: confirmed (still to travel) or completed (already travelled).
+    bookings = list(
+        Booking.objects.filter(schedule=schedule)
+        .exclude(status=Booking.Status.CANCELLED)
+        .select_related("passenger")
+    )
+    travellers = sorted(
+        PassengerDetail.objects.filter(booking__in=bookings).select_related("booking", "booking__passenger"),
+        # travellers booked before seat selection have no seat: list them last
+        key=lambda p: (not p.seat_number, sort_key(p.seat_number) if p.seat_number else (0, ""), p.pk),
+    )
+    paid = [b for b in bookings if b.payment_status == Booking.PaymentStatus.PAID]
+    unpaid = [b for b in bookings if b.payment_status == Booking.PaymentStatus.PENDING]
+    seats_taken = sum(b.seats_booked for b in bookings)
+    total_seats = schedule.bus.total_seats
+    return render(request, "transport/schedule_passengers.html", {
+        "schedule": schedule,
+        "travellers": travellers,
+        "booking_count": len(bookings),
+        "seats_taken": seats_taken,
+        "fill": round(seats_taken * 100 / total_seats) if total_seats else 0,
+        "paid_amount": sum(b.total_amount for b in paid),
+        "paid_seats": sum(b.seats_booked for b in paid),
+        "unpaid_amount": sum(b.total_amount for b in unpaid),
+        "unpaid_seats": sum(b.seats_booked for b in unpaid),
+        "unpaid_bookings": len(unpaid),
+        "cancelled_bookings": Booking.objects.filter(schedule=schedule, status=Booking.Status.CANCELLED).count(),
+    })
 
 
 @admin_required
@@ -222,8 +283,6 @@ def schedule_cancel(request, pk):
     if request.method == "POST" and schedule.status == Schedule.Status.SCHEDULED:
         schedule.status = Schedule.Status.CANCELLED
         schedule.save(update_fields=["status"])
-        if not schedule.bus.schedules.filter(status=Schedule.Status.SCHEDULED).exists():
-            schedule.bus.status = Bus.Status.AVAILABLE
-            schedule.bus.save(update_fields=["status"])
-        messages.success(request, "Schedule cancelled. " + _cancel_bookings_note(schedule))
+        _refresh_bus_status(schedule.bus)
+        messages.success(request, "Schedule cancelled. " + _cancel_bookings_note(request, schedule))
     return redirect("transport:schedule_list")

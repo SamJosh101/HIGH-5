@@ -323,3 +323,183 @@ class SeatSelectionTests(TestCase):
         self.assertNotContains(response, 'data-seat="1A"')
         self.assertContains(response, "Seat 1A, booked")
         self.assertNotContains(response, "Seat selection coming soon")
+
+
+class TicketEmailAndPageTests(TestCase):
+    """The ticket email after booking, "Email it again", the ticket page and My Bookings."""
+
+    def setUp(self):
+        route = Route.objects.create(origin="Lagos", destination="Abuja", distance_km=760,
+                                     duration_estimate=timedelta(hours=10))
+        bus = Bus.objects.create(name_or_plate="H5-LAG-01", bus_type=Bus.BusType.LUXURY, total_seats=30)
+        self.schedule = Schedule.objects.create(
+            route=route, bus=bus, departure_date=timezone.localdate() + timedelta(days=5),
+            departure_time=time(6, 0), fare="25000.00",
+        )
+        self.ada = User.objects.create_user(email="ada@example.com", password=PASSWORD,
+                                            full_name="Ada Okafor", email_verified=True)
+        self.client.force_login(self.ada)
+
+    def book(self, passengers):
+        return self.client.post(reverse("bookings:booking-create"),
+                                {"schedule_id": self.schedule.pk, "passengers": passengers},
+                                content_type="application/json")
+
+    def test_ticket_is_emailed_to_the_booker_and_travellers_with_an_email(self):
+        from django.core import mail
+        response = self.book([
+            {"full_name": "Ada Okafor", "phone": "+2348012345678", "seat": "3A"},
+            {"full_name": "Tunde Bello", "phone": "+2348098765432", "email": "tunde@example.com", "seat": "3B"},
+            {"full_name": "No Email", "phone": "+2348000000001", "seat": "4A"},
+        ])
+        self.assertEqual(response.status_code, 201)
+        ref = Booking.objects.get().booking_ref
+        self.assertEqual(response.json()["emailed_to"], ["ada@example.com", "tunde@example.com"])
+        self.assertEqual(response.json()["ticket_url"], reverse("bookings:ticket-detail", args=[ref]))
+        self.assertEqual(sorted(m.to[0] for m in mail.outbox), ["ada@example.com", "tunde@example.com"])
+        to_ada = next(m for m in mail.outbox if m.to == ["ada@example.com"])
+        self.assertIn(ref, to_ada.subject)
+        html = to_ada.alternatives[0][0]
+        for text in ("Tunde Bello", "3A", "3B", "4A", "H5-LAG-01", "75,000", "Pending", "View your ticket"):
+            self.assertIn(text, html)
+        self.assertIn("75,000", to_ada.body)
+        # a traveller's copy has no "View your ticket" (only the booker can open it)
+        to_tunde = next(m for m in mail.outbox if m.to == ["tunde@example.com"])
+        self.assertNotIn("View your ticket", to_tunde.alternatives[0][0])
+        self.assertIn("Ada Okafor booked this trip for you", to_tunde.alternatives[0][0])
+
+    def test_same_address_twice_gets_one_email(self):
+        from django.core import mail
+        self.book([{"full_name": "Ada Okafor", "phone": "+2348012345678", "email": "ADA@example.com"}])
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_booking_is_kept_when_the_email_fails(self):
+        import smtplib
+        from unittest import mock
+        with mock.patch("django.core.mail.backends.locmem.EmailBackend.send_messages",
+                        side_effect=smtplib.SMTPException("down")), self.assertLogs("bookings.emails", "ERROR"):
+            response = self.book([traveller()])
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["emailed_to"], [])
+        page = self.client.get(response.json()["ticket_url"] + "?booked=1")
+        self.assertContains(page, "couldn't email the ticket")
+
+    def test_booked_page_shows_the_ticket_and_where_it_was_emailed(self):
+        response = self.book([{"full_name": "Ada Okafor", "phone": "+2348012345678", "seat": "3A"}])
+        page = self.client.get(response.json()["ticket_url"] + "?booked=1")
+        self.assertContains(page, "booked, Ada")
+        self.assertContains(page, "We emailed this ticket to <b>ada@example.com</b>")
+        self.assertContains(page, 'class="h5-ticket')
+        self.assertContains(page, "3A")
+        # the note is shown once; a reload is the normal ticket page
+        again = self.client.get(response.json()["ticket_url"])
+        self.assertContains(again, "Your ticket")
+        self.assertNotContains(again, "We emailed this ticket")
+
+    def test_email_it_again_is_limited_to_once_a_minute(self):
+        from django.core import mail
+        from django.core.cache import cache
+        self.book([traveller()])
+        booking = Booking.objects.get()
+        cache.delete(f"h5-ticket-email-{booking.pk}")
+        mail.outbox.clear()
+        url = reverse("bookings:ticket-email", args=[booking.booking_ref])
+        self.assertContains(self.client.post(url, follow=True), "Ticket sent to ada@example.com")
+        self.assertContains(self.client.post(url, follow=True), "wait a minute")
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(self.client.get(url).status_code, 405)
+        cache.delete(f"h5-ticket-email-{booking.pk}")
+
+    def test_others_cannot_open_or_email_my_ticket(self):
+        self.book([traveller()])
+        ref = Booking.objects.get().booking_ref
+        other = User.objects.create_user(email="other@example.com", password=PASSWORD,
+                                         full_name="Other", email_verified=True)
+        self.client.force_login(other)
+        self.assertEqual(self.client.get(reverse("bookings:ticket-detail", args=[ref])).status_code, 404)
+        self.assertEqual(self.client.post(reverse("bookings:ticket-email", args=[ref])).status_code, 404)
+
+    def test_my_bookings_lists_upcoming_and_past_rows(self):
+        self.book([traveller()])
+        cancelled = Booking.objects.get()
+        cancelled.status = Booking.Status.CANCELLED
+        cancelled.save()
+        self.book([traveller()])
+        page = self.client.get(reverse("bookings:dashboard"))
+        self.assertContains(page, "Upcoming · 1")
+        self.assertContains(page, "Past &amp; cancelled · 1")
+        self.assertContains(page, "Payment pending")
+        self.assertContains(page, "h5-trip-row is-past")
+
+
+class TripCancelledEmailTests(TestCase):
+    """When an admin cancels a trip, everyone on its bookings is emailed."""
+
+    def setUp(self):
+        route = Route.objects.create(origin="Lagos", destination="Benin", distance_km=320,
+                                     duration_estimate=timedelta(hours=5))
+        bus = Bus.objects.create(name_or_plate="CXL-002", bus_type=Bus.BusType.STANDARD, total_seats=40)
+        self.schedule = Schedule.objects.create(route=route, bus=bus, fare="8000.00",
+                                                departure_date=timezone.localdate() + timedelta(days=3),
+                                                departure_time=time(6, 0))
+        self.admin = User.objects.create_user(email="ops3@example.com", password=PASSWORD,
+                                              full_name="Ops", role=User.Role.ADMIN)
+        rider = User.objects.create_user(email="rider3@example.com", password=PASSWORD, full_name="Rider Three")
+        self.paid = Booking.objects.create(passenger=rider, schedule=self.schedule, seats_booked=1,
+                                           total_amount="8000.00", payment_status=Booking.PaymentStatus.PAID)
+        self.paid.passengers.create(full_name="Kemi Ade", phone="+2348011111111", email="kemi@example.com",
+                                    seat_number="2C")
+        self.unpaid = Booking.objects.create(passenger=rider, schedule=self.schedule, seats_booked=1,
+                                             total_amount="8000.00")
+        self.unpaid.passengers.create(full_name="Rider Three", phone="+2348022222222", seat_number="2D")
+
+    def test_cancelling_a_trip_emails_the_booker_and_travellers(self):
+        from django.core import mail
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse("transport:schedule_cancel", args=[self.schedule.pk]), follow=True)
+        self.assertContains(response, "3 emails sent to the travellers")
+        self.assertEqual(sorted(m.to[0] for m in mail.outbox),
+                         ["kemi@example.com", "rider3@example.com", "rider3@example.com"])
+        paid_body = next(m.body for m in mail.outbox if self.paid.booking_ref in m.subject)
+        unpaid_body = next(m.body for m in mail.outbox if self.unpaid.booking_ref in m.subject)
+        self.assertIn("full refund", paid_body)
+        self.assertIn("Nothing to pay", unpaid_body)
+        self.assertTrue(all(m.subject.startswith("Trip cancelled: Lagos → Benin") for m in mail.outbox))
+
+
+class PassengerListTests(TestCase):
+    """Admins see who is travelling on a trip; passengers cannot."""
+
+    def setUp(self):
+        route = Route.objects.create(origin="Lagos", destination="Abuja", distance_km=760,
+                                     duration_estimate=timedelta(hours=10))
+        bus = Bus.objects.create(name_or_plate="PL-001", bus_type=Bus.BusType.LUXURY, total_seats=30)
+        self.schedule = Schedule.objects.create(route=route, bus=bus, fare="25000.00",
+                                                departure_date=timezone.localdate() + timedelta(days=2),
+                                                departure_time=time(6, 0))
+        self.rider = User.objects.create_user(email="rider4@example.com", password=PASSWORD,
+                                              full_name="Booker Four")
+        paid = Booking.objects.create(passenger=self.rider, schedule=self.schedule, seats_booked=2,
+                                      total_amount="50000.00", payment_status=Booking.PaymentStatus.PAID)
+        paid.passengers.create(full_name="Zed Last", phone="+2348000000010", seat_number="10A")
+        paid.passengers.create(full_name="Amy First", phone="+2348000000011", seat_number="2B")
+        gone = Booking.objects.create(passenger=self.rider, schedule=self.schedule, seats_booked=1,
+                                      total_amount="25000.00", status=Booking.Status.CANCELLED)
+        gone.passengers.create(full_name="Cancelled Person", phone="+2348000000012", seat_number="1A")
+        self.url = reverse("transport:schedule_passengers", args=[self.schedule.pk])
+
+    def test_admin_sees_travellers_sorted_by_seat_without_cancelled(self):
+        admin = User.objects.create_user(email="ops4@example.com", password=PASSWORD, full_name="Ops",
+                                         role=User.Role.ADMIN)
+        self.client.force_login(admin)
+        page = self.client.get(self.url)
+        self.assertContains(page, "2 / 30")
+        self.assertNotContains(page, "Cancelled Person")
+        self.assertContains(page, "1 cancelled booking not listed")
+        html = page.content.decode()
+        self.assertLess(html.index("Amy First"), html.index("Zed Last"))  # 2B before 10A
+        self.assertContains(self.client.get(reverse("transport:schedule_list")), self.url)
+
+    def test_passengers_cannot_open_the_list(self):
+        self.client.force_login(self.rider)
+        self.assertEqual(self.client.get(self.url).status_code, 403)

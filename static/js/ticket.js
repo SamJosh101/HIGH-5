@@ -80,19 +80,14 @@
 
             cancelButton.textContent = "Booking cancelled";
 
-            const statusLabel = document.querySelector(
-                ".h5-book-head span"
-            );
-
-            if (statusLabel) {
-                statusLabel.textContent = "Cancelled";
-            }
+            // Reload so the ticket, chips and refund line come from the server.
+            window.location.reload();
 
         } catch (error) {
             message.textContent = error.message;
 
             cancelButton.disabled = false;
-            cancelButton.textContent = "Cancel this booking";
+            cancelButton.textContent = "Cancel booking…";
         }
     });
 })();

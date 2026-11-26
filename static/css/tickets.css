@@ -1,0 +1,165 @@
+/* ==========================================================================
+   HIGH 5 – virtual ticket, ticket page and My Bookings.
+   Loaded by templates/bookings/ticket_detail.html and bookings/dashboard.html
+   on top of high5.css. Design: docs/design/booking-confirmed-concept.png,
+   docs/design/ticket-page-concept.png.
+   ========================================================================== */
+
+.h5-ticket-page { max-width: 1080px; margin: 0 auto; }
+.h5-back { display: inline-block; color: var(--hx-muted); font-size: 14px; text-decoration: none; margin-bottom: 6px; }
+.h5-back:hover { color: #fff; }
+
+/* ---------- chips ---------- */
+.h5-ticket-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.h5-tchip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.h5-tchip.ok { background: rgba(60, 207, 142, .12); color: #3ccf8e; }
+.h5-tchip.wait { background: rgba(245, 165, 36, .12); color: var(--hx-amber); }
+.h5-tchip.off { background: rgba(255, 107, 107, .12); color: #ff8b8b; }
+.h5-tchip.info { background: rgba(59, 119, 255, .16); color: #9fb8ff; }
+
+/* ---------- VIRTUAL TICKET (light paper so it reads as a ticket and prints well) ---------- */
+.h5-ticket {
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 300px;
+  border-radius: 22px; overflow: hidden; color: #121620; box-shadow: 0 30px 80px rgba(0, 0, 0, .55);
+  animation: h5-rise .7s var(--hx-ease) both;
+}
+.h5-t-main { background: #f6f7fb; padding: 30px 34px; }
+.h5-t-stub { position: relative; background: #eceff6; padding: 30px 28px; border-left: 2px dashed #c3c9d6; }
+.h5-t-stub::before, .h5-t-stub::after { content: ""; position: absolute; left: -15px; width: 28px; height: 28px; border-radius: 50%; background: var(--hx-bg); }
+.h5-t-stub::before { top: -14px; }
+.h5-t-stub::after { bottom: -14px; }
+.h5-t-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.h5-t-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .28em; font-size: 14px; }
+.h5-t-mark { width: 28px; height: 28px; border-radius: 8px; background: var(--hx-amber); color: #111; display: grid; place-items: center; font-size: 12px; font-weight: 800; letter-spacing: 0; }
+.h5-t-kind { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #6b7385; text-align: right; }
+
+.h5-t-route { display: grid; grid-template-columns: auto minmax(40px, 1fr) auto; align-items: end; gap: 22px; margin-top: 24px; }
+.h5-t-route b { display: block; font-size: clamp(40px, 5vw, 54px); font-weight: 300; letter-spacing: -1.5px; line-height: 1; }
+.h5-t-route strong { display: block; font-size: 20px; margin-top: 8px; }
+.h5-t-route small { font-size: 12.5px; color: #6b7385; }
+.h5-t-end { text-align: right; }
+.h5-t-line { position: relative; height: 2px; margin-bottom: 34px; background: repeating-linear-gradient(90deg, #b9c0ce 0 8px, transparent 8px 14px); }
+.h5-t-line::after {
+  content: ""; position: absolute; left: 50%; top: -9px; width: 34px; height: 20px; transform: translateX(-50%);
+  background: #f6f7fb url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23121620' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='3' width='16' height='15' rx='3'/%3E%3Cpath d='M4 11h16M8 18v2M16 18v2M8 14.5h.01M16 14.5h.01'/%3E%3C/svg%3E") center / 20px no-repeat;
+}
+
+.h5-t-pax { list-style: none; margin: 20px 0 0; padding: 14px 0 0; border-top: 1px solid #dde1ea; }
+.h5-t-pax li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 20px; align-items: center; padding: 9px 0; font-size: 15px; }
+.h5-t-pax li + li { border-top: 1px dashed #d6dbe5; }
+.h5-t-pax small { color: #6b7385; font-size: 13px; }
+.h5-t-seat { min-width: 40px; text-align: center; background: #121620; color: #fff; border-radius: 9px; padding: 5px 10px; font-weight: 700; font-size: 14px; }
+.h5-t-seat.is-none { background: #c9ced8; }
+
+.h5-t-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 24px 0 0; padding-top: 20px; border-top: 1px solid #dde1ea; }
+.h5-t-facts dt, .h5-t-label { display: block; font-size: 11px; font-weight: 400; letter-spacing: .1em; text-transform: uppercase; color: #7a8294; }
+.h5-t-facts dd { margin: 2px 0 0; font-size: 15px; font-weight: 600; }
+
+.h5-t-ref { font-family: Consolas, "SFMono-Regular", monospace; font-size: 24px; font-weight: 700; letter-spacing: .06em; margin: 4px 0 20px; word-break: break-all; }
+.h5-t-stub dl { display: grid; gap: 13px; margin: 0; }
+.h5-t-stub dd { font-size: 15px; font-weight: 600; margin: 2px 0 0; }
+.h5-t-stub .h5-t-total { font-size: 30px; font-weight: 700; }
+.h5-t-pchip { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; background: #fff1d6; color: #9a6200; }
+.h5-t-pchip.is-paid { background: #d9f6e8; color: #127a4b; }
+.h5-t-pchip.is-refunded { background: #e3e9fb; color: #3051a8; }
+.h5-t-foot { margin: 18px 0 0; font-size: 12px; color: #6b7385; line-height: 1.5; }
+
+/* cancelled: greyed with a stamp */
+.h5-ticket.is-void .h5-t-main > *, .h5-ticket.is-void .h5-t-stub > *:not(.h5-t-stamp) { opacity: .55; }
+.h5-t-stamp {
+  position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%) rotate(-12deg);
+  border: 3px solid #c23b3b; color: #c23b3b; border-radius: 10px; padding: 6px 14px;
+  font-weight: 800; font-size: 20px; letter-spacing: .14em; text-transform: uppercase;
+}
+
+/* ---------- "You're booked" (ticket page with ?booked=1) ---------- */
+.h5-booked-head { display: flex; align-items: center; gap: 18px; margin-bottom: 26px; animation: h5-rise .6s var(--hx-ease) both; }
+.h5-booked-tick { width: 54px; height: 54px; flex: none; border-radius: 50%; background: rgba(60, 207, 142, .14); color: #3ccf8e; display: grid; place-items: center; font-size: 28px; font-weight: 700; }
+.h5-booked-head h1 { font-size: clamp(28px, 3.4vw, 36px); font-weight: 500; letter-spacing: -.5px; margin: 0; }
+.h5-booked-head p { color: var(--hx-muted); margin: 4px 0 0; }
+.h5-mailed { margin: 22px 0 0; padding: 13px 16px; border-radius: 14px; background: rgba(59, 119, 255, .1); border: 1px solid rgba(59, 119, 255, .25); color: #c9d6ff; font-size: 14px; }
+.h5-mailed b { color: #fff; font-weight: 600; }
+.h5-mailed.is-failed { background: rgba(245, 165, 36, .1); border-color: rgba(245, 165, 36, .3); color: #ffd99a; }
+.h5-ticket-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+.h5-ticket-next { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 22px; }
+.h5-ticket-next div { border: 1px solid var(--hx-line); border-radius: 14px; padding: 14px 16px; font-size: 13.5px; color: #c9ced8; line-height: 1.45; }
+.h5-ticket-next b { display: block; color: #fff; margin-bottom: 4px; font-size: 14px; }
+
+/* ---------- buttons and side cards ---------- */
+.h5-tbtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px;
+  border-radius: 13px; font: inherit; font-weight: 600; font-size: 15px; text-decoration: none; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, .16); background: transparent; color: #dfe4ee;
+  transition: transform .2s var(--hx-ease), background .2s;
+}
+.h5-tbtn:hover { background: rgba(255, 255, 255, .06); color: #fff; transform: translateY(-1px); }
+.h5-tbtn.primary { border: 0; color: #fff; background: linear-gradient(180deg, var(--hx-blue-2), #2457e6); box-shadow: 0 10px 30px rgba(47, 107, 255, .3); }
+.h5-tbtn.danger { border-color: rgba(255, 107, 107, .35); color: #ffb4b4; }
+.h5-tbtn.danger:hover { background: rgba(255, 107, 107, .08); }
+.h5-tbtn:disabled { opacity: .6; cursor: default; transform: none; }
+.h5-ticket-side { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 22px; }
+.h5-tcard { background: #0b0e15; border: 1px solid var(--hx-line); border-radius: 20px; padding: 20px 22px; }
+.h5-tcard h2 { font-size: 16px; font-weight: 600; margin: 0; }
+.h5-tcard p { font-size: 13.5px; color: #c9ced8; line-height: 1.5; margin: 6px 0 14px; }
+.h5-tcard-btns { display: flex; flex-wrap: wrap; gap: 10px; }
+.h5-tcard-btns form { margin: 0; }
+.h5-tcard .h5-tcard-msg { margin: 10px 0 0; }
+.h5-tcard .h5-tcard-msg:empty { display: none; }
+
+/* ---------- MY BOOKINGS: one line per trip ---------- */
+.h5-trips-card { background: #0b0e15; border: 1px solid var(--hx-line); border-radius: 22px; padding: 22px; }
+.h5-trip-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.h5-trip-tabs button {
+  padding: 8px 14px; border-radius: 999px; border: 1px solid var(--hx-line); background: transparent;
+  color: #c9ced8; font: inherit; font-size: 13.5px; cursor: pointer;
+}
+.h5-trip-tabs button[aria-selected="true"] { background: #f2f4f8; color: #0b0e15; border-color: transparent; font-weight: 600; }
+.h5-trip-list { display: grid; gap: 12px; }
+.h5-trip-row {
+  display: grid; grid-template-columns: 78px minmax(0, 1fr) auto; gap: 18px; align-items: center;
+  padding: 16px 18px; border: 1px solid var(--hx-line); border-radius: 18px; background: #0e121a;
+  color: inherit; text-decoration: none; transition: border-color .2s, transform .2s var(--hx-ease);
+}
+.h5-trip-row:hover { border-color: rgba(255, 255, 255, .2); transform: translateY(-1px); color: inherit; }
+.h5-trip-row.is-past { opacity: .62; }
+.h5-trip-date { text-align: center; border-radius: 14px; background: #151a24; padding: 10px 0; }
+.h5-trip-date small { display: block; font-size: 11px; letter-spacing: .12em; color: var(--hx-amber); text-transform: uppercase; }
+.h5-trip-date b { display: block; font-size: 26px; font-weight: 600; line-height: 1.15; }
+.h5-trip-date i { font-style: normal; font-size: 12px; color: var(--hx-muted); }
+.h5-trip-row h3 { font-size: 17px; font-weight: 600; margin: 0; }
+.h5-trip-row h3 em { font-style: normal; color: var(--hx-muted); margin: 0 6px; }
+.h5-trip-row p { font-size: 13.5px; color: var(--hx-muted); margin: 5px 0 0; }
+.h5-trip-ref { font-family: Consolas, "SFMono-Regular", monospace; }
+.h5-trip-right { display: grid; gap: 8px; justify-items: end; text-align: right; }
+.h5-trip-right b { font-size: 16px; }
+.h5-trip-right span:last-child { font-size: 13.5px; color: #9fb8ff; }
+.h5-trip-empty { text-align: center; padding: 34px 10px; color: var(--hx-muted); }
+.h5-trip-empty h3 { color: #fff; font-size: 17px; margin: 0 0 6px; }
+.h5-trip-empty .h5-tbtn { margin-top: 14px; }
+
+/* ---------- small screens ---------- */
+@media (max-width: 767.98px) {
+  .h5-ticket { grid-template-columns: 1fr; }
+  .h5-t-main { padding: 24px 22px; }
+  .h5-t-stub { border-left: 0; border-top: 2px dashed #c3c9d6; padding: 24px 22px; }
+  .h5-t-stub::before, .h5-t-stub::after { top: -15px; bottom: auto; }
+  .h5-t-stub::before { left: -14px; }
+  .h5-t-stub::after { left: auto; right: -14px; }
+  .h5-t-facts { grid-template-columns: 1fr 1fr; }
+  .h5-t-pax li { grid-template-columns: minmax(0, 1fr) auto; }
+  .h5-t-pax li > small { display: none; }
+  .h5-ticket-next, .h5-ticket-side { grid-template-columns: 1fr; }
+  .h5-trip-row { grid-template-columns: 64px minmax(0, 1fr); }
+  .h5-trip-right { grid-column: 2; justify-items: start; text-align: left; grid-auto-flow: column; align-items: center; justify-content: start; gap: 12px; }
+}
+
+/* ---------- print: just the ticket ---------- */
+@media print {
+  .h5-hnav, .h5-hfooter, .h5-no-print, .h5-alerts, .alert { display: none !important; }
+  body { background: #fff !important; }
+  .h5-ticket { box-shadow: none; border: 1px solid #c3c9d6; animation: none; }
+  .h5-t-stub::before, .h5-t-stub::after { background: #fff; }
+  .h5-booked-head, .h5-page-head { color: #000; }
+  .h5-booked-head h1, .h5-page-head h1 { color: #000; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

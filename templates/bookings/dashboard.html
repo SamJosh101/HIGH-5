@@ -1,220 +1,58 @@
 {% extends "base.html" %}
-
+{% load static %}
+{% comment %}
+  My Bookings: one line per trip, status at a glance (bookings.views.passenger_dashboard).
+  Two tabs: Upcoming and Past & cancelled (#history opens the second; the nav's
+  "History" link uses it). Without JavaScript both lists are simply shown.
+  Design: docs/design/ticket-page-concept.png (right side).
+{% endcomment %}
 {% block title %}My bookings{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tickets.css' %}?v={{ ASSET_VERSION }}">{% endblock %}
 
 {% block content %}
+<div class="h5-ticket-page">
 
 <div class="h5-page-head">
-    <div>
-        <h1>Hi, {{ user.full_name|default:"Passenger" }}</h1>
-        <p>Manage your trips and booking history.</p>
-    </div>
-
-    <a class="btn btn-primary" href="{% url 'bookings:search' %}">
-        Book a trip &rarr;
-    </a>
+  <div>
+    <h1>Hi, {{ user.get_short_name|default:"traveller" }}</h1>
+    <p>Your trips and tickets.</p>
+  </div>
+  <a class="h5-tbtn primary" href="{% url 'bookings:search' %}">Book a trip →</a>
 </div>
 
+<div class="h5-trips-card" data-trip-tabs>
+  <div class="h5-trip-tabs" role="tablist" aria-label="Bookings">
+    <button type="button" role="tab" id="tab-upcoming" aria-controls="upcoming" aria-selected="true">Upcoming · {{ upcoming_bookings|length }}</button>
+    <button type="button" role="tab" id="tab-history" aria-controls="history" aria-selected="false">Past &amp; cancelled · {{ booking_history|length }}</button>
+  </div>
 
-<!-- UPCOMING BOOKINGS -->
+  <section id="upcoming" role="tabpanel" aria-labelledby="tab-upcoming" class="h5-trip-list">
+    {% for booking in upcoming_bookings %}
+      {% include "partials/booking/trip_row.html" %}
+    {% empty %}
+      <div class="h5-trip-empty">
+        <h3>No upcoming trips</h3>
+        <p>When you book a trip, its ticket appears here.</p>
+        <a class="h5-tbtn" href="{% url 'bookings:search' %}">Find a trip</a>
+      </div>
+    {% endfor %}
+  </section>
 
-<div class="h5-panel">
-
-    <h2>Upcoming trips</h2>
-
-    {% if upcoming_bookings %}
-
-        {% for booking in upcoming_bookings %}
-
-            <article class="h5-book-panel">
-
-                <div class="h5-book-head">
-                    <h3>
-                        {{ booking.schedule.route.origin }}
-                        &rarr;
-                        {{ booking.schedule.route.destination }}
-                    </h3>
-
-                    <span>{{ booking.get_status_display }}</span>
-                </div>
-
-                <div class="h5-trip-facts">
-
-                    <div>
-                        <dt>Departure date</dt>
-                        <dd>
-                            {{ booking.schedule.departure_date|date:"D, j M Y" }}
-                        </dd>
-                    </div>
-
-                    <div>
-                        <dt>Departure time</dt>
-                        <dd>
-                            {{ booking.schedule.departure_time|time:"H:i" }}
-                        </dd>
-                    </div>
-
-                    <div>
-                        <dt>Bus</dt>
-                        <dd>
-                            {{ booking.schedule.bus.name_or_plate }}
-                        </dd>
-                    </div>
-
-                    <div>
-                        <dt>Passengers</dt>
-                        <dd>{{ booking.seats_booked }}{% if booking.seat_list %} · Seat{{ booking.seats_booked|pluralize }} {{ booking.seat_list }}{% endif %}</dd>
-                    </div>
-
-                    <div>
-                        <dt>Total fare</dt>
-                        <dd>
-                            {{ CURRENCY }}{{ booking.total_amount|floatformat:"-2g" }}
-                        </dd>
-                    </div>
-
-                    <div>
-                        <dt>Booking reference</dt>
-                        <dd>{{ booking.booking_ref }}</dd>
-                    </div>
-
-                </div>
-
-                <p>
-                    <strong>Passenger names:</strong>
-
-                    {% for passenger in booking.passengers.all %}
-                        {{ passenger.full_name }}{% if not forloop.last %}, {% endif %}
-                    {% empty %}
-                        Not available
-                    {% endfor %}
-                </p>
-
-                <a
-                    href="{% url 'bookings:ticket-detail' booking.booking_ref %}"
-                    class="btn btn-outline-light"
-                >
-                    View ticket &rarr;
-                </a>
-
-            </article>
-
-        {% endfor %}
-
-    {% else %}
-
-        <div class="h5-empty">
-            <div class="h5-empty-ico">
-                <svg viewBox="0 0 24 24">
-                    <path d="M4 7h16v4a2 2 0 000 4v4H4v-4a2 2 0 000-4z"/>
-                    <path d="M14 7v12"/>
-                </svg>
-            </div>
-
-            <h3>No upcoming trips</h3>
-
-            <p>You haven't booked any upcoming trips yet.</p>
-
-            <a class="btn btn-outline-light"
-               href="{% url 'bookings:search' %}">
-                Find a trip
-            </a>
-        </div>
-
-    {% endif %}
-
+  <section id="history" role="tabpanel" aria-labelledby="tab-history" class="h5-trip-list">
+    {% for booking in booking_history %}
+      {% include "partials/booking/trip_row.html" with past=True %}
+    {% empty %}
+      <div class="h5-trip-empty">
+        <h3>No past trips</h3>
+        <p>Completed and cancelled bookings will appear here.</p>
+      </div>
+    {% endfor %}
+  </section>
 </div>
 
-
-<!-- BOOKING HISTORY -->
-
-<div class="h5-panel" id="history">
-
-    <h2>Booking history</h2>
-
-    {% if booking_history %}
-
-        {% for booking in booking_history %}
-
-            <article class="h5-book-panel">
-
-                <div class="h5-book-head">
-
-                    <h3>
-                        {{ booking.schedule.route.origin }}
-                        &rarr;
-                        {{ booking.schedule.route.destination }}
-                    </h3>
-
-                    <span>{{ booking.get_status_display }}</span>
-
-                </div>
-
-                <div class="h5-trip-facts">
-
-                    <div>
-                        <dt>Departure date</dt>
-                        <dd>
-                            {{ booking.schedule.departure_date|date:"D, j M Y" }}
-                        </dd>
-                    </div>
-
-                    <div>
-                        <dt>Departure time</dt>
-                        <dd>
-                            {{ booking.schedule.departure_time|time:"H:i" }}
-                        </dd>
-                    </div>
-
-                    <div>
-                        <dt>Passengers</dt>
-                        <dd>{{ booking.seats_booked }}{% if booking.seat_list %} · Seat{{ booking.seats_booked|pluralize }} {{ booking.seat_list }}{% endif %}</dd>
-                    </div>
-
-                    <div>
-                        <dt>Total fare</dt>
-                        <dd>
-                            {{ CURRENCY }}{{ booking.total_amount|floatformat:"-2g" }}
-                        </dd>
-                    </div>
-
-                    <div>
-                        <dt>Booking reference</dt>
-                        <dd>{{ booking.booking_ref }}</dd>
-                    </div>
-
-                </div>
-
-                <a
-                    href="{% url 'bookings:ticket-detail' booking.booking_ref %}"
-                    class="btn btn-outline-light"
-                >
-                    View ticket &rarr;
-                </a>
-
-            </article>
-
-        {% endfor %}
-
-    {% else %}
-
-        <div class="h5-empty">
-
-            <div class="h5-empty-ico">
-                <svg viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="9"/>
-                    <path d="M12 7v5l3 2"/>
-                </svg>
-            </div>
-
-            <h3>No booking history</h3>
-
-            <p>Your completed and cancelled bookings will appear here.</p>
-
-        </div>
-
-    {% endif %}
-
 </div>
+{% endblock %}
 
+{% block extra_js %}
+<script src="{% static 'js/my_bookings.js' %}?v={{ ASSET_VERSION }}"></script>
 {% endblock %}

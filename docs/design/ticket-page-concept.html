@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HIGH 5 – ticket page + My Bookings (concept)</title>
+<!-- Mockup only. Example data. -->
+<link rel="stylesheet" href="mockup-base.css">
+<style>
+  .label { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 6px 0 14px; }
+  .pagehead { display: flex; justify-content: space-between; align-items: end; margin: 10px 0 24px; }
+  .grid { display: grid; grid-template-columns: 1fr 520px; gap: 26px; align-items: start; }
+  .side { display: grid; gap: 14px; margin-top: 20px; grid-template-columns: 1fr 1fr; }
+  .side .card { padding: 18px 20px; }
+  .side p { font-size: 13.5px; color: #c9ced8; line-height: 1.5; margin: 6px 0 14px; }
+
+  /* My Bookings list */
+  .tabs { display: flex; gap: 8px; margin: 4px 0 16px; }
+  .tabs span { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); font-size: 13.5px; color: #c9ced8; }
+  .tabs .on { background: #f2f4f8; color: #0b0e15; border-color: transparent; font-weight: 600; }
+  .trip { display: grid; grid-template-columns: 78px 1fr auto; gap: 18px; align-items: center; padding: 16px 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); }
+  .trip + .trip { margin-top: 12px; }
+  .date { text-align: center; border-radius: 14px; background: #151a24; padding: 10px 0; }
+  .date small { display: block; font-size: 11px; letter-spacing: .12em; color: var(--amber); text-transform: uppercase; }
+  .date b { font-size: 26px; font-weight: 600; line-height: 1.15; display: block; } .date i { font-style: normal; font-size: 12px; color: var(--muted); }
+  .trip h3 { font-size: 17px; } .trip h3 em { font-style: normal; color: var(--muted); margin: 0 6px; }
+  .trip p { font-size: 13.5px; color: var(--muted); margin-top: 5px; }
+  .trip .right { text-align: right; display: grid; gap: 8px; justify-items: end; }
+  .trip .right b { font-size: 16px; } .trip a { font-size: 13.5px; color: #9fb8ff; }
+  .trip.past { opacity: .62; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo"><div class="mark">H5</div>HIGH 5</div>
+  <div class="pill"><span>Book a Trip</span><span class="on">My Bookings</span><span>History</span></div>
+  <div class="user"><div class="av">A</div>Ada</div>
+</nav>
+<div class="wrap">
+<div class="grid">
+
+  <section>
+    <p class="label">1 · Ticket page (/bookings/tickets/H5-…/) – the same ticket as after booking</p>
+    <div class="pagehead">
+      <div><span class="sub">← My Bookings</span><h1 style="margin-top:6px">Your ticket</h1></div>
+      <div style="display:flex;gap:10px"><span class="chip ok">● Confirmed</span><span class="chip wait">Payment pending</span></div>
+    </div>
+    <div class="ticket">
+      <div class="t-main">
+        <div class="t-top"><div class="t-brand"><div class="mark">H5</div>HIGH 5</div><span class="t-kind">Bus ticket · Luxury coach</span></div>
+        <div class="t-route">
+          <div><b>06:00</b><strong>Lagos</strong><small>Fri, 27 Nov 2026</small></div>
+          <div class="t-line"></div>
+          <div style="text-align:right"><b>16:00</b><strong>Abuja</strong><small>estimated arrival</small></div>
+        </div>
+        <div class="t-pax">
+          <div><span><b>Ada Okafor</b> <small>· +234 801 234 5678</small></span><small>Passenger 1</small><span class="t-seat">3A</span></div>
+          <div><span><b>Tunde Bello</b> <small>· +234 809 876 5432 · tunde@example.com</small></span><small>Passenger 2</small><span class="t-seat">3B</span></div>
+        </div>
+        <div class="t-facts">
+          <div><span>Bus</span><b>H5-LAG-01</b></div>
+          <div><span>Duration</span><b>About 10 h</b></div>
+          <div><span>Booked</span><b>26 Nov, 03:41</b></div>
+          <div><span>Free cancellation</span><b>Until 26 Nov, 06:00</b></div>
+        </div>
+      </div>
+      <div class="t-stub">
+        <span>Booking reference</span>
+        <div class="t-ref">H5-MDC8KRGYW</div>
+        <dl>
+          <div><dt><span>Seats</span></dt><dd>3A, 3B</dd></div>
+          <div><dt><span>Total</span></dt><dd class="t-total">₦50,000</dd></div>
+          <div><dt><span>Payment</span></dt><dd><span class="t-pchip">Pending</span></dd></div>
+        </dl>
+        <p class="t-foot">Show this ticket or the reference when boarding.</p>
+      </div>
+    </div>
+    <div class="side">
+      <div class="card"><h3>Keep a copy</h3><p>Print it or save it as PDF from the print window. It was also emailed to ada@gmail.com.</p><span class="btn ghost">Print ticket</span> <span class="btn ghost" style="margin-left:6px">Email it again</span></div>
+      <div class="card"><h3>Cancel this booking</h3><p>Free until 24 h before departure. Paid bookings are refunded in full.</p><span class="btn danger">Cancel booking…</span></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="label">2 · My Bookings – one line per trip, status at a glance</p>
+    <div class="pagehead"><div><h1>Hi, Ada</h1><p class="muted" style="margin-top:6px">Your trips and tickets.</p></div><span class="btn primary">Book a trip →</span></div>
+    <div class="card">
+      <div class="tabs"><span class="on">Upcoming · 2</span><span>Past &amp; cancelled · 3</span></div>
+      <div class="trip">
+        <div class="date"><small>Nov</small><b>27</b><i>Fri</i></div>
+        <div><h3>Lagos<em>→</em>Abuja</h3><p>06:00 · Seats 3A, 3B · H5-MDC8KRGYW</p></div>
+        <div class="right"><b>₦50,000</b><span class="chip wait">Payment pending</span><a>View ticket →</a></div>
+      </div>
+      <div class="trip">
+        <div class="date"><small>Dec</small><b>04</b><i>Fri</i></div>
+        <div><h3>Lagos<em>→</em>Ibadan</h3><p>07:30 · Seat 4A · H5-7K2QX9PLM</p></div>
+        <div class="right"><b>₦5,000</b><span class="chip ok">Paid</span><a>View ticket →</a></div>
+      </div>
+      <p class="label" style="margin:22px 0 12px">Past &amp; cancelled tab looks the same, faded:</p>
+      <div class="trip past">
+        <div class="date"><small>Nov</small><b>14</b><i>Sat</i></div>
+        <div><h3>Lagos<em>→</em>Benin</h3><p>06:00 · Seat 2C · cancelled by HIGH 5</p></div>
+        <div class="right"><b>₦8,000</b><span class="chip off">Cancelled · Refunded</span><a>View ticket →</a></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</div>
+</body>
+</html>

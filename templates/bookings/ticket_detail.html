@@ -1,173 +1,98 @@
-
 {% extends "base.html" %}
 {% load static %}
-{% block title %}My ticket{% endblock %}
+{% comment %}
+  One booking as a virtual ticket (bookings.views.ticket_detail).
+  Two headers: right after booking (?booked=1) "You're booked", otherwise "Your ticket".
+  Design: docs/design/booking-confirmed-concept.png and ticket-page-concept.png.
+{% endcomment %}
+{% block title %}Ticket {{ booking.booking_ref }}{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tickets.css' %}?v={{ ASSET_VERSION }}">{% endblock %}
 
 {% block content %}
+<div class="h5-ticket-page{% if just_booked %} is-new{% endif %}">
 
-<div class="h5-page-head">
+{% if just_booked %}
+  <div class="h5-booked-head">
+    <div class="h5-booked-tick" aria-hidden="true">✓</div>
     <div>
-        <h1>Ticket details</h1>
-        <p>Your HIGH 5 booking information.</p>
+      <h1>You're booked, {{ user.get_short_name|default:"traveller" }}</h1>
+      <p>{{ route.origin }} → {{ route.destination }} · {{ departure|date:"D j M" }} · {{ booking.seats_booked }} seat{{ booking.seats_booked|pluralize }}</p>
     </div>
-
-    <a href="{% url 'bookings:dashboard' %}" class="btn btn-outline-light">
-        &larr; My bookings
-    </a>
-</div>
-
-<div class="h5-panel">
-
-    <div class="h5-book-head">
-        <h2>
-            {{ booking.schedule.route.origin }}
-            &rarr;
-            {{ booking.schedule.route.destination }}
-        </h2>
-
-        <span>{{ booking.get_status_display }}</span>
+  </div>
+{% else %}
+  <div class="h5-page-head">
+    <div>
+      <a class="h5-back h5-no-print" href="{% url 'bookings:dashboard' %}">← My Bookings</a>
+      <h1>Your ticket</h1>
     </div>
-
-    <div class="h5-trip-facts">
-
-        <div>
-            <dt>Booking reference</dt>
-            <dd>{{ booking.booking_ref }}</dd>
-        </div>
-
-        <div>
-            <dt>Departure date</dt>
-            <dd>{{ booking.schedule.departure_date|date:"D, j M Y" }}</dd>
-        </div>
-
-        <div>
-            <dt>Departure time</dt>
-            <dd>{{ booking.schedule.departure_time|time:"H:i" }}</dd>
-        </div>
-
-        <div>
-            <dt>Bus</dt>
-            <dd>{{ booking.schedule.bus.name_or_plate }}</dd>
-        </div>
-
-        <div>
-            <dt>Bus type</dt>
-            <dd>{{ booking.schedule.bus.get_bus_type_display }}</dd>
-        </div>
-
-        <div>
-            <dt>Passengers</dt>
-            <dd>{{ booking.seats_booked }}{% if booking.seat_list %} · Seat{{ booking.seats_booked|pluralize }} {{ booking.seat_list }}{% endif %}</dd>
-        </div>
-
-        <div>
-            <dt>Total fare</dt>
-            <dd>{{ CURRENCY }}{{ booking.total_amount|floatformat:"-2g" }}</dd>
-        </div>
-
-        <div>
-            <dt>Payment status</dt>
-            <dd>{{ booking.get_payment_status_display }}</dd>
-        </div>
-
-        <div>
-            <dt>Booked on</dt>
-            <dd>{{ booking.booked_at|date:"D, j M Y H:i" }}</dd>
-        </div>
-
+    <div class="h5-ticket-chips">
+      {% if is_cancelled %}<span class="h5-tchip off">Cancelled{% if trip_cancelled %} by HIGH 5{% endif %}</span>
+      {% elif booking.status == "COMPLETED" %}<span class="h5-tchip info">Completed</span>
+      {% else %}<span class="h5-tchip ok">● Confirmed</span>{% endif %}
+      {% if is_paid %}<span class="h5-tchip ok">Paid</span>
+      {% elif is_refunded %}<span class="h5-tchip info">Refunded</span>
+      {% elif not is_cancelled %}<span class="h5-tchip wait">Payment pending</span>{% endif %}
     </div>
-
-</div>
-
-
-<div class="h5-panel">
-
-    <h2>Passenger information</h2>
-
-    {% for passenger in booking.passengers.all %}
-
-        <article class="h5-book-panel">
-
-            <h3>Passenger {{ forloop.counter }}</h3>
-
-            <div class="h5-trip-facts">
-
-                <div>
-                    <dt>Full name</dt>
-                    <dd>{{ passenger.full_name }}</dd>
-                </div>
-
-                <div>
-                    <dt>Phone number</dt>
-                    <dd>{{ passenger.phone }}</dd>
-                </div>
-
-                <div>
-                    <dt>Email address</dt>
-                    <dd>{{ passenger.email|default:"Not provided" }}</dd>
-                </div>
-
-                <div>
-                    <dt>Seat number</dt>
-                    <dd>{{ passenger.seat_number|default:"Assigned later" }}</dd>
-                </div>
-
-            </div>
-
-        </article>
-
-    {% empty %}
-
-        <p>No passenger information is available.</p>
-
-    {% endfor %}
-
-</div>
-
-
-
-{% if booking.status == "CONFIRMED" %}
-
-<div class="h5-panel">
-
-    <h2>Cancel booking</h2>
-
-    {% if can_cancel %}
-
-        <p>
-            You can cancel this booking up to
-            {{ cutoff_hours }} hours before departure.
-        </p>
-
-        <button
-            type="button"
-            id="cancelBookingBtn"
-            class="btn btn-danger"
-            data-cancel-url="{% url 'bookings:booking-cancel' booking.booking_ref %}"
-        >
-            Cancel this booking
-        </button>
-
-        <p
-            id="cancelBookingMessage"
-            role="status"
-            aria-live="polite"
-        ></p>
-
-    {% else %}
-
-        <p>
-            This booking can no longer be cancelled because
-            the cancellation cutoff has passed.
-        </p>
-
-    {% endif %}
-
-</div>
-
+  </div>
 {% endif %}
 
+{% include "partials/booking/ticket.html" %}
+
+{% if just_booked %}
+  {% if emailed_to %}
+    <p class="h5-mailed h5-no-print">✉&nbsp; We emailed this ticket to {% for address in emailed_to %}<b>{{ address }}</b>{% if not forloop.last %}{% if forloop.revcounter == 2 %} and {% else %}, {% endif %}{% endif %}{% endfor %}.</p>
+  {% elif emailed_to is not None %}
+    <p class="h5-mailed is-failed h5-no-print">We couldn't email the ticket just now. It is saved in My Bookings, and you can use “Email it again” there.</p>
+  {% endif %}
+  <div class="h5-ticket-actions h5-no-print">
+    <a class="h5-tbtn primary" href="{% url 'bookings:ticket-detail' booking.booking_ref %}">View ticket →</a>
+    <button type="button" class="h5-tbtn" onclick="window.print()">Print ticket</button>
+    <a class="h5-tbtn" href="{% url 'bookings:search' %}">Book another trip</a>
+  </div>
+  <div class="h5-ticket-next h5-no-print">
+    <div><b>Your ticket</b>It's always in My Bookings{% if emailed_to %}, and in your email{% endif %}.</div>
+    <div><b>Change of plans?</b>Cancel free from My Bookings until {{ cutoff_hours }} h before departure.</div>
+    <div><b>If we cancel the trip</b>You'll get an email, and a full refund of what you paid.</div>
+  </div>
+{% else %}
+  <div class="h5-ticket-side h5-no-print">
+    <section class="h5-tcard">
+      <h2>Keep a copy</h2>
+      <p>Print it, or save it as PDF from the print window.{% if user.email and not is_cancelled %} You can also have it emailed to {{ user.email }}.{% endif %}</p>
+      <div class="h5-tcard-btns">
+        <button type="button" class="h5-tbtn" onclick="window.print()">Print ticket</button>
+        {% if not is_cancelled and user.email %}
+        <form method="post" action="{% url 'bookings:ticket-email' booking.booking_ref %}">{% csrf_token %}<button type="submit" class="h5-tbtn">Email it again</button></form>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="h5-tcard">
+      {% if can_cancel %}
+        <h2>Cancel this booking</h2>
+        <p>Free until {{ cancel_until|date:"D j M, H:i" }} ({{ cutoff_hours }} h before departure).{% if is_paid %} You'll be refunded in full.{% endif %}</p>
+        <button type="button" id="cancelBookingBtn" class="h5-tbtn danger"
+                data-cancel-url="{% url 'bookings:booking-cancel' booking.booking_ref %}">Cancel booking…</button>
+        <p id="cancelBookingMessage" class="h5-tcard-msg" role="status" aria-live="polite"></p>
+      {% elif is_cancelled %}
+        <h2>Booking cancelled</h2>
+        <p>{% if trip_cancelled %}HIGH 5 cancelled this trip.{% else %}You cancelled this booking.{% endif %}{% if is_refunded %} What you paid is marked refunded.{% endif %}</p>
+        <a class="h5-tbtn" href="{% url 'bookings:search' %}">Find another trip</a>
+      {% elif booking.status == "COMPLETED" %}
+        <h2>Trip completed</h2>
+        <p>Thanks for travelling with HIGH 5.</p>
+        <a class="h5-tbtn" href="{% url 'bookings:search' %}">Book another trip</a>
+      {% else %}
+        <h2>Cancellation closed</h2>
+        <p>Bookings can be cancelled up to {{ cutoff_hours }} h before departure, so this one can no longer be cancelled.</p>
+      {% endif %}
+    </section>
+  </div>
+{% endif %}
+
+</div>
 {% endblock %}
+
 {% block extra_js %}
 <script src="{% static 'js/ticket.js' %}?v={{ ASSET_VERSION }}"></script>
 {% endblock %}

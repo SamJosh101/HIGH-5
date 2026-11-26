@@ -1,0 +1,63 @@
+{% comment %}
+  The virtual ticket (boarding-pass look). Context: bookings.tickets.ticket_facts(booking).
+  Used by bookings/ticket_detail.html for the ticket page and the "You're booked" view.
+  Styles: "VIRTUAL TICKET" in static/css/booking.css (light paper, prints well).
+{% endcomment %}
+<article class="h5-ticket{% if is_cancelled %} is-void{% endif %}" aria-label="Ticket {{ booking.booking_ref }}">
+  <div class="h5-t-main">
+    <div class="h5-t-top">
+      <div class="h5-t-brand"><span class="h5-t-mark">H5</span>HIGH 5</div>
+      <span class="h5-t-kind">Bus ticket · {{ bus.get_bus_type_display }}</span>
+    </div>
+
+    <div class="h5-t-route">
+      <div>
+        <b>{{ departure|time:"H:i" }}</b>
+        <strong>{{ route.origin }}</strong>
+        <small>{{ departure|date:"D, j M Y" }}</small>
+      </div>
+      <div class="h5-t-line" aria-hidden="true"></div>
+      <div class="h5-t-end">
+        <b>{{ arrival|time:"H:i" }}</b>
+        <strong>{{ route.destination }}</strong>
+        <small>estimated arrival{% if arrives_next_day %}, {{ arrival|date:"D j M" }}{% endif %}</small>
+      </div>
+    </div>
+
+    <ul class="h5-t-pax">
+      {% for traveller in travellers %}
+        <li>
+          <span><b>{{ traveller.full_name }}</b> <small>· {{ traveller.phone }}{% if traveller.email %} · {{ traveller.email }}{% endif %}</small></span>
+          <small>Passenger {{ forloop.counter }}</small>
+          <span class="h5-t-seat{% if not traveller.seat_number %} is-none{% endif %}">{{ traveller.seat_number|default:"–" }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+
+    <dl class="h5-t-facts">
+      <div><dt>Bus</dt><dd>{{ bus.name_or_plate }}</dd></div>
+      <div><dt>Duration</dt><dd>About {{ duration }}</dd></div>
+      <div><dt>Booked</dt><dd>{{ booking.booked_at|date:"j M, H:i" }}</dd></div>
+      {% if is_cancelled %}
+        <div><dt>Cancelled</dt><dd>{{ booking.cancelled_at|date:"j M, H:i"|default:"–" }}</dd></div>
+      {% else %}
+        <div><dt>Free cancellation</dt><dd>Until {{ cancel_until|date:"j M, H:i" }}</dd></div>
+      {% endif %}
+    </dl>
+  </div>
+
+  <div class="h5-t-stub">
+    <span class="h5-t-label">Booking reference</span>
+    <div class="h5-t-ref">{{ booking.booking_ref }}</div>
+    <dl>
+      <div><dt class="h5-t-label">Seat{{ booking.seats_booked|pluralize }}</dt><dd>{{ booking.seat_list|default:"Given at boarding" }}</dd></div>
+      <div><dt class="h5-t-label">Total</dt><dd class="h5-t-total">{{ currency }}{{ booking.total_amount|floatformat:"-2g" }}</dd></div>
+      <div><dt class="h5-t-label">Payment</dt><dd><span class="h5-t-pchip{% if is_paid %} is-paid{% elif is_refunded %} is-refunded{% endif %}">{{ booking.get_payment_status_display }}</span></dd></div>
+    </dl>
+    <p class="h5-t-foot">
+      {% if is_cancelled %}This booking is cancelled and cannot be used for boarding.
+      {% else %}Show this ticket or the reference when boarding.{% if not is_paid %} Payment shows Pending until HIGH 5 confirms it.{% endif %}{% endif %}
+    </p>
+    {% if is_cancelled %}<span class="h5-t-stamp">Cancelled</span>{% endif %}
+  </div>
+</article>

@@ -1,0 +1,55 @@
+/* Shared styles for the HTML mockups in docs/design (not used by the site). */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --bg: #07090d; --card: #0b0e15; --panel: #0e121a; --line: rgba(255,255,255,.08); --text: #f2f4f8; --muted: #8b93a3;
+        --blue: #2f6bff; --blue2: #3b77ff; --amber: #f5a524; --green: #3ccf8e; --red: #ff6b6b; }
+html, body { width: 1440px; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, sans-serif; }
+nav { height: 80px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 44px; }
+.logo { display: flex; align-items: center; gap: 12px; font-weight: 600; letter-spacing: .32em; font-size: 18px; }
+.mark { width: 34px; height: 34px; border-radius: 9px; background: var(--amber); color: #111; display: grid; place-items: center; font-weight: 800; letter-spacing: 0; font-size: 15px; }
+.pill { display: flex; gap: 4px; padding: 6px; border-radius: 999px; border: 1px solid var(--line); font-size: 15px; color: #c9ced8; }
+.pill span { padding: 9px 18px; border-radius: 999px; } .pill .on { background: #1b202b; color: #fff; }
+.user { justify-self: end; display: flex; align-items: center; gap: 10px; font-size: 14px; padding: 5px 14px 5px 5px; border: 1px solid var(--line); border-radius: 999px; }
+.av { width: 30px; height: 30px; border-radius: 50%; background: #4a5cff; display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+.wrap { padding: 0 44px 44px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 26px 28px; }
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+h1 { font-size: 46px; font-weight: 300; letter-spacing: -1px; } h2 { font-size: 21px; font-weight: 600; } h3 { font-size: 16px; font-weight: 600; }
+.sub { font-size: 13px; color: var(--muted); } .muted { color: var(--muted); }
+.tag { display: inline-block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--amber); margin-bottom: 10px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600; }
+.chip.ok { background: rgba(60,207,142,.12); color: var(--green); } .chip.wait { background: rgba(245,165,36,.12); color: var(--amber); }
+.chip.off { background: rgba(255,107,107,.12); color: var(--red); } .chip.info { background: rgba(59,119,255,.16); color: #9fb8ff; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 13px 20px; border-radius: 13px; font-weight: 600; font-size: 15px; }
+.btn.primary { background: linear-gradient(180deg, var(--blue2), #2457e6); box-shadow: 0 10px 30px rgba(47,107,255,.3); }
+.btn.ghost { border: 1px solid rgba(255,255,255,.16); color: #dfe4ee; } .btn.danger { border: 1px solid rgba(255,107,107,.35); color: #ffb4b4; }
+.note { position: absolute; font-size: 12.5px; color: #1a1a1a; background: #ffd77a; padding: 7px 11px; border-radius: 9px; box-shadow: 0 6px 18px rgba(0,0,0,.4); max-width: 260px; line-height: 1.4; }
+.note::before { content: "Note · "; font-weight: 700; }
+
+/* the virtual ticket (light "paper" so it reads as a ticket on the dark site) */
+.ticket { display: grid; grid-template-columns: 1fr 300px; border-radius: 22px; overflow: hidden; color: #121620; box-shadow: 0 30px 80px rgba(0,0,0,.55); }
+.t-main { background: #f6f7fb; padding: 30px 34px; position: relative; }
+.t-stub { background: #eceff6; padding: 30px 28px; position: relative; border-left: 2px dashed #c3c9d6; }
+.t-stub::before, .t-stub::after { content: ""; position: absolute; left: -15px; width: 28px; height: 28px; border-radius: 50%; background: var(--bg); }
+.t-stub::before { top: -14px; } .t-stub::after { bottom: -14px; }
+.t-top { display: flex; justify-content: space-between; align-items: center; }
+.t-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .28em; font-size: 14px; }
+.t-brand .mark { width: 28px; height: 28px; font-size: 12px; border-radius: 8px; }
+.t-kind { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #6b7385; }
+.t-route { display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 22px; margin-top: 24px; }
+.t-route b { display: block; font-size: 54px; font-weight: 300; letter-spacing: -1.5px; line-height: 1; }
+.t-route strong { display: block; font-size: 20px; margin-top: 8px; } .t-route small { font-size: 12.5px; color: #6b7385; }
+.t-line { height: 2px; background: repeating-linear-gradient(90deg, #b9c0ce 0 8px, transparent 8px 14px); margin-bottom: 34px; position: relative; }
+.t-line::after { content: "🚌"; position: absolute; left: 50%; top: -14px; transform: translateX(-50%); background: #f6f7fb; padding: 0 8px; font-size: 18px; }
+.t-facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #dde1ea; }
+.t-facts span { display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #7a8294; } .t-facts b { font-size: 15px; font-weight: 600; }
+.t-pax { margin-top: 20px; border-top: 1px solid #dde1ea; padding-top: 14px; }
+.t-pax div { display: grid; grid-template-columns: 1fr auto auto; gap: 20px; align-items: center; padding: 9px 0; font-size: 15px; }
+.t-pax div + div { border-top: 1px dashed #d6dbe5; } .t-pax small { color: #6b7385; font-size: 13px; }
+.t-seat { background: #121620; color: #fff; border-radius: 9px; padding: 5px 11px; font-weight: 700; font-size: 14px; }
+.t-stub span { display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #7a8294; }
+.t-ref { font-size: 25px; font-weight: 700; letter-spacing: .06em; margin: 4px 0 20px; font-family: Consolas, monospace; }
+.t-stub dl { display: grid; gap: 13px; } .t-stub dd { font-size: 15px; font-weight: 600; margin-top: 2px; }
+.t-total { font-size: 30px !important; font-weight: 700 !important; }
+.t-stub .t-pchip, .t-pchip { display: inline-block; letter-spacing: 0; text-transform: none; padding: 4px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; background: #fff1d6; color: #9a6200; }
+.t-pchip.paid { background: #d9f6e8; color: #127a4b; }
+.t-foot { margin-top: 18px; font-size: 12px; color: #6b7385; line-height: 1.5; }

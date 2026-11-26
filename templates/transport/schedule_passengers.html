@@ -1,0 +1,46 @@
+{% extends "admin_base.html" %}
+{% comment %}
+  Passenger list for one trip (transport.views.schedule_passengers).
+  "Boarded" is an empty tick box for the printed list only; nothing is saved.
+{% endcomment %}
+{% block title %}Passengers · {{ schedule.route.origin }} → {{ schedule.route.destination }}{% endblock %}
+{% block admin_eyebrow %}<p><a class="h5-back-link h5-no-print" href="{% url 'transport:schedule_list' %}">← Schedules</a> {{ schedule.departure_date|date:"D, j M Y" }} · {{ schedule.departure_time|time:"H:i" }} → {{ schedule.arrival_time|time:"H:i" }} · {{ schedule.bus.name_or_plate }} ({{ schedule.bus.get_bus_type_display }}) · <span class="h5-status{% if schedule.status == 'SCHEDULED' %} success{% elif schedule.status == 'COMPLETED' %} info{% elif schedule.status == 'CANCELLED' %} danger{% endif %}">{{ schedule.get_status_display }}</span></p>{% endblock %}
+{% block heading %}{{ schedule.route.origin }} → {{ schedule.route.destination }} · passengers{% endblock %}
+{% block admin_actions %}
+<div class="h5-pax-actions h5-no-print">
+  <button type="button" class="h5-btn-outline" onclick="window.print()">Print list</button>
+  <a class="h5-btn-outline" href="{% url 'transport:schedule_edit' schedule.pk %}">Edit trip</a>
+  {% if schedule.status == 'SCHEDULED' %}
+  <form method="post" action="{% url 'transport:schedule_cancel' schedule.pk %}" onsubmit="return confirm('Cancel this trip? Every booking on it will be cancelled, paid ones marked refunded, and the travellers emailed.')">{% csrf_token %}<button class="h5-btn-outline danger" type="submit">Cancel trip</button></form>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="h5-kpis">
+  <div class="h5-kpi"><span>Seats taken</span><strong>{{ seats_taken }} / {{ schedule.bus.total_seats }}</strong><span class="h5-fill h5-kpi-fill"><i style="width: {{ fill }}%"></i></span></div>
+  <div class="h5-kpi"><span>Travellers</span><strong>{{ travellers|length }}</strong><em>in {{ booking_count }} booking{{ booking_count|pluralize }}</em></div>
+  <div class="h5-kpi"><span>Paid</span><strong>{{ CURRENCY }}{{ paid_amount|floatformat:"-2g" }}</strong><em>{{ paid_seats }} seat{{ paid_seats|pluralize }}</em></div>
+  <div class="h5-kpi"><span>Not paid yet</span><strong>{{ CURRENCY }}{{ unpaid_amount|floatformat:"-2g" }}</strong><em{% if unpaid_bookings %} class="warn"{% endif %}>{{ unpaid_seats }} seat{{ unpaid_seats|pluralize }} · {{ unpaid_bookings }} booking{{ unpaid_bookings|pluralize }}</em></div>
+</div>
+
+<table class="h5-table h5-pax-table">
+  <thead><tr><th>Seat</th><th>Traveller</th><th>Phone</th><th>Booking</th><th>Booked by</th><th>Payment</th><th>Boarded</th></tr></thead>
+  <tbody>
+  {% for t in travellers %}
+    <tr>
+      <td><span class="h5-pax-seatcode">{{ t.seat_number|default:"–" }}</span></td>
+      <td>{{ t.full_name }}{% if t.email %}<small>{{ t.email }}</small>{% endif %}</td>
+      <td data-label="Phone">{{ t.phone }}</td>
+      <td data-label="Booking"><a class="h5-ref" href="{% url 'dashboard:booking_detail' t.booking.pk %}">{{ t.booking.booking_ref }}</a></td>
+      <td data-label="Booked by">{{ t.booking.passenger.full_name }}<small>{{ t.booking.passenger.email }}</small></td>
+      <td>{% include "dashboard/_booking_status.html" with booking=t.booking %}</td>
+      <td><span class="h5-tickbox" aria-label="Boarded (tick on paper)"></span></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="7" class="h5-empty">Nobody has booked this trip yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="h5-pax-foot">Sorted by seat.{% if cancelled_bookings %} {{ cancelled_bookings }} cancelled booking{{ cancelled_bookings|pluralize }} not listed.{% endif %} “Boarded” is a tick box for the printed list; it is not saved.</p>
+{% endblock %}
